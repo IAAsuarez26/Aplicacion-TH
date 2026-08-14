@@ -16,6 +16,14 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenSidebar }) => {
       title: 'Panel Ejecutivo de Talento Humano',
       subtitle: 'Métricas, resumen de estructura organizacional y estado del personal',
     },
+    empresas: {
+      title: 'Catálogo de Empresas y Filiales',
+      subtitle: 'Entidades jurídicas, datos fiscales y directiva corporativa del grupo',
+    },
+    tabulador: {
+      title: 'Tabulador Salarial y Bandas (80% - 120%)',
+      subtitle: 'Estructuras de compensación, percentiles y evaluación de equidad interna',
+    },
     direcciones: {
       title: 'Direcciones (Nivel 1)',
       subtitle: 'Catálogo de direcciones estratégicas y asignación de Directores Generales',

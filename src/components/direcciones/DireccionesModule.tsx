@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Building2, User, CheckCircle2, XCircle } from 'lucide-react';
-import { direccionesApi, empleadosApi } from '../../lib/insforge';
-import type { Direccion, Empleado } from '../../lib/types';
+import { Plus, Edit2, Trash2, Building2, User, Building, CheckCircle2, XCircle } from 'lucide-react';
+import { direccionesApi, empleadosApi, empresasApi } from '../../lib/insforge';
+import type { Direccion, Empleado, Empresa } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -12,6 +12,7 @@ export const DireccionesModule: React.FC = () => {
   const toast = useToast();
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -21,6 +22,7 @@ export const DireccionesModule: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   // Form State
+  const [empresaId, setEmpresaId] = useState<number | ''>('');
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -35,14 +37,17 @@ export const DireccionesModule: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [{ data: dirs, error: errDirs }, { data: emps, error: errEmps }] = await Promise.all([
-        direccionesApi.getAll(),
-        empleadosApi.getAll(),
-      ]);
+      const [{ data: dirs, error: errDirs }, { data: emps }, { data: empsList }] =
+        await Promise.all([
+          direccionesApi.getAll(),
+          empleadosApi.getAll(),
+          empresasApi.getAll(),
+        ]);
 
       if (errDirs) toast.error('No se pudieron cargar las direcciones');
       setDirecciones(dirs || []);
       setEmpleados(emps || []);
+      setEmpresas(empsList || []);
     } finally {
       setLoading(false);
     }
@@ -55,6 +60,7 @@ export const DireccionesModule: React.FC = () => {
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedDireccion(null);
+    setEmpresaId(empresas[0]?.empresa_id || '');
     setCodigo(`DIR-${Math.floor(100 + Math.random() * 900)}`);
     setNombre('');
     setDescripcion('');
@@ -66,6 +72,7 @@ export const DireccionesModule: React.FC = () => {
   const openEditModal = (dir: Direccion) => {
     setModalMode('edit');
     setSelectedDireccion(dir);
+    setEmpresaId(dir.empresa_id || empresas[0]?.empresa_id || '');
     setCodigo(dir.codigo);
     setNombre(dir.nombre);
     setDescripcion(dir.descripcion || '');
@@ -76,8 +83,8 @@ export const DireccionesModule: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codigo.trim() || !nombre.trim()) {
-      toast.error('El código y el nombre son campos obligatorios');
+    if (!codigo.trim() || !nombre.trim() || !empresaId) {
+      toast.error('La empresa, el código y el nombre son campos obligatorios');
       return;
     }
 
@@ -85,6 +92,7 @@ export const DireccionesModule: React.FC = () => {
     try {
       if (modalMode === 'create') {
         const { data, error } = await direccionesApi.create({
+          empresa_id: Number(empresaId),
           codigo: codigo.trim().toUpperCase(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -101,6 +109,7 @@ export const DireccionesModule: React.FC = () => {
         }
       } else if (selectedDireccion) {
         const { data, error } = await direccionesApi.update(selectedDireccion.direccion_id, {
+          empresa_id: Number(empresaId),
           codigo: codigo.trim().toUpperCase(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -159,21 +168,37 @@ export const DireccionesModule: React.FC = () => {
       key: 'codigo',
       header: 'Código',
       sortable: true,
-      render: (item) => (
+      render: (row) => (
         <span className="font-mono font-bold text-brand-300 text-xs px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700">
-          {item.codigo}
+          {row.codigo}
         </span>
       ),
+      className: 'w-28',
+    },
+    {
+      key: 'empresa_id',
+      header: 'Empresa Adscrita',
+      sortable: true,
+      render: (row) => {
+        const emp = empresas.find(e => e.empresa_id === row.empresa_id);
+        return (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
+            <Building className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+            <span>{emp ? `${emp.codigo} - ${emp.nombre_corto || emp.razon_social}` : 'Empresa Matriz'}</span>
+          </div>
+        );
+      },
+      className: 'w-48',
     },
     {
       key: 'nombre',
       header: 'Nombre de la Dirección',
       sortable: true,
-      render: (item) => (
+      render: (row) => (
         <div>
-          <div className="font-semibold text-slate-100">{item.nombre}</div>
-          {item.descripcion && (
-            <div className="text-xs text-slate-400 truncate max-w-xs">{item.descripcion}</div>
+          <div className="font-semibold text-slate-100 text-sm">{row.nombre}</div>
+          {row.descripcion && (
+            <div className="text-xs text-slate-400 truncate max-w-xs">{row.descripcion}</div>
           )}
         </div>
       ),
@@ -182,8 +207,8 @@ export const DireccionesModule: React.FC = () => {
       key: 'director_id',
       header: 'Director / Responsable',
       sortable: true,
-      render: (item) => {
-        const directorName = getDirectorName(item.director_id);
+      render: (row) => {
+        const directorName = getDirectorName(row.director_id);
         return directorName ? (
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-brand-500/20 text-brand-300 text-[10px] font-bold flex items-center justify-center border border-brand-500/30">
@@ -200,23 +225,23 @@ export const DireccionesModule: React.FC = () => {
       key: 'estado',
       header: 'Estado',
       sortable: true,
-      render: (item) => <EstadoBooleanBadge activo={item.estado} />,
+      render: (row) => <EstadoBooleanBadge activo={row.estado} />,
+      className: 'w-24 text-center',
     },
     {
       key: 'acciones',
       header: 'Acciones',
-      className: 'text-right',
-      render: (item) => (
+      render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
-            onClick={() => openEditModal(item)}
+            onClick={() => openEditModal(row)}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
             title="Editar dirección"
           >
             <Edit2 className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => openDeleteDialog(item)}
+            onClick={() => openDeleteDialog(row)}
             className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
             title="Eliminar dirección"
           >
@@ -224,26 +249,27 @@ export const DireccionesModule: React.FC = () => {
           </button>
         </div>
       ),
+      className: 'w-24 text-right',
     },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header with Title and Create Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-brand-400" />
             Direcciones Estratégicas (Nivel 1)
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Gestión de las direcciones ejecutivas máximas que agrupan gerencias y departamentos.
+          <p className="text-sm text-slate-400 mt-1">
+            Gestión de las direcciones ejecutivas adscritas a cada empresa o filial.
           </p>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-glow transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-glow transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Nueva Dirección</span>
@@ -257,14 +283,14 @@ export const DireccionesModule: React.FC = () => {
         loading={loading}
         searchKeys={['codigo', 'nombre', 'descripcion']}
         searchPlaceholder="Buscar por código, nombre o descripción..."
-        exportFilename="direcciones_nivel_1"
+        emptyMessage="No se encontraron direcciones registradas"
       />
 
       {/* Create / Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Crear Nueva Dirección' : 'Editar Dirección'}
+        title={modalMode === 'create' ? 'Crear Nueva Dirección' : `Editar Dirección: ${selectedDireccion?.codigo}`}
         subtitle="Nivel 1 de la Jerarquía Organizacional"
         maxWidth="lg"
       >
@@ -272,15 +298,50 @@ export const DireccionesModule: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Código Único *
+                Empresa Vinculada <span className="text-brand-400">*</span>
+              </label>
+              <select
+                required
+                value={empresaId}
+                onChange={(e) => setEmpresaId(Number(e.target.value))}
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+              >
+                <option value="">Selecciona una empresa...</option>
+                {empresas.map((emp) => (
+                  <option key={emp.empresa_id} value={emp.empresa_id}>
+                    {emp.codigo} - {emp.razon_social} ({emp.nombre_corto || 'Filial'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Código Único <span className="text-brand-400">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder="Ej. DIR-TECN"
-                className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                placeholder="DIR-TECN"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Nombre de la Dirección <span className="text-brand-400">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Dirección de Tecnología e Innovación"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -289,34 +350,20 @@ export const DireccionesModule: React.FC = () => {
                 Estado Operativo
               </label>
               <div className="flex items-center gap-3 pt-2">
-                <label className="inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={estado}
                     onChange={(e) => setEstado(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                  <span className="ml-3 text-xs font-medium text-slate-300">
-                    {estado ? 'Activa' : 'Inactiva'}
-                  </span>
+                  <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
                 </label>
+                <span className="text-xs font-medium text-slate-300">
+                  {estado ? 'Activa' : 'Inactiva'}
+                </span>
               </div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Nombre de la Dirección *
-            </label>
-            <input
-              type="text"
-              required
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej. Dirección de Tecnología e Innovación"
-              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
-            />
           </div>
 
           <div>
@@ -326,7 +373,7 @@ export const DireccionesModule: React.FC = () => {
             <select
               value={directorId}
               onChange={(e) => setDirectorId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
             >
               <option value="">-- Sin Director asignado --</option>
               {empleados.map((emp) => (
@@ -346,7 +393,7 @@ export const DireccionesModule: React.FC = () => {
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Descripción de funciones y objetivos de la dirección..."
-              className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 resize-none"
+              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 resize-none"
             />
           </div>
 
@@ -354,14 +401,14 @@ export const DireccionesModule: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {saving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               <span>{modalMode === 'create' ? 'Guardar Dirección' : 'Actualizar Cambios'}</span>
@@ -379,6 +426,8 @@ export const DireccionesModule: React.FC = () => {
         message={`¿Estás seguro de que deseas eliminar permanentemente la dirección "${deletingDireccion?.nombre}"? Esta acción no se puede deshacer.`}
         loading={deleting}
         confirmText="Eliminar Dirección"
+        cancelText="Cancelar"
+        variant="danger"
       />
     </div>
   );

@@ -15,9 +15,11 @@ import {
   CheckCircle,
   Clock,
   UserCheck,
+  Layers,
+  DollarSign,
 } from 'lucide-react';
-import { empleadosApi, cargosApi, departamentosApi } from '../../lib/insforge';
-import type { Empleado, Cargo, Departamento, EstadoLaboral } from '../../lib/types';
+import { empleadosApi, cargosApi, departamentosApi, tabuladorApi } from '../../lib/insforge';
+import type { Empleado, Cargo, Departamento, TabuladorEmpresa, EstadoLaboral } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -37,6 +39,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [tabuladores, setTabuladores] = useState<TabuladorEmpresa[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -63,6 +66,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [telefono, setTelefono] = useState('');
   const [cargoId, setCargoId] = useState<number | ''>('');
   const [departamentoId, setDepartamentoId] = useState<number | ''>('');
+  const [tabuladorId, setTabuladorId] = useState<number | ''>('');
   const [supervisorDirectoId, setSupervisorDirectoId] = useState<number | ''>('');
   const [evaluadorId, setEvaluadorId] = useState<number | ''>('');
   const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().slice(0, 10));
@@ -80,16 +84,19 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         { data: eData, error: eErr },
         { data: cData, error: cErr },
         { data: dData, error: dErr },
+        { data: tData },
       ] = await Promise.all([
         empleadosApi.getAll(),
         cargosApi.getAll(),
         departamentosApi.getAll(),
+        tabuladorApi.getAll(),
       ]);
 
       if (eErr) toast.error('No se pudieron cargar los colaboradores');
       setEmpleados(eData || []);
       setCargos(cData || []);
       setDepartamentos(dData || []);
+      setTabuladores(tData || []);
     } finally {
       setLoading(false);
     }
@@ -118,6 +125,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setTelefono('+58414' + Math.floor(1000000 + Math.random() * 9000000));
     setCargoId(cargos[0]?.cargo_id || '');
     setDepartamentoId(departamentos[0]?.departamento_id || '');
+    setTabuladorId('');
     setSupervisorDirectoId('');
     setEvaluadorId('');
     setFechaIngreso(new Date().toISOString().slice(0, 10));
@@ -136,6 +144,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setTelefono(emp.telefono || '');
     setCargoId(emp.cargo_id);
     setDepartamentoId(emp.departamento_id);
+    setTabuladorId(emp.tabulador_id || '');
     setSupervisorDirectoId(emp.supervisor_directo_id || '');
     setEvaluadorId(emp.evaluador_id || '');
     setFechaIngreso(emp.fecha_ingreso ? emp.fecha_ingreso.slice(0, 10) : '');
@@ -167,6 +176,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           telefono: telefono.trim() || null,
           cargo_id: Number(cargoId),
           departamento_id: Number(departamentoId),
+          tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
           evaluador_id: evaluadorId ? Number(evaluadorId) : null,
           fecha_ingreso: fechaIngreso,
@@ -190,6 +200,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           telefono: telefono.trim() || null,
           cargo_id: Number(cargoId),
           departamento_id: Number(departamentoId),
+          tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
           evaluador_id: evaluadorId ? Number(evaluadorId) : null,
           fecha_ingreso: fechaIngreso,
@@ -227,8 +238,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       } else {
         toast.error(
           error?.message?.includes('violates foreign key')
-            ? 'No se puede eliminar el empleado porque está asignado como director, gerente, jefe o supervisor de otros colaboradores. Reasigna esas responsabilidades primero.'
-            : error?.message || 'Error al eliminar el empleado'
+            ? 'No se puede eliminar este colaborador porque está asignado como líder o evaluador de otras áreas. Reasigna sus funciones primero.'
+            : error?.message || 'Error al eliminar al empleado'
         );
       }
     } finally {
@@ -246,7 +257,12 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     return dep ? dep.nombre : `Departamento #${dId}`;
   };
 
-  const getEmpleadoFullName = (eId: number | null) => {
+  const getTabuladorInfo = (tId?: number | null) => {
+    if (!tId) return null;
+    return tabuladores.find((t) => t.tabulador_id === tId) || null;
+  };
+
+  const getEmpleadoFullName = (eId: number | null | undefined) => {
     if (!eId) return null;
     const emp = empleados.find((e) => e.empleado_id === eId);
     return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${eId}`;
@@ -265,35 +281,36 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'codigo_empleado',
       header: 'Código / Cédula',
       sortable: true,
-      render: (item) => (
+      render: (row) => (
         <div>
           <span className="font-mono font-bold text-brand-300 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
-            {item.codigo_empleado}
+            {row.codigo_empleado}
           </span>
-          {item.documento_identidad && (
+          {row.documento_identidad && (
             <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-              {item.documento_identidad}
+              {row.documento_identidad}
             </div>
           )}
         </div>
       ),
+      className: 'w-32',
     },
     {
       key: 'nombres',
       header: 'Colaborador',
       sortable: true,
-      render: (item) => (
+      render: (row) => (
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 p-0.5 text-xs font-bold text-white flex items-center justify-center shrink-0">
             <span className="bg-slate-900 w-full h-full rounded-full flex items-center justify-center">
-              {item.nombres.charAt(0)}
+              {row.nombres.charAt(0)}
             </span>
           </div>
           <div>
-            <div className="font-semibold text-slate-100">{item.nombres} {item.apellidos}</div>
+            <div className="font-semibold text-slate-100">{row.nombres} {row.apellidos}</div>
             <div className="text-xs text-slate-400 flex items-center gap-1">
               <Mail className="w-3 h-3 text-slate-400" />
-              <span>{item.email}</span>
+              <span>{row.email}</span>
             </div>
           </div>
         </div>
@@ -303,20 +320,45 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'cargo_id',
       header: 'Cargo & Departamento',
       sortable: true,
-      render: (item) => (
+      render: (row) => (
         <div>
-          <div className="font-medium text-slate-200">{getCargoName(item.cargo_id)}</div>
-          <div className="text-xs text-brand-400/90">{getDepartamentoName(item.departamento_id)}</div>
+          <div className="font-medium text-slate-200">{getCargoName(row.cargo_id)}</div>
+          <div className="text-xs text-brand-400/90">{getDepartamentoName(row.departamento_id)}</div>
         </div>
       ),
     },
     {
+      key: 'tabulador_id',
+      header: 'Banda Salarial',
+      render: (row) => {
+        const tab = getTabuladorInfo(row.tabulador_id);
+        return tab ? (
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-xs px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50">
+                {tab.codigo_banda}
+              </span>
+              <span className="text-[11px] font-mono text-emerald-400 font-medium">
+                ${Number(tab.salario_mediana_100).toFixed(2)}
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+              Cía: {tab.codigo_empresa}
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-500 italic">Sin asignar</span>
+        );
+      },
+      className: 'w-36',
+    },
+    {
       key: 'supervisor_directo_id',
       header: 'Línea de Mando',
-      render: (item) => {
-        const supervisor = getEmpleadoFullName(item.supervisor_directo_id);
-        const evaluador = getEmpleadoFullName(item.evaluador_id);
-        const hasSpecialEvaluator = item.evaluador_id && item.evaluador_id !== item.supervisor_directo_id;
+      render: (row) => {
+        const supervisor = getEmpleadoFullName(row.supervisor_directo_id);
+        const evaluador = getEmpleadoFullName(row.evaluador_id);
+        const hasSpecialEvaluator = row.evaluador_id && row.evaluador_id !== row.supervisor_directo_id;
 
         return (
           <div className="text-xs space-y-0.5">
@@ -338,30 +380,30 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'estado_laboral',
       header: 'Estado',
       sortable: true,
-      render: (item) => <EstadoLaboralBadge estado={item.estado_laboral} />,
+      render: (row) => <EstadoLaboralBadge estado={row.estado_laboral} />,
+      className: 'w-24 text-center',
     },
     {
       key: 'acciones',
       header: 'Acciones',
-      className: 'text-right',
-      render: (item) => (
+      render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
-            onClick={() => openDetailModal(item)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 transition-colors"
-            title="Ver Ficha Ejecutiva"
+            onClick={() => openDetailModal(row)}
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+            title="Ver expediente"
           >
             <Eye className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => openEditModal(item)}
+            onClick={() => openEditModal(row)}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-            title="Editar empleado"
+            title="Editar ficha"
           >
             <Edit2 className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => openDeleteDialog(item)}
+            onClick={() => openDeleteDialog(row)}
             className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
             title="Eliminar empleado"
           >
@@ -369,96 +411,82 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           </button>
         </div>
       ),
+      className: 'w-28 text-right',
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 animate-fade-in">
+      {/* Header and Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <Users className="w-6 h-6 text-brand-400" />
-            Ficha Maestra de Empleados
+            Directorio y Ficha Maestra de Personal
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Gestión completa de colaboradores, asignación departamental, supervisión directa y evaluación de desempeño.
+          <p className="text-sm text-slate-400 mt-1">
+            Gestión integral de colaboradores, puestos de trabajo, bandas salariales y línea de supervisión.
           </p>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-glow transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-glow transition-all"
         >
           <Plus className="w-4 h-4" />
-          <span>Registrar Empleado</span>
+          <span>Nuevo Colaborador</span>
         </button>
       </div>
 
-      {/* Multi-Filters bar */}
-      <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-          <Filter className="w-3.5 h-3.5" />
-          <span>Filtros:</span>
+      {/* Filter Bar */}
+      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+          <Filter className="w-4 h-4 text-brand-400" />
+          <span>Filtros Rápidos:</span>
         </div>
 
-        {/* Dept filter */}
-        <select
-          value={filtroDepartamento}
-          onChange={(e) =>
-            setFiltroDepartamento(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
-          }
-          className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
-        >
-          <option value="ALL">Todos los Departamentos</option>
-          {departamentos.map((d) => (
-            <option key={d.departamento_id} value={d.departamento_id}>
-              {d.nombre}
-            </option>
-          ))}
-        </select>
-
-        {/* Cargo filter */}
-        <select
-          value={filtroCargo}
-          onChange={(e) =>
-            setFiltroCargo(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
-          }
-          className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
-        >
-          <option value="ALL">Todos los Cargos</option>
-          {cargos.map((c) => (
-            <option key={c.cargo_id} value={c.cargo_id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
-
-        {/* Estado filter */}
-        <select
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-          className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
-        >
-          <option value="ALL">Todos los Estados</option>
-          <option value="ACTIVO">ACTIVO</option>
-          <option value="INACTIVO">INACTIVO</option>
-          <option value="VACACIONES">VACACIONES</option>
-          <option value="LICENCIA">LICENCIA</option>
-        </select>
-
-        {(filtroDepartamento !== 'ALL' || filtroCargo !== 'ALL' || filtroEstado !== 'ALL') && (
-          <button
-            onClick={() => {
-              setFiltroDepartamento('ALL');
-              setFiltroCargo('ALL');
-              setFiltroEstado('ALL');
-            }}
-            className="text-xs text-brand-400 hover:text-brand-300 font-medium ml-auto"
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Dept Filter */}
+          <select
+            value={filtroDepartamento}
+            onChange={(e) => setFiltroDepartamento(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
           >
-            Restablecer filtros
-          </button>
-        )}
+            <option value="ALL">Todos los Departamentos</option>
+            {departamentos.map((d) => (
+              <option key={d.departamento_id} value={d.departamento_id}>
+                {d.nombre}
+              </option>
+            ))}
+          </select>
+
+          {/* Cargo Filter */}
+          <select
+            value={filtroCargo}
+            onChange={(e) => setFiltroCargo(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
+          >
+            <option value="ALL">Todos los Cargos</option>
+            {cargos.map((c) => (
+              <option key={c.cargo_id} value={c.cargo_id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+
+          {/* Estado Filter */}
+          <select
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
+          >
+            <option value="ALL">Todos los Estados</option>
+            <option value="ACTIVO">ACTIVO</option>
+            <option value="INACTIVO">INACTIVO</option>
+            <option value="VACACIONES">VACACIONES</option>
+            <option value="LICENCIA">LICENCIA</option>
+          </select>
+        </div>
       </div>
 
       {/* DataTable */}
@@ -466,18 +494,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         data={filteredEmpleados}
         columns={columns}
         loading={loading}
-        searchKeys={['codigo_empleado', 'documento_identidad', 'nombres', 'apellidos', 'email', 'telefono']}
-        searchPlaceholder="Buscar por código, cédula, nombres, correo..."
-        exportFilename="empleados_ficha_maestra"
+        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email']}
+        searchPlaceholder="Buscar por nombre, código, cédula o email..."
+        emptyMessage="No se encontraron colaboradores que coincidan con la búsqueda"
       />
 
       {/* Create / Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Registrar Nuevo Empleado' : 'Editar Ficha de Empleado'}
-        subtitle="Datos Personales, Posición Organizacional y Línea de Supervisión"
-        maxWidth="2xl"
+        title={modalMode === 'create' ? 'Registrar Nuevo Colaborador' : `Editar Colaborador: ${selectedEmpleado?.codigo_empleado}`}
+        subtitle="Ingresa la ficha laboral, posición en tabulador y relaciones de supervisión."
+        maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -490,8 +518,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={codigoEmpleado}
                 onChange={(e) => setCodigoEmpleado(e.target.value)}
-                placeholder="EMP-0006"
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:border-brand-500"
+                placeholder="EMP-0001"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -504,7 +532,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={documentoIdentidad}
                 onChange={(e) => setDocumentoIdentidad(e.target.value)}
                 placeholder="V12345678"
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -520,7 +548,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={nombres}
                 onChange={(e) => setNombres(e.target.value)}
                 placeholder="Carlos"
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -534,7 +562,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={apellidos}
                 onChange={(e) => setApellidos(e.target.value)}
                 placeholder="Mendoza"
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -550,7 +578,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="carlos.mendoza@empresa.com"
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -563,7 +591,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="+584141112233"
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -577,7 +605,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={cargoId}
                 onChange={(e) => setCargoId(Number(e.target.value))}
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="" disabled>-- Selecciona un Cargo --</option>
                 {cargos.map((c) => (
@@ -596,7 +624,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={departamentoId}
                 onChange={(e) => setDepartamentoId(Number(e.target.value))}
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="" disabled>-- Selecciona un Departamento --</option>
                 {departamentos.map((d) => (
@@ -608,6 +636,25 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
           </div>
 
+          {/* Banda Salarial Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Banda Salarial Asignada (Tabulador)
+            </label>
+            <select
+              value={tabuladorId}
+              onChange={(e) => setTabuladorId(e.target.value ? Number(e.target.value) : '')}
+              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+            >
+              <option value="">-- Sin banda salarial asignada --</option>
+              {tabuladores.map((t) => (
+                <option key={t.tabulador_id} value={t.tabulador_id}>
+                  [{t.codigo_empresa}] Banda {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toFixed(2)} ({t.cargos_referencia})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -616,7 +663,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <select
                 value={supervisorDirectoId}
                 onChange={(e) => setSupervisorDirectoId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Sin supervisor (Directorio Máximo) --</option>
                 {empleados
@@ -636,7 +683,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <select
                 value={evaluadorId}
                 onChange={(e) => setEvaluadorId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Por defecto (Mismo Supervisor Directo) --</option>
                 {empleados
@@ -660,7 +707,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={fechaIngreso}
                 onChange={(e) => setFechaIngreso(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -672,7 +719,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={estadoLaboral}
                 onChange={(e) => setEstadoLaboral(e.target.value as EstadoLaboral)}
-                className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="ACTIVO">ACTIVO</option>
                 <option value="INACTIVO">INACTIVO</option>
@@ -686,14 +733,14 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {saving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               <span>{modalMode === 'create' ? 'Guardar Empleado' : 'Actualizar Ficha'}</span>
@@ -758,6 +805,44 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               </div>
             </div>
 
+            {/* Tabulador Card */}
+            {(() => {
+              const tab = getTabuladorInfo(detailEmpleado.tabulador_id);
+              return tab ? (
+                <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-indigo-400" />
+                      Banda Salarial Asignada
+                    </h4>
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-200 border border-indigo-700">
+                      Banda {tab.codigo_banda} ({tab.codigo_empresa})
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-slate-300">
+                    <span className="text-slate-400 font-medium">Cargos de Referencia: </span>
+                    {tab.cargos_referencia}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-xs">
+                    <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+                      <div className="text-[10px] text-slate-400">Mínimo (80%)</div>
+                      <div className="text-slate-300 mt-0.5">${Number(tab.salario_minimo_80).toFixed(2)}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-center">
+                      <div className="text-[10px] text-emerald-400 font-semibold">Mediana (100%)</div>
+                      <div className="text-emerald-300 font-bold mt-0.5">${Number(tab.salario_mediana_100).toFixed(2)}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+                      <div className="text-[10px] text-slate-400">Máximo (120%)</div>
+                      <div className="text-slate-300 mt-0.5">${Number(tab.salario_maximo_120).toFixed(2)}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
             {/* Line of command */}
             <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
               <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
@@ -803,6 +888,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         message={`¿Estás seguro de que deseas eliminar permanentemente a ${deletingEmpleado?.nombres} ${deletingEmpleado?.apellidos}?`}
         loading={deleting}
         confirmText="Eliminar Empleado"
+        cancelText="Cancelar"
+        variant="danger"
       />
     </div>
   );

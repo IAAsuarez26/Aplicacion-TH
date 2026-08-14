@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users,
+  Building,
+  Layers,
   Building2,
   GitFork,
   Network,
@@ -12,6 +14,7 @@ import {
   TrendingUp,
   ShieldCheck,
   Calendar,
+  DollarSign,
 } from 'lucide-react';
 import { dashboardApi, empleadosApi, organigramaApi } from '../../lib/insforge';
 import type { DashboardMetrics, OrganigramaRow, ResumenResponsable } from '../../lib/types';
@@ -54,12 +57,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const statCards = [
     {
+      label: 'Empresas & Filiales',
+      value: metrics?.totalEmpresas ?? 0,
+      subvalue: 'Entidades Legales Activas',
+      icon: Building,
+      color: 'from-amber-600 to-orange-600',
+      badge: 'Corporativo',
+      tab: 'empresas' as NavigationTab,
+    },
+    {
+      label: 'Bandas de Tabulador',
+      value: metrics?.totalBandasTabulador ?? 0,
+      subvalue: 'Escala 80% - 120%',
+      icon: Layers,
+      color: 'from-indigo-600 to-violet-600',
+      badge: '40% Amp.',
+      tab: 'tabulador' as NavigationTab,
+    },
+    {
       label: 'Colaboradores Totales',
       value: metrics?.totalEmpleados ?? 0,
       subvalue: `${metrics?.empleadosActivos ?? 0} Activos en nómina`,
       icon: Users,
-      color: 'from-blue-600 to-indigo-600',
-      badge: '+100%',
+      color: 'from-blue-600 to-cyan-600',
+      badge: 'Talento',
       tab: 'empleados' as NavigationTab,
     },
     {
@@ -69,22 +90,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       icon: Building2,
       color: 'from-purple-600 to-pink-600',
       tab: 'direcciones' as NavigationTab,
-    },
-    {
-      label: 'Gerencias de Área (Nivel 2)',
-      value: metrics?.totalGerencias ?? 0,
-      subvalue: 'Unidades Tácticas',
-      icon: GitFork,
-      color: 'from-indigo-600 to-cyan-600',
-      tab: 'gerencias' as NavigationTab,
-    },
-    {
-      label: 'Departamentos (Nivel 3)',
-      value: metrics?.totalDepartamentos ?? 0,
-      subvalue: 'Unidades Operativas',
-      icon: Network,
-      color: 'from-emerald-600 to-teal-600',
-      tab: 'departamentos' as NavigationTab,
     },
   ];
 
@@ -99,14 +104,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>Base de Datos PostgreSQL Conectada con InsForge</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-              Estructura Organizacional & Talento Humano
+              Estructura Corporativa & Talento Humano
             </h2>
             <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-              Monitoreo integral de los 3 niveles jerárquicos, catálogo de cargos, supervisores directos y evaluadores asignados.
+              Monitoreo integral de filiales, tabuladores salariales por empresa (80%-120%), unidades jerárquicas y línea de mando.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => onNavigate('tabulador')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-medium transition-colors"
+            >
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <span>Tabulador Salarial</span>
+            </button>
             <button
               onClick={onOpenNewEmployee}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-glow transition-all"
@@ -119,7 +131,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-medium transition-colors"
             >
               <Network className="w-4 h-4 text-brand-400" />
-              <span>Ver Organigrama</span>
+              <span>Organigrama</span>
             </button>
           </div>
         </div>
@@ -254,6 +266,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="mt-4 space-y-2">
               {[
+                { label: 'Empresas & Filiales (Matriz)', tab: 'empresas' as NavigationTab, count: metrics?.totalEmpresas },
+                { label: 'Tabulador Salarial (80%-120%)', tab: 'tabulador' as NavigationTab, count: metrics?.totalBandasTabulador },
                 { label: 'Empleados & Ficha Personal', tab: 'empleados' as NavigationTab, count: metrics?.totalEmpleados },
                 { label: 'Catálogo de Cargos', tab: 'cargos' as NavigationTab, count: metrics?.totalCargos },
                 { label: 'Direcciones (Nivel 1)', tab: 'direcciones' as NavigationTab, count: metrics?.totalDirecciones },
@@ -283,10 +297,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="p-4 rounded-2xl bg-gradient-to-tr from-brand-950/60 to-indigo-950/40 border border-brand-500/20">
             <div className="flex items-center gap-2 text-xs font-semibold text-brand-300 mb-1">
               <Sparkles className="w-4 h-4 text-brand-400" />
-              <span>Línea Jerárquica</span>
+              <span>Línea Jerárquica & Compensaciones</span>
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Consulta en tiempo real la función recursiva <code className="text-brand-200">sp_obtener_subordinados</code> desde el módulo de Organigrama.
+              Evalúa la equidad y posición salarial con el simulador de Compa-Ratio en el módulo de Tabulador Salarial.
             </p>
           </div>
         </div>

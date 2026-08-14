@@ -241,7 +241,18 @@ export interface UserProfile {
   emailVerified?: boolean;
 }
 
+export interface PosicionSalarialEval {
+  codigo_empresa: string;
+  codigo_banda: string;
+  salario_actual: number;
+  mediana: number;
+  compa_ratio: number;
+  posicion_banda: string;
+}
+
 export interface DashboardMetrics {
+  totalEmpresas: number;
+  totalBandasTabulador: number;
   totalEmpleados: number;
   empleadosActivos: number;
   empleadosVacaciones: number;
