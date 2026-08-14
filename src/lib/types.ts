@@ -2,6 +2,50 @@
 
 export type EstadoLaboral = 'ACTIVO' | 'INACTIVO' | 'VACACIONES' | 'LICENCIA';
 
+export interface Empresa {
+  empresa_id: number;
+  codigo: string;
+  razon_social: string;
+  nombre_corto: string | null;
+  rif: string | null;
+  direccion: string | null;
+  estado_region: string | null;
+  localidad: string | null;
+  municipio: string | null;
+  ciudad: string | null;
+  zona_postal: string | null;
+  fecha_registro: string | null;
+  fecha_fundacion: string | null;
+  rep_legal_ci: string | null;
+  rep_legal_nombre: string | null;
+  rep_legal_nacionalidad: string | null;
+  rep_legal_cargo: string | null;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TabuladorEmpresa {
+  tabulador_id: number;
+  empresa_id: number;
+  codigo_empresa: string;
+  codigo_banda: string;
+  cargos_referencia: string;
+  salario_minimo_80: number;
+  salario_medio_bajo_90: number;
+  salario_mediana_100: number;
+  salario_medio_alto_110: number;
+  salario_maximo_120: number;
+  progresion: number;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+  // Relaciones
+  empresa?: Empresa;
+  nombre_empresa?: string;
+  razon_social?: string;
+}
+
 export interface Cargo {
   cargo_id: number;
   codigo: string;
@@ -16,6 +60,7 @@ export interface Cargo {
 
 export interface Direccion {
   direccion_id: number;
+  empresa_id?: number;
   codigo: string;
   nombre: string;
   descripcion: string | null;
@@ -24,6 +69,8 @@ export interface Direccion {
   created_at: string;
   updated_at: string;
   // Relaciones
+  empresa?: Empresa;
+  empresa_nombre?: string;
   director?: Empleado | null;
   director_nombre?: string | null;
   total_gerencias?: number;
@@ -78,6 +125,7 @@ export interface Empleado {
   telefono: string | null;
   cargo_id: number;
   departamento_id: number;
+  tabulador_id?: number | null;
   supervisor_directo_id: number | null;
   evaluador_id: number | null;
   fecha_ingreso: string;
@@ -87,6 +135,7 @@ export interface Empleado {
   // Relaciones pobladas
   cargo?: Cargo;
   departamento?: Departamento;
+  tabulador?: TabuladorEmpresa | null;
   supervisor_directo?: Empleado | null;
   evaluador?: Empleado | null;
   // Helper computado
@@ -120,8 +169,18 @@ export interface OrganigramaRow {
   telefono_empleado: string | null;
   estado_laboral: EstadoLaboral | string;
   fecha_ingreso: string;
+  empresa_id?: number;
+  empresa_codigo?: string;
+  empresa_razon_social?: string;
+  empresa_nombre_corto?: string;
   cargo_id: number;
   cargo_nombre: string;
+  tabulador_id?: number | null;
+  banda_codigo?: string | null;
+  banda_cargos_referencia?: string | null;
+  salario_mediana_banda?: number | null;
+  salario_minimo_banda?: number | null;
+  salario_maximo_banda?: number | null;
   departamento_id: number;
   departamento_codigo: string;
   departamento_nombre: string;
