@@ -14,6 +14,7 @@ export const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
@@ -23,16 +24,29 @@ export const Layout: React.FC<LayoutProps> = ({
         setActiveTab={setActiveTab}
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
+        isCollapsed={sidebarCollapsed}
+        setIsCollapsed={setSidebarCollapsed}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-72'
+        }`}
+      >
         <Header
           activeTab={activeTab}
-          onOpenSidebar={() => setSidebarOpen(true)}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={() => {
+            if (window.innerWidth < 1024) {
+              setSidebarOpen(!sidebarOpen);
+            } else {
+              setSidebarCollapsed(!sidebarCollapsed);
+            }
+          }}
         />
 
-        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto animate-fade-in">
+        <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto animate-fade-in">
           {children}
         </main>
 

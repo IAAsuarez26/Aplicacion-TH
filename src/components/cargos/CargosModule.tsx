@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Briefcase, CheckCircle2, XCircle } from 'lucide-react';
-import { cargosApi, empleadosApi } from '../../lib/insforge';
+import { cargosApi, empleadosApi, formatCargoCodigo } from '../../lib/insforge';
 import type { Cargo, Empleado } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
@@ -18,6 +18,7 @@ export const CargosModule: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedCargo, setSelectedCargo] = useState<Cargo | null>(null);
+  const [nextConsecutiveId, setNextConsecutiveId] = useState<number>(1);
   const [saving, setSaving] = useState(false);
 
   // Form State
@@ -51,10 +52,40 @@ export const CargosModule: React.FC = () => {
     loadData();
   }, []);
 
+  const getNextCargoConsecutive = (items: Cargo[]) => {
+    if (!items || items.length === 0) {
+      return { nextId: 1, nextCodigo: 'Cargo-0001' };
+    }
+    let maxCodeNum = 0;
+    for (const c of items) {
+      if (c.codigo) {
+        const match = c.codigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxCodeNum) {
+            maxCodeNum = num;
+          }
+        }
+      }
+    }
+    if (maxCodeNum === 0) {
+      for (const c of items) {
+        if (c.cargo_id && Number(c.cargo_id) > maxCodeNum) {
+          maxCodeNum = Number(c.cargo_id);
+        }
+      }
+    }
+    const nextNum = maxCodeNum + 1;
+    const nextCodigo = `Cargo-${String(nextNum).padStart(4, '0')}`;
+    return { nextId: nextNum, nextCodigo };
+  };
+
   const openCreateModal = () => {
+    const { nextId, nextCodigo } = getNextCargoConsecutive(cargos);
     setModalMode('create');
     setSelectedCargo(null);
-    setCodigo(`CARG-${Math.floor(100 + Math.random() * 900)}`);
+    setNextConsecutiveId(nextId);
+    setCodigo(nextCodigo);
     setNombre('');
     setDescripcion('');
     setEstado(true);
@@ -64,7 +95,7 @@ export const CargosModule: React.FC = () => {
   const openEditModal = (cargo: Cargo) => {
     setModalMode('edit');
     setSelectedCargo(cargo);
-    setCodigo(cargo.codigo);
+    setCodigo(formatCargoCodigo(cargo.codigo));
     setNombre(cargo.nombre);
     setDescripcion(cargo.descripcion || '');
     setEstado(cargo.estado);
@@ -73,16 +104,17 @@ export const CargosModule: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codigo.trim() || !nombre.trim()) {
-      toast.error('El código y el nombre del cargo son obligatorios');
+    if (!nombre.trim()) {
+      toast.error('El nombre del cargo es obligatorio');
       return;
     }
 
     setSaving(true);
     try {
       if (modalMode === 'create') {
+        const autoCodigo = formatCargoCodigo(codigo) || `Cargo-${String(nextConsecutiveId).padStart(4, '0')}`;
         const { data, error } = await cargosApi.create({
-          codigo: codigo.trim().toUpperCase(),
+          codigo: autoCodigo,
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           estado,
@@ -91,13 +123,13 @@ export const CargosModule: React.FC = () => {
         if (error) {
           toast.error(error.message || 'Error al registrar el cargo');
         } else {
-          toast.success('Cargo creado exitosamente');
+          toast.success(`Cargo ${autoCodigo} creado exitosamente`);
           setIsModalOpen(false);
           loadData();
         }
       } else if (selectedCargo) {
         const { data, error } = await cargosApi.update(selectedCargo.cargo_id, {
-          codigo: codigo.trim().toUpperCase(),
+          codigo: formatCargoCodigo(codigo),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           estado,
@@ -134,7 +166,7 @@ export const CargosModule: React.FC = () => {
       } else {
         toast.error(
           error?.message?.includes('violates foreign key')
-            ? 'No se puede eliminar el cargo porque hay empleados adscritos a este puesto.'
+            ? 'No se puede eliminar el cargo porque hay empleados adscritos a este cargo.'
             : error?.message || 'Error al eliminar el cargo'
         );
       }
@@ -143,24 +175,34 @@ export const CargosModule: React.FC = () => {
     }
   };
 
-  const getEmployeeCount = (cargoId: number) => {
-    return empleados.filter((e) => e.cargo_id === cargoId).length;
+  const getEmployeeCount = (cargoCodigo: string) => {
+    return empleados.filter((e) => e.codigo_cargo === cargoCodigo).length;
   };
 
   const columns: Column<Cargo>[] = [
     {
-      key: 'codigo',
-      header: 'Código',
+      key: 'cargo_id',
+      header: 'Cargo_id',
       sortable: true,
       render: (item) => (
-        <span className="font-mono font-bold text-brand-300 text-xs px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700">
+        <span className="font-mono font-bold text-slate-200 text-xs px-2.5 py-1 rounded-lg bg-slate-800/90 border border-slate-700">
+          {item.cargo_id}
+        </span>
+      ),
+    },
+    {
+      key: 'codigo',
+      header: 'Codigo',
+      sortable: true,
+      render: (item) => (
+        <span className="font-mono font-bold text-brand-300 text-xs px-2.5 py-1 rounded-lg bg-brand-950/40 border border-brand-800/40">
           {item.codigo}
         </span>
       ),
     },
     {
       key: 'nombre',
-      header: 'Título / Nombre del Cargo',
+      header: 'Nombre',
       sortable: true,
       render: (item) => (
         <div>
@@ -172,11 +214,21 @@ export const CargosModule: React.FC = () => {
       ),
     },
     {
+      key: 'descripcion',
+      header: 'Descripcion',
+      sortable: true,
+      render: (item) => (
+        <span className="text-xs text-slate-400 truncate max-w-xs block">
+          {item.descripcion || item.nombre}
+        </span>
+      ),
+    },
+    {
       key: 'total_empleados',
       header: 'Personal Asignado',
       sortable: true,
       render: (item) => {
-        const count = getEmployeeCount(item.cargo_id);
+        const count = getEmployeeCount(item.codigo);
         return (
           <span className="inline-flex items-center gap-1.5 text-xs text-slate-300 font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700">
             <span>{count}</span>
@@ -225,10 +277,10 @@ export const CargosModule: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Briefcase className="w-6 h-6 text-brand-400" />
-            Catálogo de Cargos y Puestos
+            Catálogo de Cargos
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Catálogo maestro de puestos, títulos oficiales y perfiles para asignación de personal.
+            Maestro de Cargos
           </p>
         </div>
 
@@ -246,8 +298,8 @@ export const CargosModule: React.FC = () => {
         data={cargos}
         columns={columns}
         loading={loading}
-        searchKeys={['codigo', 'nombre', 'descripcion']}
-        searchPlaceholder="Buscar por código o nombre de cargo..."
+        searchKeys={['cargo_id', 'codigo', 'nombre', 'descripcion']}
+        searchPlaceholder="Buscar por ID, código o nombre de cargo..."
         exportFilename="catalogo_cargos"
       />
 
@@ -256,23 +308,45 @@ export const CargosModule: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? 'Registrar Nuevo Cargo' : 'Editar Cargo'}
-        subtitle="Catálogo de Puestos de la Organización"
+        subtitle="Catálogo de Cargos"
         maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Autogenerated consecutive preview info banner */}
+          <div className="p-3.5 bg-slate-900/90 border border-slate-700/80 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Cargo_id</div>
+                <div className="text-sm font-mono font-bold text-emerald-400">
+                  {modalMode === 'create' ? `#${nextConsecutiveId}` : `#${selectedCargo?.cargo_id}`}
+                </div>
+              </div>
+              <div className="h-7 w-[1px] bg-slate-800" />
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Código Consecutivo</div>
+                <div className="text-sm font-mono font-bold text-brand-300">
+                  {codigo || (modalMode === 'create' ? `Cargo-${String(nextConsecutiveId).padStart(4, '0')}` : selectedCargo?.codigo)}
+                </div>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {modalMode === 'create' ? 'Autogenerado' : 'Asignado'}
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Código del Cargo *
+                Código del Cargo (Autogenerado)
               </label>
               <input
                 type="text"
-                required
+                readOnly
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value)}
-                placeholder="Ej. CARG-006"
-                className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm font-mono text-brand-300 cursor-not-allowed select-none focus:outline-none"
               />
+              <p className="text-[10px] text-slate-500 mt-1">Formato secuencial estandarizado (ej. Cargo-0096).</p>
             </div>
 
             <div>
@@ -280,7 +354,7 @@ export const CargosModule: React.FC = () => {
                 Estado
               </label>
               <div className="flex items-center gap-3 pt-2">
-                <label className="inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={estado}
@@ -298,21 +372,21 @@ export const CargosModule: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Nombre / Título del Puesto *
+              Nombre del Cargo *
             </label>
             <input
               type="text"
               required
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej. Especialista en Ciberseguridad"
+              placeholder="Ej. Supervisor de Elaboración"
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Descripción del Puesto / Requisitos
+              Descripción del Cargo
             </label>
             <textarea
               rows={3}

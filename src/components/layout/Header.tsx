@@ -1,14 +1,15 @@
 import React from 'react';
-import { Menu, Bell, Search, User, Sparkles, Database, Github, ExternalLink } from 'lucide-react';
+import { Menu, Bell, Search, User, Sparkles, Database, Github, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NavigationTab } from './Sidebar';
 
 interface HeaderProps {
   activeTab: NavigationTab;
-  onOpenSidebar: () => void;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onToggleSidebar }) => {
   const { user } = useAuth();
 
   const titles: Record<NavigationTab, { title: string; subtitle: string }> = {
@@ -37,8 +38,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenSidebar }) => {
       subtitle: 'Unidades departamentales donde se adscribe el personal de la empresa',
     },
     cargos: {
-      title: 'Catálogo de Cargos y Puestos',
-      subtitle: 'Definición de títulos, descriptores de puesto y perfiles laborales',
+      title: 'Catálogo de Cargos',
+      subtitle: 'Maestro de Cargos',
     },
     empleados: {
       title: 'Ficha Maestra de Empleados',
@@ -63,14 +64,19 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenSidebar }) => {
   return (
     <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-4 md:px-8 py-4">
       <div className="flex items-center justify-between gap-4">
-        {/* Left: Mobile Menu Trigger & Title */}
+        {/* Left: Menu / Collapse Trigger & Title */}
         <div className="flex items-center gap-3">
           <button
-            onClick={onOpenSidebar}
-            className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
-            aria-label="Abrir menú"
+            onClick={onToggleSidebar}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center shadow-sm"
+            aria-label={sidebarCollapsed ? "Mostrar barra lateral" : "Ocultar barra lateral"}
+            title={sidebarCollapsed ? "Mostrar barra lateral" : "Ocultar barra lateral"}
           >
-            <Menu className="w-5 h-5" />
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="w-5 h-5 text-brand-400" />
+            ) : (
+              <PanelLeftClose className="w-5 h-5 text-slate-300" />
+            )}
           </button>
 
           <div>

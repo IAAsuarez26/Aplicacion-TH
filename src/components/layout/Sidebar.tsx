@@ -14,6 +14,7 @@ import {
   Sparkles,
   ChevronRight,
   Database,
+  PanelLeftClose,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -35,6 +36,8 @@ interface SidebarProps {
   setActiveTab: (tab: NavigationTab) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  isCollapsed?: boolean;
+  setIsCollapsed?: (collapsed: boolean) => void;
 }
 
 interface NavItem {
@@ -55,6 +58,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   isOpen,
   setIsOpen,
+  isCollapsed,
+  setIsCollapsed,
 }) => {
   const { user, signOut } = useAuth();
 
@@ -158,14 +163,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-72 bg-slate-900/95 border-r border-slate-800/80 backdrop-blur-xl flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-40 w-72 bg-slate-900/95 border-r border-slate-800/80 backdrop-blur-xl flex flex-col transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${
+          isCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'
         }`}
       >
         {/* Brand Header */}
-        <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-glow flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-glow flex items-center justify-center shrink-0">
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-brand-400" />
               </div>
@@ -180,6 +187,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p className="text-xs text-slate-400 font-medium">Gestión Organizacional</p>
             </div>
           </div>
+
+          {/* Desktop collapse button */}
+          {setIsCollapsed && (
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="hidden lg:flex p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-colors"
+              title="Ocultar barra lateral"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Groups */}

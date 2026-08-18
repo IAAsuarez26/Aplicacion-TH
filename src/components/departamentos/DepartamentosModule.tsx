@@ -16,7 +16,7 @@ export const DepartamentosModule: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Filter state
-  const [selectedGerenciaFilter, setSelectedGerenciaFilter] = useState<number | 'ALL'>('ALL');
+  const [selectedGerenciaFilter, setSelectedGerenciaFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,7 +25,7 @@ export const DepartamentosModule: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   // Form State
-  const [gerenciaId, setGerenciaId] = useState<number | ''>('');
+  const [codigoGerencia, setCodigoGerencia] = useState<string>('');
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -66,7 +66,7 @@ export const DepartamentosModule: React.FC = () => {
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedDepartamento(null);
-    setGerenciaId(gerencias[0]?.gerencia_id || '');
+    setCodigoGerencia(gerencias[0]?.codigo || '');
     setCodigo(`DEP-${Math.floor(100 + Math.random() * 900)}`);
     setNombre('');
     setDescripcion('');
@@ -78,7 +78,7 @@ export const DepartamentosModule: React.FC = () => {
   const openEditModal = (dep: Departamento) => {
     setModalMode('edit');
     setSelectedDepartamento(dep);
-    setGerenciaId(dep.gerencia_id);
+    setCodigoGerencia(dep.codigo_gerencia || '');
     setCodigo(dep.codigo);
     setNombre(dep.nombre);
     setDescripcion(dep.descripcion || '');
@@ -89,8 +89,8 @@ export const DepartamentosModule: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gerenciaId || !codigo.trim() || !nombre.trim()) {
-      toast.error('La gerencia padre, el código y el nombre son obligatorios');
+    if (!codigo.trim() || !nombre.trim()) {
+      toast.error('El código y el nombre del departamento son obligatorios');
       return;
     }
 
@@ -98,7 +98,7 @@ export const DepartamentosModule: React.FC = () => {
     try {
       if (modalMode === 'create') {
         const { data, error } = await departamentosApi.create({
-          gerencia_id: Number(gerenciaId),
+          codigo_gerencia: codigoGerencia ? codigoGerencia.trim() : null,
           codigo: codigo.trim().toUpperCase(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -115,7 +115,7 @@ export const DepartamentosModule: React.FC = () => {
         }
       } else if (selectedDepartamento) {
         const { data, error } = await departamentosApi.update(selectedDepartamento.departamento_id, {
-          gerencia_id: Number(gerenciaId),
+          codigo_gerencia: codigoGerencia ? codigoGerencia.trim() : null,
           codigo: codigo.trim().toUpperCase(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -163,9 +163,10 @@ export const DepartamentosModule: React.FC = () => {
     }
   };
 
-  const getGerenciaName = (gerId: number) => {
-    const ger = gerencias.find((g) => g.gerencia_id === gerId);
-    return ger ? ger.nombre : `Gerencia #${gerId}`;
+  const getGerenciaName = (gerCode?: string | null) => {
+    if (!gerCode) return 'Sin asignar';
+    const ger = gerencias.find((g) => g.codigo === gerCode);
+    return ger ? ger.nombre : gerCode;
   };
 
   const getJefeName = (jId: number | null) => {
@@ -176,7 +177,7 @@ export const DepartamentosModule: React.FC = () => {
 
   const filteredDepartamentos = departamentos.filter((dep) => {
     if (selectedGerenciaFilter === 'ALL') return true;
-    return dep.gerencia_id === selectedGerenciaFilter;
+    return dep.codigo_gerencia === selectedGerenciaFilter;
   });
 
   const columns: Column<Departamento>[] = [
@@ -204,13 +205,13 @@ export const DepartamentosModule: React.FC = () => {
       ),
     },
     {
-      key: 'gerencia_id',
+      key: 'codigo_gerencia',
       header: 'Gerencia Padre (Nivel 2)',
       sortable: true,
       render: (item) => (
         <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
           <GitFork className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span>{getGerenciaName(item.gerencia_id)}</span>
+          <span>{getGerenciaName(item.codigo_gerencia)}</span>
         </div>
       ),
     },
@@ -239,24 +240,23 @@ export const DepartamentosModule: React.FC = () => {
       render: (item) => <EstadoBooleanBadge activo={item.estado} />,
     },
     {
-      key: 'acciones',
+      key: 'departamento_id',
       header: 'Acciones',
-      className: 'text-right',
       render: (item) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center gap-1.5 justify-end">
           <button
             onClick={() => openEditModal(item)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-            title="Editar departamento"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Editar Departamento"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => openDeleteDialog(item)}
-            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
-            title="Eliminar departamento"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            title="Eliminar Departamento"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ),
@@ -268,12 +268,9 @@ export const DepartamentosModule: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Network className="w-6 h-6 text-emerald-400" />
-            Departamentos Operativos (Nivel 3)
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Unidades operacionales donde se adscriben directamente los empleados de la organización.
+          <h2 className="text-lg font-bold text-white">Estructura de Departamentos</h2>
+          <p className="text-xs text-slate-400">
+            Nivel 3 de la estructura organizacional de las empresas del grupo
           </p>
         </div>
 
@@ -293,13 +290,13 @@ export const DepartamentosModule: React.FC = () => {
         <select
           value={selectedGerenciaFilter}
           onChange={(e) =>
-            setSelectedGerenciaFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
+            setSelectedGerenciaFilter(e.target.value)
           }
           className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
         >
           <option value="ALL">Todas las Gerencias</option>
           {gerencias.map((g) => (
-            <option key={g.gerencia_id} value={g.gerencia_id}>
+            <option key={g.codigo} value={g.codigo}>
               {g.nombre} ({g.codigo})
             </option>
           ))}
@@ -311,7 +308,7 @@ export const DepartamentosModule: React.FC = () => {
         data={filteredDepartamentos}
         columns={columns}
         loading={loading}
-        searchKeys={['codigo', 'nombre', 'descripcion']}
+        searchKeys={['codigo', 'nombre', 'descripcion', 'codigo_gerencia']}
         searchPlaceholder="Buscar por código, nombre o descripción..."
         exportFilename="departamentos_nivel_3"
       />
@@ -331,13 +328,13 @@ export const DepartamentosModule: React.FC = () => {
             </label>
             <select
               required
-              value={gerenciaId}
-              onChange={(e) => setGerenciaId(Number(e.target.value))}
+              value={codigoGerencia}
+              onChange={(e) => setCodigoGerencia(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
             >
               <option value="" disabled>-- Selecciona una Gerencia --</option>
               {gerencias.map((g) => (
-                <option key={g.gerencia_id} value={g.gerencia_id}>
+                <option key={g.codigo} value={g.codigo}>
                   {g.nombre} ({g.codigo})
                 </option>
               ))}
@@ -364,7 +361,7 @@ export const DepartamentosModule: React.FC = () => {
                 Estado Operativo
               </label>
               <div className="flex items-center gap-3 pt-2">
-                <label className="inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={estado}

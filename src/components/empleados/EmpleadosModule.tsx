@@ -13,8 +13,10 @@ import {
   Shield,
   Filter,
   CheckCircle,
+  CheckCircle2,
   Clock,
   UserCheck,
+  UserPlus,
   Layers,
   DollarSign,
 } from 'lucide-react';
@@ -43,8 +45,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [filtroDepartamento, setFiltroDepartamento] = useState<number | 'ALL'>('ALL');
-  const [filtroCargo, setFiltroCargo] = useState<number | 'ALL'>('ALL');
+  const [filtroDepartamento, setFiltroDepartamento] = useState<string | 'ALL'>('ALL');
+  const [filtroCargo, setFiltroCargo] = useState<string | 'ALL'>('ALL');
   const [filtroEstado, setFiltroEstado] = useState<string>('ALL');
 
   // Modal State (Create / Edit)
@@ -64,8 +66,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [apellidos, setApellidos] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [cargoId, setCargoId] = useState<number | ''>('');
-  const [departamentoId, setDepartamentoId] = useState<number | ''>('');
+  const [codigoCargo, setCodigoCargo] = useState<string>('');
+  const [codigoDepartamento, setCodigoDepartamento] = useState<string>('');
   const [tabuladorId, setTabuladorId] = useState<number | ''>('');
   const [supervisorDirectoId, setSupervisorDirectoId] = useState<number | ''>('');
   const [evaluadorId, setEvaluadorId] = useState<number | ''>('');
@@ -123,8 +125,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setApellidos('');
     setEmail('');
     setTelefono('+58414' + Math.floor(1000000 + Math.random() * 9000000));
-    setCargoId(cargos[0]?.cargo_id || '');
-    setDepartamentoId(departamentos[0]?.departamento_id || '');
+    setCodigoCargo(cargos[0]?.codigo || '');
+    setCodigoDepartamento(departamentos[0]?.codigo || '');
     setTabuladorId('');
     setSupervisorDirectoId('');
     setEvaluadorId('');
@@ -142,8 +144,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setApellidos(emp.apellidos);
     setEmail(emp.email);
     setTelefono(emp.telefono || '');
-    setCargoId(emp.cargo_id);
-    setDepartamentoId(emp.departamento_id);
+    setCodigoCargo(emp.codigo_cargo);
+    setCodigoDepartamento(emp.codigo_departamento);
     setTabuladorId(emp.tabulador_id || '');
     setSupervisorDirectoId(emp.supervisor_directo_id || '');
     setEvaluadorId(emp.evaluador_id || '');
@@ -159,7 +161,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codigoEmpleado.trim() || !nombres.trim() || !apellidos.trim() || !email.trim() || !cargoId || !departamentoId) {
+    if (!codigoEmpleado.trim() || !nombres.trim() || !apellidos.trim() || !email.trim() || !codigoCargo || !codigoDepartamento) {
       toast.error('Por favor completa todos los campos requeridos (*)');
       return;
     }
@@ -174,8 +176,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           apellidos: apellidos.trim(),
           email: email.trim().toLowerCase(),
           telefono: telefono.trim() || null,
-          cargo_id: Number(cargoId),
-          departamento_id: Number(departamentoId),
+          codigo_cargo: codigoCargo.trim(),
+          codigo_departamento: codigoDepartamento.trim(),
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
           evaluador_id: evaluadorId ? Number(evaluadorId) : null,
@@ -198,8 +200,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           apellidos: apellidos.trim(),
           email: email.trim().toLowerCase(),
           telefono: telefono.trim() || null,
-          cargo_id: Number(cargoId),
-          departamento_id: Number(departamentoId),
+          codigo_cargo: codigoCargo.trim(),
+          codigo_departamento: codigoDepartamento.trim(),
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
           evaluador_id: evaluadorId ? Number(evaluadorId) : null,
@@ -247,14 +249,14 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     }
   };
 
-  const getCargoName = (cId: number) => {
-    const cargo = cargos.find((c) => c.cargo_id === cId);
-    return cargo ? cargo.nombre : `Cargo #${cId}`;
+  const getCargoName = (code: string) => {
+    const cargo = cargos.find((c) => c.codigo === code);
+    return cargo ? cargo.nombre : (code || 'Sin Cargo');
   };
 
-  const getDepartamentoName = (dId: number) => {
-    const dep = departamentos.find((d) => d.departamento_id === dId);
-    return dep ? dep.nombre : `Departamento #${dId}`;
+  const getDepartamentoName = (code: string) => {
+    const dep = departamentos.find((d) => d.codigo === code);
+    return dep ? dep.nombre : (code || 'Sin Departamento');
   };
 
   const getTabuladorInfo = (tId?: number | null) => {
@@ -270,8 +272,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
   // Filtered List
   const filteredEmpleados = empleados.filter((emp) => {
-    if (filtroDepartamento !== 'ALL' && emp.departamento_id !== filtroDepartamento) return false;
-    if (filtroCargo !== 'ALL' && emp.cargo_id !== filtroCargo) return false;
+    if (filtroDepartamento !== 'ALL' && emp.codigo_departamento !== filtroDepartamento) return false;
+    if (filtroCargo !== 'ALL' && emp.codigo_cargo !== filtroCargo) return false;
     if (filtroEstado !== 'ALL' && emp.estado_laboral !== filtroEstado) return false;
     return true;
   });
@@ -317,13 +319,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       ),
     },
     {
-      key: 'cargo_id',
+      key: 'codigo_cargo',
       header: 'Cargo & Departamento',
       sortable: true,
       render: (row) => (
         <div>
-          <div className="font-medium text-slate-200">{getCargoName(row.cargo_id)}</div>
-          <div className="text-xs text-brand-400/90">{getDepartamentoName(row.departamento_id)}</div>
+          <div className="font-medium text-slate-200">{getCargoName(row.codigo_cargo)}</div>
+          <div className="text-xs text-brand-400/90">{getDepartamentoName(row.codigo_departamento)}</div>
         </div>
       ),
     },
@@ -338,38 +340,39 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <span className="font-mono font-bold text-xs px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50">
                 {tab.codigo_banda}
               </span>
-              <span className="text-[11px] font-mono text-emerald-400 font-medium">
-                ${Number(tab.salario_mediana_100).toFixed(2)}
+              <span className="text-[10px] text-slate-400">
+                ({tab.salario_minimo_80.toLocaleString()} - {tab.salario_maximo_120.toLocaleString()})
               </span>
             </div>
-            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-              Cía: {tab.codigo_empresa}
+            <div className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">
+              {tab.cargos_referencia}
             </div>
           </div>
         ) : (
-          <span className="text-xs text-slate-500 italic">Sin asignar</span>
+          <span className="text-xs text-slate-500 italic">Sin Banda Asignada</span>
         );
       },
-      className: 'w-36',
     },
     {
       key: 'supervisor_directo_id',
       header: 'Línea de Mando',
       render: (row) => {
-        const supervisor = getEmpleadoFullName(row.supervisor_directo_id);
-        const evaluador = getEmpleadoFullName(row.evaluador_id);
-        const hasSpecialEvaluator = row.evaluador_id && row.evaluador_id !== row.supervisor_directo_id;
-
+        const supName = getEmpleadoFullName(row.supervisor_directo_id);
+        const evalName = getEmpleadoFullName(row.evaluador_id);
         return (
-          <div className="text-xs space-y-0.5">
-            <div>
-              <span className="text-slate-400 text-[10px] uppercase font-semibold">Sup: </span>
-              <span className="text-slate-200">{supervisor || <em className="text-slate-400">Directorio</em>}</span>
-            </div>
-            {hasSpecialEvaluator && (
-              <div className="text-amber-400">
-                <span className="text-[10px] uppercase font-semibold">Eval. Especial: </span>
-                <span>{evaluador}</span>
+          <div className="space-y-1 text-xs">
+            {supName ? (
+              <div className="text-slate-300 flex items-center gap-1">
+                <span className="text-slate-500 font-semibold text-[10px] uppercase">Sup:</span>
+                <span className="truncate max-w-[140px]">{supName}</span>
+              </div>
+            ) : (
+              <span className="text-slate-500 italic block">Sin supervisor</span>
+            )}
+            {evalName && evalName !== supName && (
+              <div className="text-brand-400 flex items-center gap-1 text-[11px]">
+                <span className="text-brand-500/70 font-semibold text-[10px] uppercase">Eval:</span>
+                <span className="truncate max-w-[140px]">{evalName}</span>
               </div>
             )}
           </div>
@@ -381,17 +384,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       header: 'Estado',
       sortable: true,
       render: (row) => <EstadoLaboralBadge estado={row.estado_laboral} />,
-      className: 'w-24 text-center',
+      className: 'w-28',
     },
     {
       key: 'acciones',
       header: 'Acciones',
+      className: 'text-right w-28',
       render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => openDetailModal(row)}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-            title="Ver expediente"
+            title="Ver expediente completo"
           >
             <Eye className="w-3.5 h-3.5" />
           </button>
@@ -405,18 +409,17 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <button
             onClick={() => openDeleteDialog(row)}
             className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
-            title="Eliminar empleado"
+            title="Eliminar colaborador"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       ),
-      className: 'w-28 text-right',
     },
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header and Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -425,7 +428,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             Directorio y Ficha Maestra de Personal
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Gestión integral de colaboradores, puestos de trabajo, bandas salariales y línea de supervisión.
+            Gestión integral de colaboradores, cargos, bandas salariales y línea de supervisión.
           </p>
         </div>
 
@@ -433,29 +436,74 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           onClick={openCreateModal}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-sm font-semibold shadow-glow transition-all"
         >
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Colaborador</span>
+          <UserPlus className="w-4 h-4" />
+          <span>Registrar Empleado</span>
         </button>
       </div>
 
-      {/* Filter Bar */}
-      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-          <Filter className="w-4 h-4 text-brand-400" />
-          <span>Filtros Rápidos:</span>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Plantilla</span>
+            <Users className="w-4 h-4 text-brand-400" />
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{empleados.length}</p>
+          <span className="text-[11px] text-slate-500">Colaboradores registrados</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Dept Filter */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Activos</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-400 mt-2">
+            {empleados.filter((e) => e.estado_laboral === 'ACTIVO').length}
+          </p>
+          <span className="text-[11px] text-slate-500">En funciones operativas</span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Vacaciones / Lic</span>
+            <Clock className="w-4 h-4 text-amber-400" />
+          </div>
+          <p className="text-2xl font-bold text-amber-400 mt-2">
+            {empleados.filter((e) => e.estado_laboral === 'VACACIONES' || e.estado_laboral === 'LICENCIA').length}
+          </p>
+          <span className="text-[11px] text-slate-500">Permisos temporales</span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Tabulador Asignado</span>
+            <Layers className="w-4 h-4 text-indigo-400" />
+          </div>
+          <p className="text-2xl font-bold text-indigo-400 mt-2">
+            {empleados.filter((e) => e.tabulador_id).length}
+          </p>
+          <span className="text-[11px] text-slate-500">Con banda y percentiles</span>
+        </div>
+      </div>
+
+      {/* Filter Toolbar */}
+      <div className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <Filter className="w-4 h-4 text-brand-400" />
+          <span>Filtros rápidos:</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Departamento Filter */}
           <select
             value={filtroDepartamento}
-            onChange={(e) => setFiltroDepartamento(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+            onChange={(e) => setFiltroDepartamento(e.target.value)}
             className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
           >
             <option value="ALL">Todos los Departamentos</option>
             {departamentos.map((d) => (
-              <option key={d.departamento_id} value={d.departamento_id}>
-                {d.nombre}
+              <option key={d.codigo} value={d.codigo}>
+                {d.nombre} ({d.codigo})
               </option>
             ))}
           </select>
@@ -463,13 +511,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           {/* Cargo Filter */}
           <select
             value={filtroCargo}
-            onChange={(e) => setFiltroCargo(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+            onChange={(e) => setFiltroCargo(e.target.value)}
             className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
           >
             <option value="ALL">Todos los Cargos</option>
             {cargos.map((c) => (
-              <option key={c.cargo_id} value={c.cargo_id}>
-                {c.nombre}
+              <option key={c.codigo} value={c.codigo}>
+                {c.nombre} ({c.codigo})
               </option>
             ))}
           </select>
@@ -494,45 +542,45 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         data={filteredEmpleados}
         columns={columns}
         loading={loading}
-        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email']}
+        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email', 'codigo_cargo', 'codigo_departamento']}
         searchPlaceholder="Buscar por nombre, código, cédula o email..."
         emptyMessage="No se encontraron colaboradores que coincidan con la búsqueda"
       />
 
-      {/* Create / Edit Modal */}
+      {/* Modal Creación / Edición */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Registrar Nuevo Colaborador' : `Editar Colaborador: ${selectedEmpleado?.codigo_empleado}`}
-        subtitle="Ingresa la ficha laboral, posición en tabulador y relaciones de supervisión."
-        maxWidth="lg"
+        title={modalMode === 'create' ? 'Registrar Nuevo Colaborador' : 'Editar Ficha del Empleado'}
+        subtitle="Expediente de Personal de la Organización"
+        maxWidth="2xl"
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Código de Empleado *
+                Código del Empleado *
               </label>
               <input
                 type="text"
                 required
                 value={codigoEmpleado}
                 onChange={(e) => setCodigoEmpleado(e.target.value)}
-                placeholder="EMP-0001"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-brand-500"
+                placeholder="Ej. EMP-0001"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-brand-300 focus:outline-none focus:border-brand-500 uppercase"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Documento de Identidad / Cédula
+                Cédula / Documento de Identidad
               </label>
               <input
                 type="text"
                 value={documentoIdentidad}
                 onChange={(e) => setDocumentoIdentidad(e.target.value)}
-                placeholder="V12345678"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-brand-500"
+                placeholder="Ej. V12345678"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -547,7 +595,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={nombres}
                 onChange={(e) => setNombres(e.target.value)}
-                placeholder="Carlos"
+                placeholder="Ej. Juan Carlos"
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -561,7 +609,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={apellidos}
                 onChange={(e) => setApellidos(e.target.value)}
-                placeholder="Mendoza"
+                placeholder="Ej. Pérez Rodríguez"
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -577,8 +625,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="carlos.mendoza@empresa.com"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+                placeholder="juan.perez@empresa.com"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500 lowercase"
               />
             </div>
 
@@ -587,10 +635,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 Teléfono de Contacto
               </label>
               <input
-                type="text"
+                type="tel"
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
-                placeholder="+584141112233"
+                placeholder="+58 414 1234567"
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -599,17 +647,17 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Cargo / Puesto *
+                Cargo *
               </label>
               <select
                 required
-                value={cargoId}
-                onChange={(e) => setCargoId(Number(e.target.value))}
+                value={codigoCargo}
+                onChange={(e) => setCodigoCargo(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="" disabled>-- Selecciona un Cargo --</option>
                 {cargos.map((c) => (
-                  <option key={c.cargo_id} value={c.cargo_id}>
+                  <option key={c.codigo} value={c.codigo}>
                     {c.nombre} ({c.codigo})
                   </option>
                 ))}
@@ -618,17 +666,17 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Departamento Asignado (Nivel 3) *
+                Departamento Asignado *
               </label>
               <select
                 required
-                value={departamentoId}
-                onChange={(e) => setDepartamentoId(Number(e.target.value))}
+                value={codigoDepartamento}
+                onChange={(e) => setCodigoDepartamento(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="" disabled>-- Selecciona un Departamento --</option>
                 {departamentos.map((d) => (
-                  <option key={d.departamento_id} value={d.departamento_id}>
+                  <option key={d.codigo} value={d.codigo}>
                     {d.nombre} ({d.codigo})
                   </option>
                 ))}
@@ -639,17 +687,17 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           {/* Banda Salarial Selector */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Banda Salarial Asignada (Tabulador)
+              Banda Salarial (Tabulador Salarial)
             </label>
             <select
               value={tabuladorId}
               onChange={(e) => setTabuladorId(e.target.value ? Number(e.target.value) : '')}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
             >
-              <option value="">-- Sin banda salarial asignada --</option>
+              <option value="">-- Sin Banda Salarial Asignada --</option>
               {tabuladores.map((t) => (
                 <option key={t.tabulador_id} value={t.tabulador_id}>
-                  [{t.codigo_empresa}] Banda {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toFixed(2)} ({t.cargos_referencia})
+                  {t.codigo_banda} — Mediana: ${t.salario_mediana_100.toLocaleString()} (Min: ${t.salario_minimo_80.toLocaleString()} / Max: ${t.salario_maximo_120.toLocaleString()})
                 </option>
               ))}
             </select>
@@ -658,19 +706,19 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Supervisor Directo (Mando Inmediato)
+                Supervisor Directo
               </label>
               <select
                 value={supervisorDirectoId}
                 onChange={(e) => setSupervisorDirectoId(e.target.value ? Number(e.target.value) : '')}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
-                <option value="">-- Sin supervisor (Directorio Máximo) --</option>
+                <option value="">-- Sin Supervisor (Máxima Autoridad) --</option>
                 {empleados
-                  .filter((e) => !selectedEmpleado || e.empleado_id !== selectedEmpleado.empleado_id)
-                  .map((emp) => (
-                    <option key={emp.empleado_id} value={emp.empleado_id}>
-                      {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
+                  .filter((e) => (modalMode === 'edit' ? e.empleado_id !== selectedEmpleado?.empleado_id : true))
+                  .map((e) => (
+                    <option key={e.empleado_id} value={e.empleado_id}>
+                      {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
                     </option>
                   ))}
               </select>
@@ -678,19 +726,19 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Evaluador de Desempeño Específico
+                Evaluador de Desempeño
               </label>
               <select
                 value={evaluadorId}
                 onChange={(e) => setEvaluadorId(e.target.value ? Number(e.target.value) : '')}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
-                <option value="">-- Por defecto (Mismo Supervisor Directo) --</option>
+                <option value="">-- Por defecto (Mismo Supervisor) --</option>
                 {empleados
-                  .filter((e) => !selectedEmpleado || e.empleado_id !== selectedEmpleado.empleado_id)
-                  .map((emp) => (
-                    <option key={emp.empleado_id} value={emp.empleado_id}>
-                      {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
+                  .filter((e) => (modalMode === 'edit' ? e.empleado_id !== selectedEmpleado?.empleado_id : true))
+                  .map((e) => (
+                    <option key={e.empleado_id} value={e.empleado_id}>
+                      {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
                     </option>
                   ))}
               </select>
@@ -749,14 +797,14 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         </form>
       </Modal>
 
-      {/* Detail Modal */}
+      {/* Modal Detalle Expediente */}
       {detailEmpleado && (
         <Modal
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
-          title="Ficha Ejecutiva del Colaborador"
+          title="Ficha del Empleado"
           subtitle={`Expediente #${detailEmpleado.codigo_empleado}`}
-          maxWidth="lg"
+          maxWidth="2xl"
         >
           <div className="space-y-6">
             {/* Header card */}
@@ -769,7 +817,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   {detailEmpleado.nombres} {detailEmpleado.apellidos}
                 </h3>
                 <p className="text-xs text-brand-300 font-medium">
-                  {getCargoName(detailEmpleado.cargo_id)}
+                  {getCargoName(detailEmpleado.codigo_cargo)} ({detailEmpleado.codigo_cargo})
                 </p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <EstadoLaboralBadge estado={detailEmpleado.estado_laboral} />
@@ -794,7 +842,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                 <span className="text-slate-400 block mb-1">Departamento</span>
-                <span className="text-slate-200 font-medium">{getDepartamentoName(detailEmpleado.departamento_id)}</span>
+                <span className="text-slate-200 font-medium">
+                  {getDepartamentoName(detailEmpleado.codigo_departamento)} ({detailEmpleado.codigo_departamento})
+                </span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">

@@ -16,7 +16,7 @@ export const GerenciasModule: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Filter state
-  const [selectedDireccionFilter, setSelectedDireccionFilter] = useState<number | 'ALL'>('ALL');
+  const [selectedDireccionFilter, setSelectedDireccionFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,7 +25,7 @@ export const GerenciasModule: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   // Form State
-  const [direccionId, setDireccionId] = useState<number | ''>('');
+  const [codigoDireccion, setCodigoDireccion] = useState<string>('');
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -66,7 +66,7 @@ export const GerenciasModule: React.FC = () => {
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedGerencia(null);
-    setDireccionId(direcciones[0]?.direccion_id || '');
+    setCodigoDireccion(direcciones[0]?.codigo || '');
     setCodigo(`GER-${Math.floor(100 + Math.random() * 900)}`);
     setNombre('');
     setDescripcion('');
@@ -78,7 +78,7 @@ export const GerenciasModule: React.FC = () => {
   const openEditModal = (ger: Gerencia) => {
     setModalMode('edit');
     setSelectedGerencia(ger);
-    setDireccionId(ger.direccion_id);
+    setCodigoDireccion(ger.codigo_direccion || '');
     setCodigo(ger.codigo);
     setNombre(ger.nombre);
     setDescripcion(ger.descripcion || '');
@@ -89,8 +89,8 @@ export const GerenciasModule: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!direccionId || !codigo.trim() || !nombre.trim()) {
-      toast.error('La dirección padre, el código y el nombre son obligatorios');
+    if (!codigo.trim() || !nombre.trim()) {
+      toast.error('El código y el nombre de la gerencia son obligatorios');
       return;
     }
 
@@ -98,7 +98,7 @@ export const GerenciasModule: React.FC = () => {
     try {
       if (modalMode === 'create') {
         const { data, error } = await gerenciasApi.create({
-          direccion_id: Number(direccionId),
+          codigo_direccion: codigoDireccion ? codigoDireccion.trim() : null,
           codigo: codigo.trim().toUpperCase(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -115,7 +115,7 @@ export const GerenciasModule: React.FC = () => {
         }
       } else if (selectedGerencia) {
         const { data, error } = await gerenciasApi.update(selectedGerencia.gerencia_id, {
-          direccion_id: Number(direccionId),
+          codigo_direccion: codigoDireccion ? codigoDireccion.trim() : null,
           codigo: codigo.trim().toUpperCase(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -163,9 +163,10 @@ export const GerenciasModule: React.FC = () => {
     }
   };
 
-  const getDireccionName = (dirId: number) => {
-    const dir = direcciones.find((d) => d.direccion_id === dirId);
-    return dir ? dir.nombre : `Dirección #${dirId}`;
+  const getDireccionName = (dirCode?: string | null) => {
+    if (!dirCode) return 'Sin asignar';
+    const dir = direcciones.find((d) => d.codigo === dirCode);
+    return dir ? dir.nombre : dirCode;
   };
 
   const getGerenteName = (gId: number | null) => {
@@ -176,7 +177,7 @@ export const GerenciasModule: React.FC = () => {
 
   const filteredGerencias = gerencias.filter((g) => {
     if (selectedDireccionFilter === 'ALL') return true;
-    return g.direccion_id === selectedDireccionFilter;
+    return g.codigo_direccion === selectedDireccionFilter;
   });
 
   const columns: Column<Gerencia>[] = [
@@ -204,13 +205,13 @@ export const GerenciasModule: React.FC = () => {
       ),
     },
     {
-      key: 'direccion_id',
+      key: 'codigo_direccion',
       header: 'Dirección Padre (Nivel 1)',
       sortable: true,
       render: (item) => (
         <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
           <Building2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
-          <span>{getDireccionName(item.direccion_id)}</span>
+          <span>{getDireccionName(item.codigo_direccion)}</span>
         </div>
       ),
     },
@@ -239,24 +240,23 @@ export const GerenciasModule: React.FC = () => {
       render: (item) => <EstadoBooleanBadge activo={item.estado} />,
     },
     {
-      key: 'acciones',
+      key: 'gerencia_id',
       header: 'Acciones',
-      className: 'text-right',
       render: (item) => (
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center gap-1.5 justify-end">
           <button
             onClick={() => openEditModal(item)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
-            title="Editar gerencia"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Editar Gerencia"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => openDeleteDialog(item)}
-            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
-            title="Eliminar gerencia"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            title="Eliminar Gerencia"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ),
@@ -265,15 +265,12 @@ export const GerenciasModule: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <GitFork className="w-6 h-6 text-indigo-400" />
-            Gerencias de Área (Nivel 2)
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Unidades tácticas dependientes de Direcciones que coordinan departamentos operativos.
+          <h2 className="text-lg font-bold text-white">Estructura de Gerencias</h2>
+          <p className="text-xs text-slate-400">
+            Nivel 2 de la estructura organizacional de las empresas del grupo
           </p>
         </div>
 
@@ -293,13 +290,13 @@ export const GerenciasModule: React.FC = () => {
         <select
           value={selectedDireccionFilter}
           onChange={(e) =>
-            setSelectedDireccionFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
+            setSelectedDireccionFilter(e.target.value)
           }
           className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
         >
           <option value="ALL">Todas las Direcciones</option>
           {direcciones.map((d) => (
-            <option key={d.direccion_id} value={d.direccion_id}>
+            <option key={d.codigo} value={d.codigo}>
               {d.nombre} ({d.codigo})
             </option>
           ))}
@@ -311,7 +308,7 @@ export const GerenciasModule: React.FC = () => {
         data={filteredGerencias}
         columns={columns}
         loading={loading}
-        searchKeys={['codigo', 'nombre', 'descripcion']}
+        searchKeys={['codigo', 'nombre', 'descripcion', 'codigo_direccion']}
         searchPlaceholder="Buscar por código, nombre o descripción..."
         exportFilename="gerencias_nivel_2"
       />
@@ -331,13 +328,13 @@ export const GerenciasModule: React.FC = () => {
             </label>
             <select
               required
-              value={direccionId}
-              onChange={(e) => setDireccionId(Number(e.target.value))}
+              value={codigoDireccion}
+              onChange={(e) => setCodigoDireccion(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
             >
               <option value="" disabled>-- Selecciona una Dirección --</option>
               {direcciones.map((d) => (
-                <option key={d.direccion_id} value={d.direccion_id}>
+                <option key={d.codigo} value={d.codigo}>
                   {d.nombre} ({d.codigo})
                 </option>
               ))}
@@ -364,7 +361,7 @@ export const GerenciasModule: React.FC = () => {
                 Estado Operativo
               </label>
               <div className="flex items-center gap-3 pt-2">
-                <label className="inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={estado}

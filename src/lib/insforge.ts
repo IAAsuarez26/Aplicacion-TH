@@ -261,6 +261,20 @@ export const tabuladorApi = {
   },
 };
 
+// Helper para formato consistente de código de Cargo (Cargo-XXXX)
+export const formatCargoCodigo = (input: string | number | undefined | null): string => {
+  if (!input) return '';
+  const str = String(input).trim();
+  const match = str.match(/^(?:cargo[-\s]?)?(\d+)$/i);
+  if (match) {
+    return `Cargo-${match[1].padStart(4, '0')}`;
+  }
+  if (/^cargo-/i.test(str)) {
+    return `Cargo-${str.slice(6)}`;
+  }
+  return str;
+};
+
 // ====================================================================================
 // 1. API: CARGOS
 // ====================================================================================
@@ -273,27 +287,89 @@ export const cargosApi = {
         .order('cargo_id', { ascending: true });
 
       logDebug('cargos.getAll', { data, error });
-      return { data: (data as Cargo[]) || [], error };
+
+      const normalizedData = ((data as Cargo[]) || []).map((c) => ({
+        ...c,
+        codigo: formatCargoCodigo(c.codigo),
+      }));
+
+      // Sincronizar en segundo plano registros existentes con formato en mayúsculas
+      if (data && data.length > 0) {
+        data.forEach((c: any) => {
+          const formatted = formatCargoCodigo(c.codigo);
+          if (c.codigo && c.codigo !== formatted) {
+            insforge.database
+              .from('cargos')
+              .update({ codigo: formatted })
+              .eq('cargo_id', c.cargo_id)
+              .then(() => {});
+          }
+        });
+      }
+
+      return { data: normalizedData, error };
     } catch (err: any) {
       console.error('Error fetching cargos:', err);
       return { data: [], error: err };
     }
   },
 
-  async create(cargo: Omit<Cargo, 'cargo_id' | 'created_at' | 'updated_at'>): Promise<{ data: Cargo | null; error: any }> {
+  async create(cargo: Omit<Cargo, 'cargo_id' | 'created_at' | 'updated_at'> & { cargo_id?: number }): Promise<{ data: Cargo | null; error: any }> {
     try {
+      let finalCodigo = formatCargoCodigo(cargo.codigo);
+
+      // Si no viene código o está vacío, determinar el consecutivo a partir del código más alto
+      if (!finalCodigo) {
+        const { data: allCargos } = await insforge.database
+          .from('cargos')
+          .select('codigo');
+
+        let maxCodeNum = 0;
+        if (allCargos && allCargos.length > 0) {
+          for (const c of allCargos) {
+            const match = c.codigo?.match(/\d+/);
+            if (match) {
+              const num = parseInt(match[0], 10);
+              if (!isNaN(num) && num > maxCodeNum) {
+                maxCodeNum = num;
+              }
+            }
+          }
+        }
+        const nextNum = maxCodeNum + 1;
+        finalCodigo = `Cargo-${String(nextNum).padStart(4, '0')}`;
+      }
+
+      const insertPayload: any = {
+        codigo: finalCodigo,
+        nombre: cargo.nombre.trim(),
+        descripcion: cargo.descripcion?.trim() || null,
+        estado: cargo.estado !== undefined ? cargo.estado : true,
+      };
+
+      if (cargo.cargo_id) {
+        insertPayload.cargo_id = Number(cargo.cargo_id);
+      } else {
+        const match = finalCodigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > 0) {
+            insertPayload.cargo_id = num;
+          }
+        }
+      }
+
       const { data, error } = await insforge.database
         .from('cargos')
-        .insert([{
-          codigo: cargo.codigo.trim().toUpperCase(),
-          nombre: cargo.nombre.trim(),
-          descripcion: cargo.descripcion?.trim() || null,
-          estado: cargo.estado !== undefined ? cargo.estado : true,
-        }])
+        .insert([insertPayload])
         .select();
 
       logDebug('cargos.create', { data, error });
-      return { data: data?.[0] as Cargo || null, error };
+      const created = (data?.[0] as Cargo) || null;
+      if (created) {
+        created.codigo = formatCargoCodigo(created.codigo);
+      }
+      return { data: created, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -307,7 +383,7 @@ export const cargosApi = {
       delete payload.updated_at;
       delete payload.total_empleados;
 
-      if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
+      if (payload.codigo) payload.codigo = formatCargoCodigo(payload.codigo);
       if (payload.nombre) payload.nombre = payload.nombre.trim();
 
       const { data, error } = await insforge.database
@@ -317,7 +393,11 @@ export const cargosApi = {
         .select();
 
       logDebug('cargos.update', { data, error });
-      return { data: data?.[0] as Cargo || null, error };
+      const updated = (data?.[0] as Cargo) || null;
+      if (updated) {
+        updated.codigo = formatCargoCodigo(updated.codigo);
+      }
+      return { data: updated, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -448,7 +528,7 @@ export const gerenciasApi = {
       const { data, error } = await insforge.database
         .from('gerencias')
         .insert([{
-          direccion_id: Number(gerencia.direccion_id),
+          codigo_direccion: gerencia.codigo_direccion ? gerencia.codigo_direccion.trim() : null,
           codigo: gerencia.codigo.trim().toUpperCase(),
           nombre: gerencia.nombre.trim(),
           descripcion: gerencia.descripcion?.trim() || null,
@@ -479,7 +559,9 @@ export const gerenciasApi = {
 
       if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
       if (payload.nombre) payload.nombre = payload.nombre.trim();
-      if (payload.direccion_id) payload.direccion_id = Number(payload.direccion_id);
+      if (payload.codigo_direccion !== undefined) {
+        payload.codigo_direccion = payload.codigo_direccion ? payload.codigo_direccion.trim() : null;
+      }
       if (payload.gerente_id !== undefined) {
         payload.gerente_id = payload.gerente_id ? Number(payload.gerente_id) : null;
       }
@@ -535,7 +617,7 @@ export const departamentosApi = {
       const { data, error } = await insforge.database
         .from('departamentos')
         .insert([{
-          gerencia_id: Number(departamento.gerencia_id),
+          codigo_gerencia: departamento.codigo_gerencia ? departamento.codigo_gerencia.trim() : null,
           codigo: departamento.codigo.trim().toUpperCase(),
           nombre: departamento.nombre.trim(),
           descripcion: departamento.descripcion?.trim() || null,
@@ -566,7 +648,9 @@ export const departamentosApi = {
 
       if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
       if (payload.nombre) payload.nombre = payload.nombre.trim();
-      if (payload.gerencia_id) payload.gerencia_id = Number(payload.gerencia_id);
+      if (payload.codigo_gerencia !== undefined) {
+        payload.codigo_gerencia = payload.codigo_gerencia ? payload.codigo_gerencia.trim() : null;
+      }
       if (payload.jefe_departamento_id !== undefined) {
         payload.jefe_departamento_id = payload.jefe_departamento_id ? Number(payload.jefe_departamento_id) : null;
       }
@@ -628,8 +712,8 @@ export const empleadosApi = {
           apellidos: empleado.apellidos.trim(),
           email: empleado.email.trim().toLowerCase(),
           telefono: empleado.telefono?.trim() || null,
-          cargo_id: Number(empleado.cargo_id),
-          departamento_id: Number(empleado.departamento_id),
+          codigo_cargo: empleado.codigo_cargo.trim(),
+          codigo_departamento: empleado.codigo_departamento.trim(),
           tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
           supervisor_directo_id: empleado.supervisor_directo_id ? Number(empleado.supervisor_directo_id) : null,
           evaluador_id: empleado.evaluador_id ? Number(empleado.evaluador_id) : null,
@@ -662,8 +746,8 @@ export const empleadosApi = {
       if (payload.email) payload.email = payload.email.trim().toLowerCase();
       if (payload.nombres) payload.nombres = payload.nombres.trim();
       if (payload.apellidos) payload.apellidos = payload.apellidos.trim();
-      if (payload.cargo_id) payload.cargo_id = Number(payload.cargo_id);
-      if (payload.departamento_id) payload.departamento_id = Number(payload.departamento_id);
+      if (payload.codigo_cargo) payload.codigo_cargo = payload.codigo_cargo.trim();
+      if (payload.codigo_departamento) payload.codigo_departamento = payload.codigo_departamento.trim();
       if (payload.tabulador_id !== undefined) {
         payload.tabulador_id = payload.tabulador_id ? Number(payload.tabulador_id) : null;
       }

@@ -79,7 +79,7 @@ export interface Direccion {
 
 export interface Gerencia {
   gerencia_id: number;
-  direccion_id: number;
+  codigo_direccion: string | null;
   codigo: string;
   nombre: string;
   descripcion: string | null;
@@ -98,7 +98,7 @@ export interface Gerencia {
 
 export interface Departamento {
   departamento_id: number;
-  gerencia_id: number;
+  codigo_gerencia: string | null;
   codigo: string;
   nombre: string;
   descripcion: string | null;
@@ -123,8 +123,8 @@ export interface Empleado {
   apellidos: string;
   email: string;
   telefono: string | null;
-  cargo_id: number;
-  departamento_id: number;
+  codigo_cargo: string;
+  codigo_departamento: string;
   tabulador_id?: number | null;
   supervisor_directo_id: number | null;
   evaluador_id: number | null;

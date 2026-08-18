@@ -192,7 +192,7 @@ export const OrganigramaModule: React.FC = () => {
           <div className="space-y-4">
             {direcciones.map((dir) => {
               const isDirOpen = !!expandedDirs[dir.direccion_id];
-              const childGerencias = gerencias.filter((g) => g.direccion_id === dir.direccion_id);
+              const childGerencias = gerencias.filter((g) => g.codigo_direccion === dir.codigo);
               const dirDirector = empleados.find((e) => e.empleado_id === dir.director_id);
 
               return (
@@ -236,7 +236,7 @@ export const OrganigramaModule: React.FC = () => {
                       {childGerencias.length > 0 ? (
                         childGerencias.map((ger) => {
                           const isGerOpen = !!expandedGers[ger.gerencia_id];
-                          const childDeptos = departamentos.filter((d) => d.gerencia_id === ger.gerencia_id);
+                          const childDeptos = departamentos.filter((d) => d.codigo_gerencia === ger.codigo);
                           const gerente = empleados.find((e) => e.empleado_id === ger.gerente_id);
 
                           return (
@@ -280,7 +280,7 @@ export const OrganigramaModule: React.FC = () => {
                                   {childDeptos.length > 0 ? (
                                     childDeptos.map((dep) => {
                                       const isDepOpen = !!expandedDeps[dep.departamento_id];
-                                      const deptEmployees = empleados.filter((e) => e.departamento_id === dep.departamento_id);
+                                      const deptEmployees = empleados.filter((e) => e.codigo_departamento === dep.codigo);
                                       const jefe = empleados.find((e) => e.empleado_id === dep.jefe_departamento_id);
 
                                       return (
