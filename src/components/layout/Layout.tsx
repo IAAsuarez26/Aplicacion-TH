@@ -52,7 +52,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
         <footer className="py-6 px-8 border-t border-slate-800/60 text-center text-xs text-slate-400">
           <p>
-            Sistema de Gestión de Talento Humano © {new Date().getFullYear()} — Desarrollado con React, Vite, TypeScript e InsForge BaaS.
+            Sistema de Gestión de Talento Humano © {new Date().getFullYear()}
           </p>
         </footer>
       </div>

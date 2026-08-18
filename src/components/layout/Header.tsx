@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Bell, Search, User, Sparkles, Database, Github, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Menu, Bell, Search, User, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NavigationTab } from './Sidebar';
 
@@ -91,31 +91,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
 
         {/* Right: Actions & Links */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* GitHub Repo link */}
-          <a
-            href="https://github.com/IAAsuarez26/Aplicacion-TH"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
-          >
-            <Github className="w-3.5 h-3.5" />
-            <span>GitHub</span>
-            <ExternalLink className="w-3 h-3 text-slate-400" />
-          </a>
-
-          {/* InsForge Dashboard link */}
-          <a
-            href="https://insforge.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/50 border border-indigo-500/30 text-xs font-medium text-indigo-300 hover:bg-indigo-900/50 hover:text-indigo-200 transition-colors"
-          >
-            <Database className="w-3.5 h-3.5 text-indigo-400" />
-            <span>InsForge BaaS</span>
-          </a>
-
           {/* User badge */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+          <div className="flex items-center gap-2 pl-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-sm">
               <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-200">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}

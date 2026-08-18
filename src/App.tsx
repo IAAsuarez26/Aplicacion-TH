@@ -31,7 +31,7 @@ export const App: React.FC = () => {
           </div>
         </div>
         <h2 className="text-lg font-bold text-white tracking-tight">Portal Talento Humano</h2>
-        <p className="text-xs text-slate-400 mt-1">Conectando con InsForge BaaS...</p>
+        <p className="text-xs text-slate-400 mt-1">Cargando portal...</p>
         <div className="w-48 h-1 bg-slate-800 rounded-full mt-6 overflow-hidden">
           <div className="w-full h-full bg-brand-500 rounded-full animate-[pulse_1.5s_ease-in-out_infinite]" />
         </div>
