@@ -99,10 +99,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-900/80 via-indigo-950/60 to-slate-900 border border-brand-500/20 p-6 md:p-8 shadow-glow">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Base de Datos PostgreSQL Conectada con InsForge</span>
-            </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
               Estructura Corporativa & Talento Humano
             </h2>
