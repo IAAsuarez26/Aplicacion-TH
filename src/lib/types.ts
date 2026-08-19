@@ -122,6 +122,7 @@ export interface Empleado {
   nombres: string;
   apellidos: string;
   email: string;
+  email_corporativo?: string | null;
   telefono: string | null;
   codigo_cargo: string;
   codigo_departamento: string;

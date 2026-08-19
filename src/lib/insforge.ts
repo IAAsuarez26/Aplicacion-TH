@@ -872,25 +872,40 @@ export const empleadosApi = {
     }
   },
 
-  async create(empleado: Omit<Empleado, 'empleado_id' | 'created_at' | 'updated_at'>): Promise<{ data: Empleado | null; error: any }> {
+  async create(empleado: Omit<Empleado, 'empleado_id' | 'created_at' | 'updated_at'> & { empleado_id?: number }): Promise<{ data: Empleado | null; error: any }> {
     try {
+      const insertPayload: any = {
+        codigo_empleado: empleado.codigo_empleado.trim(),
+        documento_identidad: empleado.documento_identidad?.trim() || null,
+        nombres: empleado.nombres.trim(),
+        apellidos: empleado.apellidos.trim(),
+        email: empleado.email.trim().toLowerCase(),
+        email_corporativo: empleado.email_corporativo?.trim().toLowerCase() || null,
+        telefono: empleado.telefono?.trim() || null,
+        codigo_cargo: empleado.codigo_cargo.trim(),
+        codigo_departamento: empleado.codigo_departamento.trim(),
+        tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
+        supervisor_directo_id: empleado.supervisor_directo_id ? Number(empleado.supervisor_directo_id) : null,
+        evaluador_id: empleado.evaluador_id ? Number(empleado.evaluador_id) : null,
+        fecha_ingreso: empleado.fecha_ingreso,
+        estado_laboral: empleado.estado_laboral || 'ACTIVO',
+      };
+
+      if (empleado.empleado_id) {
+        insertPayload.empleado_id = Number(empleado.empleado_id);
+      } else {
+        const match = empleado.codigo_empleado.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > 0) {
+            insertPayload.empleado_id = num;
+          }
+        }
+      }
+
       const { data, error } = await insforge.database
         .from('empleados')
-        .insert([{
-          codigo_empleado: empleado.codigo_empleado.trim(),
-          documento_identidad: empleado.documento_identidad?.trim() || null,
-          nombres: empleado.nombres.trim(),
-          apellidos: empleado.apellidos.trim(),
-          email: empleado.email.trim().toLowerCase(),
-          telefono: empleado.telefono?.trim() || null,
-          codigo_cargo: empleado.codigo_cargo.trim(),
-          codigo_departamento: empleado.codigo_departamento.trim(),
-          tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
-          supervisor_directo_id: empleado.supervisor_directo_id ? Number(empleado.supervisor_directo_id) : null,
-          evaluador_id: empleado.evaluador_id ? Number(empleado.evaluador_id) : null,
-          fecha_ingreso: empleado.fecha_ingreso,
-          estado_laboral: empleado.estado_laboral || 'ACTIVO',
-        }])
+        .insert([insertPayload])
         .select();
 
       logDebug('empleados.create', { data, error });
@@ -915,6 +930,9 @@ export const empleadosApi = {
 
       if (payload.codigo_empleado) payload.codigo_empleado = payload.codigo_empleado.trim();
       if (payload.email) payload.email = payload.email.trim().toLowerCase();
+      if (payload.email_corporativo !== undefined) {
+        payload.email_corporativo = payload.email_corporativo ? payload.email_corporativo.trim().toLowerCase() : null;
+      }
       if (payload.nombres) payload.nombres = payload.nombres.trim();
       if (payload.apellidos) payload.apellidos = payload.apellidos.trim();
       if (payload.codigo_cargo) payload.codigo_cargo = payload.codigo_cargo.trim();

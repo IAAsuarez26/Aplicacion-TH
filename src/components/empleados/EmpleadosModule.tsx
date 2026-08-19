@@ -65,6 +65,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [nombres, setNombres] = useState('');
   const [apellidos, setApellidos] = useState('');
   const [email, setEmail] = useState('');
+  const [emailCorporativo, setEmailCorporativo] = useState('');
   const [telefono, setTelefono] = useState('');
   const [codigoCargo, setCodigoCargo] = useState<string>('');
   const [codigoDepartamento, setCodigoDepartamento] = useState<string>('');
@@ -134,6 +135,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setNombres('');
     setApellidos('');
     setEmail('');
+    setEmailCorporativo('');
     setTelefono('+58414' + Math.floor(1000000 + Math.random() * 9000000));
     setCodigoCargo(cargos[0]?.codigo || '');
     setCodigoDepartamento(departamentos[0]?.codigo || '');
@@ -153,6 +155,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setNombres(emp.nombres);
     setApellidos(emp.apellidos);
     setEmail(emp.email);
+    setEmailCorporativo(emp.email_corporativo || '');
     setTelefono(emp.telefono || '');
     setCodigoCargo(emp.codigo_cargo);
     setCodigoDepartamento(emp.codigo_departamento);
@@ -185,6 +188,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           nombres: nombres.trim(),
           apellidos: apellidos.trim(),
           email: email.trim().toLowerCase(),
+          email_corporativo: emailCorporativo.trim().toLowerCase() || null,
           telefono: telefono.trim() || null,
           codigo_cargo: codigoCargo.trim(),
           codigo_departamento: codigoDepartamento.trim(),
@@ -209,6 +213,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           nombres: nombres.trim(),
           apellidos: apellidos.trim(),
           email: email.trim().toLowerCase(),
+          email_corporativo: emailCorporativo.trim().toLowerCase() || null,
           telefono: telefono.trim() || null,
           codigo_cargo: codigoCargo.trim(),
           codigo_departamento: codigoDepartamento.trim(),
@@ -320,11 +325,39 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           </div>
           <div>
             <div className="font-semibold text-slate-100">{row.nombres} {row.apellidos}</div>
-            <div className="text-xs text-slate-400 flex items-center gap-1">
-              <Mail className="w-3 h-3 text-slate-400" />
-              <span>{row.email}</span>
-            </div>
+            {row.telefono && (
+              <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                <Phone className="w-3 h-3 text-slate-500" />
+                <span>{row.telefono}</span>
+              </div>
+            )}
           </div>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      sortable: true,
+      render: (row) => (
+        <div className="text-xs text-slate-300 flex items-center gap-1.5 font-mono">
+          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="truncate max-w-[150px]" title={row.email}>{row.email}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'email_corporativo',
+      header: 'Email Corporativo',
+      sortable: true,
+      render: (row) => (
+        <div className="text-xs text-indigo-300 flex items-center gap-1.5 font-mono">
+          <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          {row.email_corporativo ? (
+            <span className="truncate max-w-[150px]" title={row.email_corporativo}>{row.email_corporativo}</span>
+          ) : (
+            <span className="text-slate-500 italic text-[11px]">No asignado</span>
+          )}
         </div>
       ),
     },
@@ -552,7 +585,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         data={filteredEmpleados}
         columns={columns}
         loading={loading}
-        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email', 'codigo_cargo', 'codigo_departamento']}
+        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email', 'email_corporativo', 'codigo_cargo', 'codigo_departamento']}
         searchPlaceholder="Buscar por nombre, código, cédula o email..."
         emptyMessage="No se encontraron colaboradores que coincidan con la búsqueda"
       />
@@ -628,18 +661,33 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Correo Electrónico Corporativo *
+                Correo Electrónico Personal *
               </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="juan.perez@empresa.com"
+                placeholder="juan.perez@gmail.com"
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500 lowercase"
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Correo Electrónico Corporativo
+              </label>
+              <input
+                type="email"
+                value={emailCorporativo}
+                onChange={(e) => setEmailCorporativo(e.target.value)}
+                placeholder="juan.perez@empresa.com"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500 lowercase"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Teléfono de Contacto
@@ -649,6 +697,19 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="+58 414 1234567"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Fecha de Ingreso *
+              </label>
+              <input
+                type="date"
+                required
+                value={fechaIngreso}
+                onChange={(e) => setFechaIngreso(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -755,20 +816,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Fecha de Ingreso *
-              </label>
-              <input
-                type="date"
-                required
-                value={fechaIngreso}
-                onChange={(e) => setFechaIngreso(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-              />
-            </div>
-
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Estado Laboral *
@@ -841,8 +889,15 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             {/* Info grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block mb-1">Correo Electrónico</span>
+                <span className="text-slate-400 block mb-1">Correo Personal</span>
                 <span className="text-slate-200 font-medium break-all">{detailEmpleado.email}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-indigo-400 block mb-1 font-semibold">Correo Corporativo</span>
+                <span className="text-indigo-200 font-medium break-all">
+                  {detailEmpleado.email_corporativo || <span className="text-slate-500 italic">No asignado</span>}
+                </span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -851,16 +906,16 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block mb-1">Departamento</span>
-                <span className="text-slate-200 font-medium">
-                  {getDepartamentoName(detailEmpleado.codigo_departamento)} ({detailEmpleado.codigo_departamento})
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                 <span className="text-slate-400 block mb-1">Fecha de Ingreso</span>
                 <span className="text-slate-200 font-medium">
                   {detailEmpleado.fecha_ingreso ? detailEmpleado.fecha_ingreso.slice(0, 10) : '-'}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 col-span-2">
+                <span className="text-slate-400 block mb-1">Departamento</span>
+                <span className="text-slate-200 font-medium">
+                  {getDepartamentoName(detailEmpleado.codigo_departamento)} ({detailEmpleado.codigo_departamento})
                 </span>
               </div>
             </div>
