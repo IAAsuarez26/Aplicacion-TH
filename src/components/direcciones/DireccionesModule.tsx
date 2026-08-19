@@ -396,11 +396,13 @@ export const DireccionesModule: React.FC = () => {
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
             >
               <option value="">-- Sin Director asignado --</option>
-              {empleados.map((emp) => (
-                <option key={emp.empleado_id} value={emp.empleado_id}>
-                  {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
-                </option>
-              ))}
+              {[...empleados]
+                .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
+                .map((emp) => (
+                  <option key={emp.empleado_id} value={emp.empleado_id}>
+                    {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
+                  </option>
+                ))}
             </select>
           </div>
 

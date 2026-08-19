@@ -785,8 +785,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Sin Supervisor (Máxima Autoridad) --</option>
-                {empleados
+                {[...empleados]
                   .filter((e) => (modalMode === 'edit' ? e.empleado_id !== selectedEmpleado?.empleado_id : true))
+                  .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
                   .map((e) => (
                     <option key={e.empleado_id} value={e.empleado_id}>
                       {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
@@ -805,8 +806,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Por defecto (Mismo Supervisor) --</option>
-                {empleados
+                {[...empleados]
                   .filter((e) => (modalMode === 'edit' ? e.empleado_id !== selectedEmpleado?.empleado_id : true))
+                  .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
                   .map((e) => (
                     <option key={e.empleado_id} value={e.empleado_id}>
                       {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})

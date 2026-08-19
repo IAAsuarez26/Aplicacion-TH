@@ -863,7 +863,7 @@ export const empleadosApi = {
       const { data, error } = await insforge.database
         .from('empleados')
         .select('*')
-        .order('empleado_id', { ascending: true });
+        .order('nombres', { ascending: true });
 
       logDebug('empleados.getAll', { data, error });
       return { data: (data as Empleado[]) || [], error };

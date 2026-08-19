@@ -421,11 +421,13 @@ export const GerenciasModule: React.FC = () => {
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
             >
               <option value="">-- Sin Gerente asignado --</option>
-              {empleados.map((emp) => (
-                <option key={emp.empleado_id} value={emp.empleado_id}>
-                  {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
-                </option>
-              ))}
+              {[...empleados]
+                .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
+                .map((emp) => (
+                  <option key={emp.empleado_id} value={emp.empleado_id}>
+                    {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
+                  </option>
+                ))}
             </select>
           </div>
 

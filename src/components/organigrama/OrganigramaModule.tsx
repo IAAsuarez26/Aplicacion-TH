@@ -395,11 +395,13 @@ export const OrganigramaModule: React.FC = () => {
                 onChange={(e) => setSelectedSupervisorId(Number(e.target.value))}
                 className="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 font-medium"
               >
-                {empleados.map((emp) => (
-                  <option key={emp.empleado_id} value={emp.empleado_id}>
-                    {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
-                  </option>
-                ))}
+                {[...empleados]
+                  .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
+                  .map((emp) => (
+                    <option key={emp.empleado_id} value={emp.empleado_id}>
+                      {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
