@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Building2, User, Building, CheckCircle2, XCircle } from 'lucide-react';
-import { direccionesApi, empleadosApi, empresasApi } from '../../lib/insforge';
+import { direccionesApi, empleadosApi, empresasApi, formatDireccionCodigo } from '../../lib/insforge';
 import type { Direccion, Empleado, Empresa } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
@@ -56,15 +56,6 @@ export const DireccionesModule: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  const formatDireccionCodigo = (cod?: string | null) => {
-    if (!cod) return '';
-    const match = cod.match(/^dir-(\d+)$/i);
-    if (match) {
-      return `Dir-${match[1].padStart(4, '0')}`;
-    }
-    return cod;
-  };
 
   const getNextDireccionConsecutive = (items: Direccion[]) => {
     if (!items || items.length === 0) {

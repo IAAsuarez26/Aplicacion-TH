@@ -170,7 +170,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     try {
       if (modalMode === 'create') {
         const { data, error } = await empleadosApi.create({
-          codigo_empleado: codigoEmpleado.trim().toUpperCase(),
+          codigo_empleado: codigoEmpleado.trim(),
           documento_identidad: documentoIdentidad.trim() || null,
           nombres: nombres.trim(),
           apellidos: apellidos.trim(),
@@ -194,7 +194,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         }
       } else if (selectedEmpleado) {
         const { data, error } = await empleadosApi.update(selectedEmpleado.empleado_id, {
-          codigo_empleado: codigoEmpleado.trim().toUpperCase(),
+          codigo_empleado: codigoEmpleado.trim(),
           documento_identidad: documentoIdentidad.trim() || null,
           nombres: nombres.trim(),
           apellidos: apellidos.trim(),

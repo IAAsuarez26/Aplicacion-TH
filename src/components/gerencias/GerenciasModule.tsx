@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, GitFork, User, Building2, Filter } from 'lucide-react';
-import { gerenciasApi, direccionesApi, empleadosApi } from '../../lib/insforge';
+import { gerenciasApi, direccionesApi, empleadosApi, formatGerenciaCodigo } from '../../lib/insforge';
 import type { Gerencia, Direccion, Empleado } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
@@ -62,15 +62,6 @@ export const GerenciasModule: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  const formatGerenciaCodigo = (cod?: string | null) => {
-    if (!cod) return '';
-    const match = cod.match(/^ger-(\d+)$/i);
-    if (match) {
-      return `Ger-${match[1].padStart(4, '0')}`;
-    }
-    return cod;
-  };
 
   const getNextGerenciaConsecutive = (items: Gerencia[]) => {
     if (!items || items.length === 0) {

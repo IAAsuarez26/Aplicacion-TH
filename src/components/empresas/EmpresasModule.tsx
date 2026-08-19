@@ -143,10 +143,10 @@ export const EmpresasModule: React.FC = () => {
     try {
       if (modalMode === 'create') {
         const { data, error } = await empresasApi.create({
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           razon_social: razonSocial.trim(),
           nombre_corto: nombreCorto.trim() || null,
-          rif: rif.trim().toUpperCase() || null,
+          rif: rif.trim() || null,
           direccion: direccion.trim() || null,
           estado_region: estadoRegion.trim() || null,
           localidad: localidad.trim() || null,
@@ -171,10 +171,10 @@ export const EmpresasModule: React.FC = () => {
         }
       } else if (selectedEmpresa) {
         const { data, error } = await empresasApi.update(selectedEmpresa.empresa_id, {
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           razon_social: razonSocial.trim(),
           nombre_corto: nombreCorto.trim() || null,
-          rif: rif.trim().toUpperCase() || null,
+          rif: rif.trim() || null,
           direccion: direccion.trim() || null,
           estado_region: estadoRegion.trim() || null,
           localidad: localidad.trim() || null,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Network, User, GitFork, Filter } from 'lucide-react';
-import { departamentosApi, gerenciasApi, empleadosApi } from '../../lib/insforge';
+import { departamentosApi, gerenciasApi, empleadosApi, formatDepartamentoCodigo } from '../../lib/insforge';
 import type { Departamento, Gerencia, Empleado } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
@@ -62,15 +62,6 @@ export const DepartamentosModule: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  const formatDepartamentoCodigo = (cod?: string | null) => {
-    if (!cod) return '';
-    const match = cod.match(/^dep-(\d+)$/i);
-    if (match) {
-      return `Dep-${match[1].padStart(4, '0')}`;
-    }
-    return cod;
-  };
 
   const getNextDepartamentoConsecutive = (items: Departamento[]) => {
     if (!items || items.length === 0) {

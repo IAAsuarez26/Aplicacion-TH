@@ -168,7 +168,7 @@ export const TabuladorModule: React.FC = () => {
         const { data, error } = await tabuladorApi.create({
           empresa_id: Number(empresaId),
           codigo_empresa: codigoEmpresa,
-          codigo_banda: codigoBanda.trim().toUpperCase(),
+          codigo_banda: codigoBanda.trim(),
           cargos_referencia: cargosReferencia.trim(),
           salario_minimo_80: Number(salarioMinimo80),
           salario_medio_bajo_90: Number(salarioMedioBajo90),
@@ -190,7 +190,7 @@ export const TabuladorModule: React.FC = () => {
         const { data, error } = await tabuladorApi.update(selectedBanda.tabulador_id, {
           empresa_id: Number(empresaId),
           codigo_empresa: codigoEmpresa,
-          codigo_banda: codigoBanda.trim().toUpperCase(),
+          codigo_banda: codigoBanda.trim(),
           cargos_referencia: cargosReferencia.trim(),
           salario_minimo_80: Number(salarioMinimo80),
           salario_medio_bajo_90: Number(salarioMedioBajo90),

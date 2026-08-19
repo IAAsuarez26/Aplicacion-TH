@@ -59,10 +59,10 @@ export const empresasApi = {
       const { data, error } = await insforge.database
         .from('empresas')
         .insert([{
-          codigo: empresa.codigo.trim().toUpperCase(),
+          codigo: empresa.codigo.trim(),
           razon_social: empresa.razon_social.trim(),
           nombre_corto: empresa.nombre_corto?.trim() || null,
-          rif: empresa.rif?.trim().toUpperCase() || null,
+          rif: empresa.rif?.trim() || null,
           direccion: empresa.direccion?.trim() || null,
           estado_region: empresa.estado_region?.trim() || null,
           localidad: empresa.localidad?.trim() || null,
@@ -93,9 +93,9 @@ export const empresasApi = {
       delete payload.created_at;
       delete payload.updated_at;
 
-      if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
+      if (payload.codigo) payload.codigo = payload.codigo.trim();
       if (payload.razon_social) payload.razon_social = payload.razon_social.trim();
-      if (payload.rif) payload.rif = payload.rif.trim().toUpperCase();
+      if (payload.rif) payload.rif = payload.rif.trim();
 
       const { data, error } = await insforge.database
         .from('empresas')
@@ -177,7 +177,7 @@ export const tabuladorApi = {
         .insert([{
           empresa_id: Number(banda.empresa_id),
           codigo_empresa: banda.codigo_empresa.trim(),
-          codigo_banda: banda.codigo_banda.trim().toUpperCase(),
+          codigo_banda: banda.codigo_banda.trim(),
           cargos_referencia: banda.cargos_referencia.trim(),
           salario_minimo_80: Number(banda.salario_minimo_80),
           salario_medio_bajo_90: Number(banda.salario_medio_bajo_90),
@@ -210,7 +210,7 @@ export const tabuladorApi = {
       delete payload.porcentaje_progresion;
 
       if (payload.empresa_id) payload.empresa_id = Number(payload.empresa_id);
-      if (payload.codigo_banda) payload.codigo_banda = payload.codigo_banda.trim().toUpperCase();
+      if (payload.codigo_banda) payload.codigo_banda = payload.codigo_banda.trim();
       if (payload.salario_minimo_80) payload.salario_minimo_80 = Number(payload.salario_minimo_80);
       if (payload.salario_medio_bajo_90) payload.salario_medio_bajo_90 = Number(payload.salario_medio_bajo_90);
       if (payload.salario_mediana_100) payload.salario_mediana_100 = Number(payload.salario_mediana_100);
@@ -271,6 +271,48 @@ export const formatCargoCodigo = (input: string | number | undefined | null): st
   }
   if (/^cargo-/i.test(str)) {
     return `Cargo-${str.slice(6)}`;
+  }
+  return str;
+};
+
+// Helper para formato consistente de código de Dirección (Dir-XXXX)
+export const formatDireccionCodigo = (input: string | number | undefined | null): string => {
+  if (!input) return '';
+  const str = String(input).trim();
+  const match = str.match(/^(?:dir[-\s]?)?(\d+)$/i);
+  if (match) {
+    return `Dir-${match[1].padStart(4, '0')}`;
+  }
+  if (/^dir-/i.test(str)) {
+    return `Dir-${str.slice(4)}`;
+  }
+  return str;
+};
+
+// Helper para formato consistente de código de Gerencia (Ger-XXXX)
+export const formatGerenciaCodigo = (input: string | number | undefined | null): string => {
+  if (!input) return '';
+  const str = String(input).trim();
+  const match = str.match(/^(?:ger[-\s]?)?(\d+)$/i);
+  if (match) {
+    return `Ger-${match[1].padStart(4, '0')}`;
+  }
+  if (/^ger-/i.test(str)) {
+    return `Ger-${str.slice(4)}`;
+  }
+  return str;
+};
+
+// Helper para formato consistente de código de Departamento (Dep-XXXX)
+export const formatDepartamentoCodigo = (input: string | number | undefined | null): string => {
+  if (!input) return '';
+  const str = String(input).trim();
+  const match = str.match(/^(?:dep[-\s]?)?(\d+)$/i);
+  if (match) {
+    return `Dep-${match[1].padStart(4, '0')}`;
+  }
+  if (/^dep-/i.test(str)) {
+    return `Dep-${str.slice(4)}`;
   }
   return str;
 };
@@ -430,7 +472,27 @@ export const direccionesApi = {
         .order('direccion_id', { ascending: true });
 
       logDebug('direcciones.getAll', { data, error });
-      return { data: (data as Direccion[]) || [], error };
+
+      const normalizedData = ((data as Direccion[]) || []).map((d) => ({
+        ...d,
+        codigo: formatDireccionCodigo(d.codigo),
+      }));
+
+      // Sincronizar en segundo plano registros con formato inconsistente
+      if (data && data.length > 0) {
+        data.forEach((d: any) => {
+          const formatted = formatDireccionCodigo(d.codigo);
+          if (d.codigo && d.codigo !== formatted) {
+            insforge.database
+              .from('direcciones')
+              .update({ codigo: formatted })
+              .eq('direccion_id', d.direccion_id)
+              .then(() => {});
+          }
+        });
+      }
+
+      return { data: normalizedData, error };
     } catch (err: any) {
       return { data: [], error: err };
     }
@@ -442,7 +504,7 @@ export const direccionesApi = {
         .from('direcciones')
         .insert([{
           empresa_id: direccion.empresa_id ? Number(direccion.empresa_id) : 1,
-          codigo: direccion.codigo.trim().toUpperCase(),
+          codigo: formatDireccionCodigo(direccion.codigo) || direccion.codigo.trim(),
           nombre: direccion.nombre.trim(),
           descripcion: direccion.descripcion?.trim() || null,
           director_id: direccion.director_id || null,
@@ -451,7 +513,11 @@ export const direccionesApi = {
         .select();
 
       logDebug('direcciones.create', { data, error });
-      return { data: data?.[0] as Direccion || null, error };
+      const created = (data?.[0] as Direccion) || null;
+      if (created) {
+        created.codigo = formatDireccionCodigo(created.codigo);
+      }
+      return { data: created, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -471,7 +537,7 @@ export const direccionesApi = {
       delete payload.total_empleados;
 
       if (payload.empresa_id) payload.empresa_id = Number(payload.empresa_id);
-      if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
+      if (payload.codigo) payload.codigo = formatDireccionCodigo(payload.codigo) || payload.codigo.trim();
       if (payload.nombre) payload.nombre = payload.nombre.trim();
       if (payload.director_id !== undefined) {
         payload.director_id = payload.director_id ? Number(payload.director_id) : null;
@@ -484,7 +550,11 @@ export const direccionesApi = {
         .select();
 
       logDebug('direcciones.update', { data, error });
-      return { data: data?.[0] as Direccion || null, error };
+      const updated = (data?.[0] as Direccion) || null;
+      if (updated) {
+        updated.codigo = formatDireccionCodigo(updated.codigo);
+      }
+      return { data: updated, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -517,7 +587,27 @@ export const gerenciasApi = {
         .order('gerencia_id', { ascending: true });
 
       logDebug('gerencias.getAll', { data, error });
-      return { data: (data as Gerencia[]) || [], error };
+
+      const normalizedData = ((data as Gerencia[]) || []).map((g) => ({
+        ...g,
+        codigo: formatGerenciaCodigo(g.codigo),
+      }));
+
+      // Sincronizar y auto-corregir registros con formato en mayúsculas (ej. GER-0024 -> Ger-0024)
+      if (data && data.length > 0) {
+        data.forEach((g: any) => {
+          const formatted = formatGerenciaCodigo(g.codigo);
+          if (g.codigo && g.codigo !== formatted) {
+            insforge.database
+              .from('gerencias')
+              .update({ codigo: formatted })
+              .eq('gerencia_id', g.gerencia_id)
+              .then(() => {});
+          }
+        });
+      }
+
+      return { data: normalizedData, error };
     } catch (err: any) {
       return { data: [], error: err };
     }
@@ -529,7 +619,7 @@ export const gerenciasApi = {
         .from('gerencias')
         .insert([{
           codigo_direccion: gerencia.codigo_direccion ? gerencia.codigo_direccion.trim() : null,
-          codigo: gerencia.codigo.trim().toUpperCase(),
+          codigo: formatGerenciaCodigo(gerencia.codigo) || gerencia.codigo.trim(),
           nombre: gerencia.nombre.trim(),
           descripcion: gerencia.descripcion?.trim() || null,
           gerente_id: gerencia.gerente_id || null,
@@ -538,7 +628,11 @@ export const gerenciasApi = {
         .select();
 
       logDebug('gerencias.create', { data, error });
-      return { data: data?.[0] as Gerencia || null, error };
+      const created = (data?.[0] as Gerencia) || null;
+      if (created) {
+        created.codigo = formatGerenciaCodigo(created.codigo);
+      }
+      return { data: created, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -557,7 +651,7 @@ export const gerenciasApi = {
       delete payload.total_departamentos;
       delete payload.total_empleados;
 
-      if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
+      if (payload.codigo) payload.codigo = formatGerenciaCodigo(payload.codigo) || payload.codigo.trim();
       if (payload.nombre) payload.nombre = payload.nombre.trim();
       if (payload.codigo_direccion !== undefined) {
         payload.codigo_direccion = payload.codigo_direccion ? payload.codigo_direccion.trim() : null;
@@ -573,7 +667,11 @@ export const gerenciasApi = {
         .select();
 
       logDebug('gerencias.update', { data, error });
-      return { data: data?.[0] as Gerencia || null, error };
+      const updated = (data?.[0] as Gerencia) || null;
+      if (updated) {
+        updated.codigo = formatGerenciaCodigo(updated.codigo);
+      }
+      return { data: updated, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -606,7 +704,27 @@ export const departamentosApi = {
         .order('departamento_id', { ascending: true });
 
       logDebug('departamentos.getAll', { data, error });
-      return { data: (data as Departamento[]) || [], error };
+
+      const normalizedData = ((data as Departamento[]) || []).map((dep) => ({
+        ...dep,
+        codigo: formatDepartamentoCodigo(dep.codigo),
+      }));
+
+      // Sincronizar en segundo plano registros con formato inconsistente
+      if (data && data.length > 0) {
+        data.forEach((dep: any) => {
+          const formatted = formatDepartamentoCodigo(dep.codigo);
+          if (dep.codigo && dep.codigo !== formatted) {
+            insforge.database
+              .from('departamentos')
+              .update({ codigo: formatted })
+              .eq('departamento_id', dep.departamento_id)
+              .then(() => {});
+          }
+        });
+      }
+
+      return { data: normalizedData, error };
     } catch (err: any) {
       return { data: [], error: err };
     }
@@ -618,7 +736,7 @@ export const departamentosApi = {
         .from('departamentos')
         .insert([{
           codigo_gerencia: departamento.codigo_gerencia ? departamento.codigo_gerencia.trim() : null,
-          codigo: departamento.codigo.trim().toUpperCase(),
+          codigo: formatDepartamentoCodigo(departamento.codigo) || departamento.codigo.trim(),
           nombre: departamento.nombre.trim(),
           descripcion: departamento.descripcion?.trim() || null,
           jefe_departamento_id: departamento.jefe_departamento_id || null,
@@ -627,7 +745,11 @@ export const departamentosApi = {
         .select();
 
       logDebug('departamentos.create', { data, error });
-      return { data: data?.[0] as Departamento || null, error };
+      const created = (data?.[0] as Departamento) || null;
+      if (created) {
+        created.codigo = formatDepartamentoCodigo(created.codigo);
+      }
+      return { data: created, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -646,7 +768,7 @@ export const departamentosApi = {
       delete payload.jefe_nombre;
       delete payload.total_empleados;
 
-      if (payload.codigo) payload.codigo = payload.codigo.trim().toUpperCase();
+      if (payload.codigo) payload.codigo = formatDepartamentoCodigo(payload.codigo) || payload.codigo.trim();
       if (payload.nombre) payload.nombre = payload.nombre.trim();
       if (payload.codigo_gerencia !== undefined) {
         payload.codigo_gerencia = payload.codigo_gerencia ? payload.codigo_gerencia.trim() : null;
@@ -662,7 +784,11 @@ export const departamentosApi = {
         .select();
 
       logDebug('departamentos.update', { data, error });
-      return { data: data?.[0] as Departamento || null, error };
+      const updated = (data?.[0] as Departamento) || null;
+      if (updated) {
+        updated.codigo = formatDepartamentoCodigo(updated.codigo);
+      }
+      return { data: updated, error };
     } catch (err: any) {
       return { data: null, error: err };
     }
@@ -706,7 +832,7 @@ export const empleadosApi = {
       const { data, error } = await insforge.database
         .from('empleados')
         .insert([{
-          codigo_empleado: empleado.codigo_empleado.trim().toUpperCase(),
+          codigo_empleado: empleado.codigo_empleado.trim(),
           documento_identidad: empleado.documento_identidad?.trim() || null,
           nombres: empleado.nombres.trim(),
           apellidos: empleado.apellidos.trim(),
@@ -742,7 +868,7 @@ export const empleadosApi = {
       delete payload.evaluador;
       delete payload.nombre_completo;
 
-      if (payload.codigo_empleado) payload.codigo_empleado = payload.codigo_empleado.trim().toUpperCase();
+      if (payload.codigo_empleado) payload.codigo_empleado = payload.codigo_empleado.trim();
       if (payload.email) payload.email = payload.email.trim().toLowerCase();
       if (payload.nombres) payload.nombres = payload.nombres.trim();
       if (payload.apellidos) payload.apellidos = payload.apellidos.trim();
