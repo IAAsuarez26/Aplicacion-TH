@@ -498,18 +498,33 @@ export const direccionesApi = {
     }
   },
 
-  async create(direccion: Omit<Direccion, 'direccion_id' | 'created_at' | 'updated_at'>): Promise<{ data: Direccion | null; error: any }> {
+  async create(direccion: Omit<Direccion, 'direccion_id' | 'created_at' | 'updated_at'> & { direccion_id?: number }): Promise<{ data: Direccion | null; error: any }> {
     try {
+      const finalCodigo = formatDireccionCodigo(direccion.codigo) || direccion.codigo.trim();
+      const insertPayload: any = {
+        empresa_id: direccion.empresa_id ? Number(direccion.empresa_id) : 1,
+        codigo: finalCodigo,
+        nombre: direccion.nombre.trim(),
+        descripcion: direccion.descripcion?.trim() || null,
+        director_id: direccion.director_id || null,
+        estado: direccion.estado !== undefined ? direccion.estado : true,
+      };
+
+      if (direccion.direccion_id) {
+        insertPayload.direccion_id = Number(direccion.direccion_id);
+      } else {
+        const match = finalCodigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > 0) {
+            insertPayload.direccion_id = num;
+          }
+        }
+      }
+
       const { data, error } = await insforge.database
         .from('direcciones')
-        .insert([{
-          empresa_id: direccion.empresa_id ? Number(direccion.empresa_id) : 1,
-          codigo: formatDireccionCodigo(direccion.codigo) || direccion.codigo.trim(),
-          nombre: direccion.nombre.trim(),
-          descripcion: direccion.descripcion?.trim() || null,
-          director_id: direccion.director_id || null,
-          estado: direccion.estado !== undefined ? direccion.estado : true,
-        }])
+        .insert([insertPayload])
         .select();
 
       logDebug('direcciones.create', { data, error });
@@ -613,18 +628,33 @@ export const gerenciasApi = {
     }
   },
 
-  async create(gerencia: Omit<Gerencia, 'gerencia_id' | 'created_at' | 'updated_at'>): Promise<{ data: Gerencia | null; error: any }> {
+  async create(gerencia: Omit<Gerencia, 'gerencia_id' | 'created_at' | 'updated_at'> & { gerencia_id?: number }): Promise<{ data: Gerencia | null; error: any }> {
     try {
+      const finalCodigo = formatGerenciaCodigo(gerencia.codigo) || gerencia.codigo.trim();
+      const insertPayload: any = {
+        codigo_direccion: gerencia.codigo_direccion ? gerencia.codigo_direccion.trim() : null,
+        codigo: finalCodigo,
+        nombre: gerencia.nombre.trim(),
+        descripcion: gerencia.descripcion?.trim() || null,
+        gerente_id: gerencia.gerente_id || null,
+        estado: gerencia.estado !== undefined ? gerencia.estado : true,
+      };
+
+      if (gerencia.gerencia_id) {
+        insertPayload.gerencia_id = Number(gerencia.gerencia_id);
+      } else {
+        const match = finalCodigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > 0) {
+            insertPayload.gerencia_id = num;
+          }
+        }
+      }
+
       const { data, error } = await insforge.database
         .from('gerencias')
-        .insert([{
-          codigo_direccion: gerencia.codigo_direccion ? gerencia.codigo_direccion.trim() : null,
-          codigo: formatGerenciaCodigo(gerencia.codigo) || gerencia.codigo.trim(),
-          nombre: gerencia.nombre.trim(),
-          descripcion: gerencia.descripcion?.trim() || null,
-          gerente_id: gerencia.gerente_id || null,
-          estado: gerencia.estado !== undefined ? gerencia.estado : true,
-        }])
+        .insert([insertPayload])
         .select();
 
       logDebug('gerencias.create', { data, error });
@@ -730,18 +760,33 @@ export const departamentosApi = {
     }
   },
 
-  async create(departamento: Omit<Departamento, 'departamento_id' | 'created_at' | 'updated_at'>): Promise<{ data: Departamento | null; error: any }> {
+  async create(departamento: Omit<Departamento, 'departamento_id' | 'created_at' | 'updated_at'> & { departamento_id?: number }): Promise<{ data: Departamento | null; error: any }> {
     try {
+      const finalCodigo = formatDepartamentoCodigo(departamento.codigo) || departamento.codigo.trim();
+      const insertPayload: any = {
+        codigo_gerencia: departamento.codigo_gerencia ? departamento.codigo_gerencia.trim() : null,
+        codigo: finalCodigo,
+        nombre: departamento.nombre.trim(),
+        descripcion: departamento.descripcion?.trim() || null,
+        jefe_departamento_id: departamento.jefe_departamento_id || null,
+        estado: departamento.estado !== undefined ? departamento.estado : true,
+      };
+
+      if (departamento.departamento_id) {
+        insertPayload.departamento_id = Number(departamento.departamento_id);
+      } else {
+        const match = finalCodigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > 0) {
+            insertPayload.departamento_id = num;
+          }
+        }
+      }
+
       const { data, error } = await insforge.database
         .from('departamentos')
-        .insert([{
-          codigo_gerencia: departamento.codigo_gerencia ? departamento.codigo_gerencia.trim() : null,
-          codigo: formatDepartamentoCodigo(departamento.codigo) || departamento.codigo.trim(),
-          nombre: departamento.nombre.trim(),
-          descripcion: departamento.descripcion?.trim() || null,
-          jefe_departamento_id: departamento.jefe_departamento_id || null,
-          estado: departamento.estado !== undefined ? departamento.estado : true,
-        }])
+        .insert([insertPayload])
         .select();
 
       logDebug('departamentos.create', { data, error });
