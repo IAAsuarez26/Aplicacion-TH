@@ -57,11 +57,43 @@ export const DireccionesModule: React.FC = () => {
     loadData();
   }, []);
 
+  const formatDireccionCodigo = (cod?: string | null) => {
+    if (!cod) return '';
+    const match = cod.match(/^dir-(\d+)$/i);
+    if (match) {
+      return `Dir-${match[1].padStart(4, '0')}`;
+    }
+    return cod;
+  };
+
+  const getNextDireccionConsecutive = (items: Direccion[]) => {
+    if (!items || items.length === 0) {
+      return 'Dir-0001';
+    }
+    let maxCodeNum = 0;
+    for (const d of items) {
+      if (d.codigo) {
+        const match = d.codigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxCodeNum) {
+            maxCodeNum = num;
+          }
+        }
+      }
+      if (d.direccion_id && Number(d.direccion_id) > maxCodeNum) {
+        maxCodeNum = Number(d.direccion_id);
+      }
+    }
+    const nextNum = maxCodeNum + 1;
+    return `Dir-${String(nextNum).padStart(4, '0')}`;
+  };
+
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedDireccion(null);
     setEmpresaId(empresas[0]?.empresa_id || '');
-    setCodigo(`DIR-${Math.floor(100 + Math.random() * 900)}`);
+    setCodigo(getNextDireccionConsecutive(direcciones));
     setNombre('');
     setDescripcion('');
     setDirectorId('');
@@ -73,7 +105,7 @@ export const DireccionesModule: React.FC = () => {
     setModalMode('edit');
     setSelectedDireccion(dir);
     setEmpresaId(dir.empresa_id || empresas[0]?.empresa_id || '');
-    setCodigo(dir.codigo);
+    setCodigo(formatDireccionCodigo(dir.codigo));
     setNombre(dir.nombre);
     setDescripcion(dir.descripcion || '');
     setDirectorId(dir.director_id || '');
@@ -93,7 +125,7 @@ export const DireccionesModule: React.FC = () => {
       if (modalMode === 'create') {
         const { data, error } = await direccionesApi.create({
           empresa_id: Number(empresaId),
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           director_id: directorId ? Number(directorId) : null,
@@ -110,7 +142,7 @@ export const DireccionesModule: React.FC = () => {
       } else if (selectedDireccion) {
         const { data, error } = await direccionesApi.update(selectedDireccion.direccion_id, {
           empresa_id: Number(empresaId),
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           director_id: directorId ? Number(directorId) : null,
@@ -324,7 +356,7 @@ export const DireccionesModule: React.FC = () => {
                 required
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder="DIR-TECN"
+                placeholder="Ej. Dir-0009"
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
               />
             </div>

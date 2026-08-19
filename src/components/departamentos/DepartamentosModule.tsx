@@ -63,11 +63,43 @@ export const DepartamentosModule: React.FC = () => {
     loadData();
   }, []);
 
+  const formatDepartamentoCodigo = (cod?: string | null) => {
+    if (!cod) return '';
+    const match = cod.match(/^dep-(\d+)$/i);
+    if (match) {
+      return `Dep-${match[1].padStart(4, '0')}`;
+    }
+    return cod;
+  };
+
+  const getNextDepartamentoConsecutive = (items: Departamento[]) => {
+    if (!items || items.length === 0) {
+      return 'Dep-0001';
+    }
+    let maxCodeNum = 0;
+    for (const d of items) {
+      if (d.codigo) {
+        const match = d.codigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxCodeNum) {
+            maxCodeNum = num;
+          }
+        }
+      }
+      if (d.departamento_id && Number(d.departamento_id) > maxCodeNum) {
+        maxCodeNum = Number(d.departamento_id);
+      }
+    }
+    const nextNum = maxCodeNum + 1;
+    return `Dep-${String(nextNum).padStart(4, '0')}`;
+  };
+
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedDepartamento(null);
     setCodigoGerencia(gerencias[0]?.codigo || '');
-    setCodigo(`DEP-${Math.floor(100 + Math.random() * 900)}`);
+    setCodigo(getNextDepartamentoConsecutive(departamentos));
     setNombre('');
     setDescripcion('');
     setJefeId('');
@@ -79,7 +111,7 @@ export const DepartamentosModule: React.FC = () => {
     setModalMode('edit');
     setSelectedDepartamento(dep);
     setCodigoGerencia(dep.codigo_gerencia || '');
-    setCodigo(dep.codigo);
+    setCodigo(formatDepartamentoCodigo(dep.codigo));
     setNombre(dep.nombre);
     setDescripcion(dep.descripcion || '');
     setJefeId(dep.jefe_departamento_id || '');
@@ -99,7 +131,7 @@ export const DepartamentosModule: React.FC = () => {
       if (modalMode === 'create') {
         const { data, error } = await departamentosApi.create({
           codigo_gerencia: codigoGerencia ? codigoGerencia.trim() : null,
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           jefe_departamento_id: jefeId ? Number(jefeId) : null,
@@ -116,7 +148,7 @@ export const DepartamentosModule: React.FC = () => {
       } else if (selectedDepartamento) {
         const { data, error } = await departamentosApi.update(selectedDepartamento.departamento_id, {
           codigo_gerencia: codigoGerencia ? codigoGerencia.trim() : null,
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           jefe_departamento_id: jefeId ? Number(jefeId) : null,
@@ -351,7 +383,7 @@ export const DepartamentosModule: React.FC = () => {
                 required
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder="Ej. DEP-BACK"
+                placeholder="Ej. Dep-0037"
                 className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
               />
             </div>

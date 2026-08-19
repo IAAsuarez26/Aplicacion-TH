@@ -63,11 +63,43 @@ export const GerenciasModule: React.FC = () => {
     loadData();
   }, []);
 
+  const formatGerenciaCodigo = (cod?: string | null) => {
+    if (!cod) return '';
+    const match = cod.match(/^ger-(\d+)$/i);
+    if (match) {
+      return `Ger-${match[1].padStart(4, '0')}`;
+    }
+    return cod;
+  };
+
+  const getNextGerenciaConsecutive = (items: Gerencia[]) => {
+    if (!items || items.length === 0) {
+      return 'Ger-0001';
+    }
+    let maxCodeNum = 0;
+    for (const g of items) {
+      if (g.codigo) {
+        const match = g.codigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxCodeNum) {
+            maxCodeNum = num;
+          }
+        }
+      }
+      if (g.gerencia_id && Number(g.gerencia_id) > maxCodeNum) {
+        maxCodeNum = Number(g.gerencia_id);
+      }
+    }
+    const nextNum = maxCodeNum + 1;
+    return `Ger-${String(nextNum).padStart(4, '0')}`;
+  };
+
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedGerencia(null);
     setCodigoDireccion(direcciones[0]?.codigo || '');
-    setCodigo(`GER-${Math.floor(100 + Math.random() * 900)}`);
+    setCodigo(getNextGerenciaConsecutive(gerencias));
     setNombre('');
     setDescripcion('');
     setGerenteId('');
@@ -79,7 +111,7 @@ export const GerenciasModule: React.FC = () => {
     setModalMode('edit');
     setSelectedGerencia(ger);
     setCodigoDireccion(ger.codigo_direccion || '');
-    setCodigo(ger.codigo);
+    setCodigo(formatGerenciaCodigo(ger.codigo));
     setNombre(ger.nombre);
     setDescripcion(ger.descripcion || '');
     setGerenteId(ger.gerente_id || '');
@@ -99,7 +131,7 @@ export const GerenciasModule: React.FC = () => {
       if (modalMode === 'create') {
         const { data, error } = await gerenciasApi.create({
           codigo_direccion: codigoDireccion ? codigoDireccion.trim() : null,
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           gerente_id: gerenteId ? Number(gerenteId) : null,
@@ -116,7 +148,7 @@ export const GerenciasModule: React.FC = () => {
       } else if (selectedGerencia) {
         const { data, error } = await gerenciasApi.update(selectedGerencia.gerencia_id, {
           codigo_direccion: codigoDireccion ? codigoDireccion.trim() : null,
-          codigo: codigo.trim().toUpperCase(),
+          codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           gerente_id: gerenteId ? Number(gerenteId) : null,
@@ -351,7 +383,7 @@ export const GerenciasModule: React.FC = () => {
                 required
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder="Ej. GER-DESA"
+                placeholder="Ej. Ger-0024"
                 className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
               />
             </div>
