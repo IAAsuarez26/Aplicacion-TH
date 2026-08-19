@@ -544,11 +544,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
           >
             <option value="ALL">Todos los Departamentos</option>
-            {departamentos.map((d) => (
-              <option key={d.codigo} value={d.codigo}>
-                {d.nombre} ({d.codigo})
-              </option>
-            ))}
+            {[...departamentos]
+              .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+              .map((d) => (
+                <option key={d.codigo} value={d.codigo}>
+                  {d.nombre} ({d.codigo})
+                </option>
+              ))}
           </select>
 
           {/* Cargo Filter */}
@@ -558,11 +560,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
           >
             <option value="ALL">Todos los Cargos</option>
-            {cargos.map((c) => (
-              <option key={c.codigo} value={c.codigo}>
-                {c.nombre} ({c.codigo})
-              </option>
-            ))}
+            {[...cargos]
+              .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+              .map((c) => (
+                <option key={c.codigo} value={c.codigo}>
+                  {c.nombre} ({c.codigo})
+                </option>
+              ))}
           </select>
 
           {/* Estado Filter */}
@@ -727,11 +731,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="" disabled>-- Selecciona un Cargo --</option>
-                {cargos.map((c) => (
-                  <option key={c.codigo} value={c.codigo}>
-                    {c.nombre} ({c.codigo})
-                  </option>
-                ))}
+                {[...cargos]
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                  .map((c) => (
+                    <option key={c.codigo} value={c.codigo}>
+                      {c.nombre} ({c.codigo})
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -746,11 +752,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="" disabled>-- Selecciona un Departamento --</option>
-                {departamentos.map((d) => (
-                  <option key={d.codigo} value={d.codigo}>
-                    {d.nombre} ({d.codigo})
-                  </option>
-                ))}
+                {[...departamentos]
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                  .map((d) => (
+                    <option key={d.codigo} value={d.codigo}>
+                      {d.nombre} ({d.codigo})
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

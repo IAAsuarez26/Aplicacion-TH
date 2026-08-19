@@ -315,11 +315,13 @@ export const DepartamentosModule: React.FC = () => {
           className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
         >
           <option value="ALL">Todas las Gerencias</option>
-          {gerencias.map((g) => (
-            <option key={g.codigo} value={g.codigo}>
-              {g.nombre} ({g.codigo})
-            </option>
-          ))}
+          {[...gerencias]
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+            .map((g) => (
+              <option key={g.codigo} value={g.codigo}>
+                {g.nombre} ({g.codigo})
+              </option>
+            ))}
         </select>
       </div>
 
@@ -353,11 +355,13 @@ export const DepartamentosModule: React.FC = () => {
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
             >
               <option value="" disabled>-- Selecciona una Gerencia --</option>
-              {gerencias.map((g) => (
-                <option key={g.codigo} value={g.codigo}>
-                  {g.nombre} ({g.codigo})
-                </option>
-              ))}
+              {[...gerencias]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                .map((g) => (
+                  <option key={g.codigo} value={g.codigo}>
+                    {g.nombre} ({g.codigo})
+                  </option>
+                ))}
             </select>
           </div>
 
