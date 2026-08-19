@@ -78,11 +78,8 @@ export const DepartamentosModule: React.FC = () => {
           }
         }
       }
-      if (d.departamento_id && Number(d.departamento_id) > maxCodeNum) {
-        maxCodeNum = Number(d.departamento_id);
-      }
     }
-    const nextNum = maxCodeNum + 1;
+    const nextNum = maxCodeNum > 0 ? maxCodeNum + 1 : items.length + 1;
     return `Dep-${String(nextNum).padStart(4, '0')}`;
   };
 

@@ -78,11 +78,8 @@ export const GerenciasModule: React.FC = () => {
           }
         }
       }
-      if (g.gerencia_id && Number(g.gerencia_id) > maxCodeNum) {
-        maxCodeNum = Number(g.gerencia_id);
-      }
     }
-    const nextNum = maxCodeNum + 1;
+    const nextNum = maxCodeNum > 0 ? maxCodeNum + 1 : items.length + 1;
     return `Ger-${String(nextNum).padStart(4, '0')}`;
   };
 

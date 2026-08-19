@@ -68,14 +68,7 @@ export const CargosModule: React.FC = () => {
         }
       }
     }
-    if (maxCodeNum === 0) {
-      for (const c of items) {
-        if (c.cargo_id && Number(c.cargo_id) > maxCodeNum) {
-          maxCodeNum = Number(c.cargo_id);
-        }
-      }
-    }
-    const nextNum = maxCodeNum + 1;
+    const nextNum = maxCodeNum > 0 ? maxCodeNum + 1 : items.length + 1;
     const nextCodigo = `Cargo-${String(nextNum).padStart(4, '0')}`;
     return { nextId: nextNum, nextCodigo };
   };

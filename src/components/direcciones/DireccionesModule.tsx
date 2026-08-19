@@ -72,11 +72,8 @@ export const DireccionesModule: React.FC = () => {
           }
         }
       }
-      if (d.direccion_id && Number(d.direccion_id) > maxCodeNum) {
-        maxCodeNum = Number(d.direccion_id);
-      }
     }
-    const nextNum = maxCodeNum + 1;
+    const nextNum = maxCodeNum > 0 ? maxCodeNum + 1 : items.length + 1;
     return `Dir-${String(nextNum).padStart(4, '0')}`;
   };
 

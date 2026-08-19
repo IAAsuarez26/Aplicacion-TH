@@ -118,7 +118,17 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedEmpleado(null);
-    const nextNum = (empleados.length + 1).toString().padStart(4, '0');
+    let maxEmpNum = 0;
+    for (const emp of empleados) {
+      if (emp.codigo_empleado) {
+        const match = emp.codigo_empleado.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxEmpNum) maxEmpNum = num;
+        }
+      }
+    }
+    const nextNum = (maxEmpNum > 0 ? maxEmpNum + 1 : empleados.length + 1).toString().padStart(4, '0');
     setCodigoEmpleado(`EMP-${nextNum}`);
     setDocumentoIdentidad(`V${Math.floor(10000000 + Math.random() * 90000000)}`);
     setNombres('');

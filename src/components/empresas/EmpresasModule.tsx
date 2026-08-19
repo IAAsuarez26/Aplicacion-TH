@@ -87,7 +87,17 @@ export const EmpresasModule: React.FC = () => {
     setSelectedEmpresa(null);
     setActiveFormTab('general');
     
-    const nextNum = (empresas.length + 2).toString().padStart(4, '0');
+    let maxEmpNum = 0;
+    for (const emp of empresas) {
+      if (emp.codigo) {
+        const match = emp.codigo.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (!isNaN(num) && num > maxEmpNum) maxEmpNum = num;
+        }
+      }
+    }
+    const nextNum = (maxEmpNum > 0 ? maxEmpNum + 1 : empresas.length + 1).toString().padStart(4, '0');
     setCodigo(nextNum);
     setRazonSocial('');
     setNombreCorto('');
