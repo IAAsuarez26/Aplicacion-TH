@@ -25,6 +25,14 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
       title: 'Tabulador Salarial y Bandas (80% - 120%)',
       subtitle: 'Estructuras de compensación, percentiles y evaluación de equidad interna',
     },
+    tipo_costos: {
+      title: 'Tipos de Costos (MOD, MOI, Gastos)',
+      subtitle: 'Catálogo de clasificación contable para mano de obra y costos de personal',
+    },
+    centros_costos: {
+      title: 'Centros de Costos (01 al 15)',
+      subtitle: 'Unidades de imputación de costos asociadas a los departamentos de la empresa',
+    },
     direcciones: {
       title: 'Direcciones (Nivel 1)',
       subtitle: 'Catálogo de direcciones estratégicas y asignación de Directores Generales',

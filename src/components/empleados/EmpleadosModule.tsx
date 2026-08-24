@@ -19,9 +19,10 @@ import {
   UserPlus,
   Layers,
   DollarSign,
+  Coins,
 } from 'lucide-react';
-import { empleadosApi, cargosApi, departamentosApi, tabuladorApi } from '../../lib/insforge';
-import type { Empleado, Cargo, Departamento, TabuladorEmpresa, EstadoLaboral } from '../../lib/types';
+import { empleadosApi, cargosApi, departamentosApi, tabuladorApi, tipoCostosApi } from '../../lib/insforge';
+import type { Empleado, Cargo, Departamento, TabuladorEmpresa, TipoCosto, EstadoLaboral } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -42,11 +43,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [tabuladores, setTabuladores] = useState<TabuladorEmpresa[]>([]);
+  const [tipoCostos, setTipoCostos] = useState<TipoCosto[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [filtroDepartamento, setFiltroDepartamento] = useState<string | 'ALL'>('ALL');
   const [filtroCargo, setFiltroCargo] = useState<string | 'ALL'>('ALL');
+  const [filtroTipoCosto, setFiltroTipoCosto] = useState<string | 'ALL'>('ALL');
   const [filtroEstado, setFiltroEstado] = useState<string>('ALL');
 
   // Modal State (Create / Edit)
@@ -69,6 +72,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [telefono, setTelefono] = useState('');
   const [codigoCargo, setCodigoCargo] = useState<string>('');
   const [codigoDepartamento, setCodigoDepartamento] = useState<string>('');
+  const [codigoTc, setCodigoTc] = useState<string>('');
   const [tabuladorId, setTabuladorId] = useState<number | ''>('');
   const [supervisorDirectoId, setSupervisorDirectoId] = useState<number | ''>('');
   const [evaluadorId, setEvaluadorId] = useState<number | ''>('');
@@ -88,11 +92,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         { data: cData, error: cErr },
         { data: dData, error: dErr },
         { data: tData },
+        { data: tcData },
       ] = await Promise.all([
         empleadosApi.getAll(),
         cargosApi.getAll(),
         departamentosApi.getAll(),
         tabuladorApi.getAll(),
+        tipoCostosApi.getAll(),
       ]);
 
       if (eErr) toast.error('No se pudieron cargar los colaboradores');
@@ -100,6 +106,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       setCargos(cData || []);
       setDepartamentos(dData || []);
       setTabuladores(tData || []);
+      setTipoCostos(tcData || []);
     } finally {
       setLoading(false);
     }
@@ -139,6 +146,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setTelefono('+58414' + Math.floor(1000000 + Math.random() * 9000000));
     setCodigoCargo(cargos[0]?.codigo || '');
     setCodigoDepartamento(departamentos[0]?.codigo || '');
+    setCodigoTc('');
     setTabuladorId('');
     setSupervisorDirectoId('');
     setEvaluadorId('');
@@ -159,6 +167,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setTelefono(emp.telefono || '');
     setCodigoCargo(emp.codigo_cargo);
     setCodigoDepartamento(emp.codigo_departamento);
+    setCodigoTc(emp.codigo_tc || '');
     setTabuladorId(emp.tabulador_id || '');
     setSupervisorDirectoId(emp.supervisor_directo_id || '');
     setEvaluadorId(emp.evaluador_id || '');
@@ -192,6 +201,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           telefono: telefono.trim() || null,
           codigo_cargo: codigoCargo.trim(),
           codigo_departamento: codigoDepartamento.trim(),
+          codigo_tc: codigoTc ? codigoTc.trim() : null,
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
           evaluador_id: evaluadorId ? Number(evaluadorId) : null,
@@ -217,6 +227,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           telefono: telefono.trim() || null,
           codigo_cargo: codigoCargo.trim(),
           codigo_departamento: codigoDepartamento.trim(),
+          codigo_tc: codigoTc ? codigoTc.trim() : null,
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
           evaluador_id: evaluadorId ? Number(evaluadorId) : null,
@@ -253,11 +264,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         setDeletingEmpleado(null);
         loadData();
       } else {
-        toast.error(
-          error?.message?.includes('violates foreign key')
-            ? 'No se puede eliminar este colaborador porque está asignado como líder o evaluador de otras áreas. Reasigna sus funciones primero.'
-            : error?.message || 'Error al eliminar al empleado'
-        );
+        toast.error(error?.message || 'Error al eliminar al empleado');
       }
     } finally {
       setDeleting(false);
@@ -266,29 +273,34 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
   const getCargoName = (code: string) => {
     const cargo = cargos.find((c) => c.codigo === code);
-    return cargo ? cargo.nombre : (code || 'Sin Cargo');
+    return cargo ? cargo.nombre : code;
   };
 
   const getDepartamentoName = (code: string) => {
-    const dep = departamentos.find((d) => d.codigo === code);
-    return dep ? dep.nombre : (code || 'Sin Departamento');
+    const depto = departamentos.find((d) => d.codigo === code);
+    return depto ? depto.nombre : code;
   };
 
-  const getTabuladorInfo = (tId?: number | null) => {
-    if (!tId) return null;
-    return tabuladores.find((t) => t.tabulador_id === tId) || null;
+  const getEmpleadoFullName = (empId: number | null) => {
+    if (!empId) return null;
+    const emp = empleados.find((e) => e.empleado_id === empId);
+    return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${empId}`;
   };
 
-  const getEmpleadoFullName = (eId: number | null | undefined) => {
-    if (!eId) return null;
-    const emp = empleados.find((e) => e.empleado_id === eId);
-    return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${eId}`;
+  const getTabuladorInfo = (tabId?: number | null) => {
+    if (!tabId) return null;
+    return tabuladores.find((t) => t.tabulador_id === tabId);
   };
 
-  // Filtered List
+  const getTipoCostoInfo = (codigo_tc?: string | null) => {
+    if (!codigo_tc) return null;
+    return tipoCostos.find((tc) => tc.codigo_tc === codigo_tc);
+  };
+
   const filteredEmpleados = empleados.filter((emp) => {
     if (filtroDepartamento !== 'ALL' && emp.codigo_departamento !== filtroDepartamento) return false;
     if (filtroCargo !== 'ALL' && emp.codigo_cargo !== filtroCargo) return false;
+    if (filtroTipoCosto !== 'ALL' && emp.codigo_tc !== filtroTipoCosto) return false;
     if (filtroEstado !== 'ALL' && emp.estado_laboral !== filtroEstado) return false;
     return true;
   });
@@ -296,7 +308,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const columns: Column<Empleado>[] = [
     {
       key: 'codigo_empleado',
-      header: 'Código / Cédula',
+      header: 'Código / DNI',
       sortable: true,
       render: (row) => (
         <div>
@@ -347,21 +359,6 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       ),
     },
     {
-      key: 'email_corporativo',
-      header: 'Email Corporativo',
-      sortable: true,
-      render: (row) => (
-        <div className="text-xs text-indigo-300 flex items-center gap-1.5 font-mono">
-          <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          {row.email_corporativo ? (
-            <span className="truncate max-w-[150px]" title={row.email_corporativo}>{row.email_corporativo}</span>
-          ) : (
-            <span className="text-slate-500 italic text-[11px]">No asignado</span>
-          )}
-        </div>
-      ),
-    },
-    {
       key: 'codigo_cargo',
       header: 'Cargo & Departamento',
       sortable: true,
@@ -371,6 +368,34 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="text-xs text-brand-400/90">{getDepartamentoName(row.codigo_departamento)}</div>
         </div>
       ),
+    },
+    {
+      key: 'codigo_tc',
+      header: 'Tipo de Costo',
+      sortable: true,
+      render: (row) => {
+        const tc = getTipoCostoInfo(row.codigo_tc);
+        return tc ? (
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md border ${
+                tc.nombre === 'MOD'
+                  ? 'bg-amber-950/60 border-amber-800/60 text-amber-300'
+                  : tc.nombre === 'MOI'
+                  ? 'bg-blue-950/60 border-blue-800/60 text-blue-300'
+                  : 'bg-purple-950/60 border-purple-800/60 text-purple-300'
+              }`}
+            >
+              {tc.nombre}
+            </span>
+            <span className="text-[11px] text-slate-400 hidden lg:inline" title={tc.descripcion || ''}>
+              ({tc.codigo_tc})
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-500 italic">Sin asignar</span>
+        );
+      },
     },
     {
       key: 'tabulador_id',
@@ -384,15 +409,12 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 {tab.codigo_banda}
               </span>
               <span className="text-[10px] text-slate-400">
-                ({tab.salario_minimo_80.toLocaleString()} - {tab.salario_maximo_120.toLocaleString()})
+                (${tab.salario_minimo_80.toLocaleString()} - ${tab.salario_maximo_120.toLocaleString()})
               </span>
-            </div>
-            <div className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5">
-              {tab.cargos_referencia}
             </div>
           </div>
         ) : (
-          <span className="text-xs text-slate-500 italic">Sin Banda Asignada</span>
+          <span className="text-xs text-slate-500 italic">Sin Banda</span>
         );
       },
     },
@@ -471,7 +493,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             Directorio y Ficha Maestra de Personal
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Gestión integral de colaboradores, cargos, bandas salariales y línea de supervisión.
+            Gestión integral de colaboradores, cargos, bandas salariales, tipo de costo y línea de supervisión.
           </p>
         </div>
 
@@ -508,13 +530,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Vacaciones / Lic</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Tipos de Costo</span>
+            <Coins className="w-4 h-4 text-amber-400" />
           </div>
           <p className="text-2xl font-bold text-amber-400 mt-2">
-            {empleados.filter((e) => e.estado_laboral === 'VACACIONES' || e.estado_laboral === 'LICENCIA').length}
+            {empleados.filter((e) => e.codigo_tc).length}
           </p>
-          <span className="text-[11px] text-slate-500">Permisos temporales</span>
+          <span className="text-[11px] text-slate-500">MOD / MOI / Gastos</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
@@ -553,6 +575,20 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               ))}
           </select>
 
+          {/* Tipo de Costo Filter */}
+          <select
+            value={filtroTipoCosto}
+            onChange={(e) => setFiltroTipoCosto(e.target.value)}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
+          >
+            <option value="ALL">Todos los Tipos de Costos</option>
+            {tipoCostos.map((tc) => (
+              <option key={tc.codigo_tc} value={tc.codigo_tc}>
+                {tc.nombre} ({tc.codigo_tc}) - {tc.descripcion}
+              </option>
+            ))}
+          </select>
+
           {/* Cargo Filter */}
           <select
             value={filtroCargo}
@@ -589,8 +625,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         data={filteredEmpleados}
         columns={columns}
         loading={loading}
-        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email', 'email_corporativo', 'codigo_cargo', 'codigo_departamento']}
-        searchPlaceholder="Buscar por nombre, código, cédula o email..."
+        searchKeys={['nombres', 'apellidos', 'codigo_empleado', 'documento_identidad', 'email', 'email_corporativo', 'codigo_cargo', 'codigo_departamento', 'codigo_tc']}
+        searchPlaceholder="Buscar por nombre, código, cédula, cargo o tipo de costo..."
         emptyMessage="No se encontraron colaboradores que coincidan con la búsqueda"
       />
 
@@ -598,36 +634,36 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Registrar Nuevo Colaborador' : 'Editar Ficha del Empleado'}
-        subtitle="Expediente de Personal de la Organización"
+        title={modalMode === 'create' ? 'Registrar Nuevo Colaborador' : 'Editar Ficha del Colaborador'}
+        subtitle="Expediente digital de Talento Humano"
         maxWidth="2xl"
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Código del Empleado *
+                Código de Empleado *
               </label>
               <input
                 type="text"
                 required
                 value={codigoEmpleado}
                 onChange={(e) => setCodigoEmpleado(e.target.value)}
-                placeholder="Ej. EMP-0001"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-brand-300 focus:outline-none focus:border-brand-500 uppercase"
+                placeholder="EMP-0001"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Cédula / Documento de Identidad
+                Documento de Identidad (Cédula/DNI)
               </label>
               <input
                 type="text"
                 value={documentoIdentidad}
                 onChange={(e) => setDocumentoIdentidad(e.target.value)}
-                placeholder="Ej. V12345678"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+                placeholder="V12345678"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -642,7 +678,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={nombres}
                 onChange={(e) => setNombres(e.target.value)}
-                placeholder="Ej. Juan Carlos"
+                placeholder="Carlos Eduardo"
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -656,7 +692,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={apellidos}
                 onChange={(e) => setApellidos(e.target.value)}
-                placeholder="Ej. Pérez Rodríguez"
+                placeholder="Mendoza Ruiz"
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -672,8 +708,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="juan.perez@gmail.com"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500 lowercase"
+                placeholder="carlos.mendoza@gmail.com"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -685,8 +721,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 type="email"
                 value={emailCorporativo}
                 onChange={(e) => setEmailCorporativo(e.target.value)}
-                placeholder="juan.perez@empresa.com"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500 lowercase"
+                placeholder="carlos.mendoza@empresa.com"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -763,23 +799,43 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
           </div>
 
-          {/* Banda Salarial Selector */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Banda Salarial (Tabulador Salarial)
-            </label>
-            <select
-              value={tabuladorId}
-              onChange={(e) => setTabuladorId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-            >
-              <option value="">-- Sin Banda Salarial Asignada --</option>
-              {tabuladores.map((t) => (
-                <option key={t.tabulador_id} value={t.tabulador_id}>
-                  {t.codigo_banda} — Mediana: ${t.salario_mediana_100.toLocaleString()} (Min: ${t.salario_minimo_80.toLocaleString()} / Max: ${t.salario_maximo_120.toLocaleString()})
-                </option>
-              ))}
-            </select>
+          {/* Tipo de Costo y Banda Salarial */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Tipo de Costo (Mano de Obra / Gastos)
+              </label>
+              <select
+                value={codigoTc}
+                onChange={(e) => setCodigoTc(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500"
+              >
+                <option value="">-- Sin Tipo de Costo Asignado --</option>
+                {tipoCostos.map((tc) => (
+                  <option key={tc.codigo_tc} value={tc.codigo_tc}>
+                    {tc.codigo_tc} — {tc.nombre} ({tc.descripcion})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Banda Salarial (Tabulador)
+              </label>
+              <select
+                value={tabuladorId}
+                onChange={(e) => setTabuladorId(e.target.value ? Number(e.target.value) : '')}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+              >
+                <option value="">-- Sin Banda Salarial Asignada --</option>
+                {tabuladores.map((t) => (
+                  <option key={t.tabulador_id} value={t.tabulador_id}>
+                    {t.codigo_banda} — Mediana: ${t.salario_mediana_100.toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -922,11 +978,25 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 col-span-2">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                 <span className="text-slate-400 block mb-1">Departamento</span>
                 <span className="text-slate-200 font-medium">
-                  {getDepartamentoName(detailEmpleado.codigo_departamento)} ({detailEmpleado.codigo_departamento})
+                  {getDepartamentoName(detailEmpleado.codigo_departamento)}
                 </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-amber-400 block mb-1 font-semibold">Tipo de Costo</span>
+                {(() => {
+                  const tc = getTipoCostoInfo(detailEmpleado.codigo_tc);
+                  return tc ? (
+                    <span className="text-amber-200 font-medium">
+                      {tc.nombre} ({tc.descripcion})
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic">No asignado</span>
+                  );
+                })()}
               </div>
             </div>
 
@@ -941,7 +1011,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                       Banda Salarial Asignada
                     </h4>
                     <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-200 border border-indigo-700">
-                      Banda {tab.codigo_banda} ({tab.codigo_empresa})
+                      Banda {tab.codigo_banda}
                     </span>
                   </div>
 

@@ -1,6 +1,7 @@
 -- ====================================================================================
 -- SISTEMA DE GESTIÓN DE TALENTO HUMANO (TH)
--- Script DDL: Estructura Organizacional, Empresas, Tabuladores Salariales y Empleados
+-- Script DDL: Estructura Organizacional, Empresas, Tabuladores Salariales,
+--             Tipos de Costos, Centros de Costos y Empleados
 -- Dialecto: PostgreSQL (PL/pgSQL) - InsForge DB (TH_PB)
 -- ====================================================================================
 
@@ -11,6 +12,10 @@
 DROP VIEW IF EXISTS vw_organigrama_completo CASCADE;
 DROP VIEW IF EXISTS vw_resumen_responsables_area CASCADE;
 DROP VIEW IF EXISTS vw_tabulador_empresas_resumen CASCADE;
+DROP VIEW IF EXISTS tipos_costos CASCADE;
+DROP VIEW IF EXISTS "TipoCostos" CASCADE;
+DROP VIEW IF EXISTS centros_costo CASCADE;
+DROP VIEW IF EXISTS "CentrosCostos" CASCADE;
 
 DROP FUNCTION IF EXISTS sp_obtener_subordinados(INT) CASCADE;
 DROP FUNCTION IF EXISTS fn_evaluar_posicion_salarial(VARCHAR, VARCHAR, NUMERIC) CASCADE;
@@ -22,6 +27,8 @@ DROP TABLE IF EXISTS departamentos CASCADE;
 DROP TABLE IF EXISTS gerencias CASCADE;
 DROP TABLE IF EXISTS direcciones CASCADE;
 DROP TABLE IF EXISTS cargos CASCADE;
+DROP TABLE IF EXISTS centros_costos CASCADE;
+DROP TABLE IF EXISTS tipo_costos CASCADE;
 DROP TABLE IF EXISTS tabulador_empresas CASCADE;
 DROP TABLE IF EXISTS empresas CASCADE;
 
@@ -110,7 +117,44 @@ BEFORE UPDATE ON tabulador_empresas
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ====================================================================================
--- 5. TABLAS DE ESTRUCTURA ORGANIZACIONAL
+-- 5. TABLAS DE COSTOS (Tipos de Costo y Centros de Costo)
+-- ====================================================================================
+
+-- ------------------------------------------------------------------------------------
+-- Tabla: tipo_costos (MOD, MOI, Gastos) - Origen: TiposdeCostos.xlsx
+-- ------------------------------------------------------------------------------------
+CREATE TABLE tipo_costos (
+    tipo_costo_id SERIAL PRIMARY KEY,
+    codigo_tc VARCHAR(20) NOT NULL UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_tipo_costos_updated_at
+BEFORE UPDATE ON tipo_costos
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ------------------------------------------------------------------------------------
+-- Tabla: centros_costos (Centros de Costo 01-15) - Origen: Centros de Costos.xlsx
+-- ------------------------------------------------------------------------------------
+CREATE TABLE centros_costos (
+    centro_costo_id SERIAL PRIMARY KEY,
+    codigo_cc VARCHAR(20) NOT NULL UNIQUE,
+    descripcion VARCHAR(150) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_centros_costos_updated_at
+BEFORE UPDATE ON centros_costos
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ====================================================================================
+-- 6. TABLAS DE ESTRUCTURA ORGANIZACIONAL
 -- ====================================================================================
 
 -- ------------------------------------------------------------------------------------
@@ -154,7 +198,8 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 -- ------------------------------------------------------------------------------------
 CREATE TABLE gerencias (
     gerencia_id SERIAL PRIMARY KEY,
-    direccion_id INT NOT NULL REFERENCES direcciones (direccion_id) ON DELETE RESTRICT,
+    direccion_id INT NULL REFERENCES direcciones (direccion_id) ON DELETE RESTRICT,
+    codigo_direccion VARCHAR(20) NULL REFERENCES direcciones (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT,
@@ -169,11 +214,13 @@ BEFORE UPDATE ON gerencias
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ------------------------------------------------------------------------------------
--- Tabla: departamentos (Nivel 3 de la Jerarquía Organizacional)
+-- Tabla: departamentos (Nivel 3 de la Jerarquía Organizacional, con FK a Centros de Costo)
 -- ------------------------------------------------------------------------------------
 CREATE TABLE departamentos (
     departamento_id SERIAL PRIMARY KEY,
-    gerencia_id INT NOT NULL REFERENCES gerencias (gerencia_id) ON DELETE RESTRICT,
+    gerencia_id INT NULL REFERENCES gerencias (gerencia_id) ON DELETE RESTRICT,
+    codigo_gerencia VARCHAR(20) NULL REFERENCES gerencias (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
+    codigo_cc VARCHAR(20) NULL REFERENCES centros_costos (codigo_cc) ON UPDATE CASCADE ON DELETE RESTRICT,
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT,
@@ -188,7 +235,7 @@ BEFORE UPDATE ON departamentos
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ------------------------------------------------------------------------------------
--- Tabla: empleados (Ficha Maestra del Personal con Tabulador Salarial Asignado)
+-- Tabla: empleados (Ficha Maestra del Personal con Tabulador Salarial y Tipo de Costo)
 -- ------------------------------------------------------------------------------------
 CREATE TABLE empleados (
     empleado_id SERIAL PRIMARY KEY,
@@ -196,10 +243,14 @@ CREATE TABLE empleados (
     documento_identidad VARCHAR(20) UNIQUE,
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
+    email VARCHAR(150) UNIQUE,
+    email_corporativo VARCHAR(150),
     telefono VARCHAR(30),
-    cargo_id INT NOT NULL REFERENCES cargos (cargo_id) ON DELETE RESTRICT,
-    departamento_id INT NOT NULL REFERENCES departamentos (departamento_id) ON DELETE RESTRICT,
+    codigo_cargo VARCHAR(20) NOT NULL REFERENCES cargos (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
+    cargo_id INT NULL REFERENCES cargos (cargo_id) ON DELETE RESTRICT,
+    codigo_departamento VARCHAR(20) NOT NULL REFERENCES departamentos (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
+    departamento_id INT NULL REFERENCES departamentos (departamento_id) ON DELETE RESTRICT,
+    codigo_tc VARCHAR(20) NULL REFERENCES tipo_costos (codigo_tc) ON UPDATE CASCADE ON DELETE RESTRICT,
     tabulador_id INT NULL REFERENCES tabulador_empresas (tabulador_id) ON DELETE SET NULL,
     supervisor_directo_id INT REFERENCES empleados (empleado_id) ON DELETE RESTRICT,
     evaluador_id INT REFERENCES empleados (empleado_id) ON DELETE SET NULL,
@@ -228,7 +279,7 @@ CREATE TABLE historial_cargos_departamentos (
 );
 
 -- ====================================================================================
--- 6. DEFINICIÓN DE CLAVES FORÁNEAS DE RESPONSABLES POR ÁREA
+-- 7. DEFINICIÓN DE CLAVES FORÁNEAS DE RESPONSABLES POR ÁREA
 -- ====================================================================================
 
 ALTER TABLE direcciones ADD CONSTRAINT fk_direcciones_director
@@ -241,7 +292,7 @@ ALTER TABLE departamentos ADD CONSTRAINT fk_departamentos_jefe
     FOREIGN KEY (jefe_departamento_id) REFERENCES empleados (empleado_id) ON DELETE SET NULL;
 
 -- ====================================================================================
--- 7. ÍNDICES DE RENDIMIENTO
+-- 8. ÍNDICES DE RENDIMIENTO
 -- ====================================================================================
 
 CREATE INDEX idx_empresas_codigo ON empresas (codigo);
@@ -252,18 +303,26 @@ CREATE INDEX idx_tabulador_empresa_id ON tabulador_empresas (empresa_id);
 CREATE INDEX idx_tabulador_banda ON tabulador_empresas (codigo_banda);
 CREATE INDEX idx_tabulador_activos ON tabulador_empresas (empresa_id, activo) WHERE activo = TRUE;
 
+CREATE INDEX idx_tipo_costos_codigo ON tipo_costos (codigo_tc);
+CREATE INDEX idx_tipo_costos_activos ON tipo_costos (activo) WHERE activo = TRUE;
+
+CREATE INDEX idx_centros_costos_codigo ON centros_costos (codigo_cc);
+CREATE INDEX idx_centros_costos_activos ON centros_costos (activo) WHERE activo = TRUE;
+
 CREATE INDEX idx_direcciones_empresa_id ON direcciones (empresa_id);
 CREATE INDEX idx_gerencias_direccion_id ON gerencias (direccion_id);
 CREATE INDEX idx_departamentos_gerencia_id ON departamentos (gerencia_id);
+CREATE INDEX idx_departamentos_codigo_cc ON departamentos (codigo_cc);
 
 CREATE INDEX idx_empleados_departamento_id ON empleados (departamento_id);
 CREATE INDEX idx_empleados_cargo_id ON empleados (cargo_id);
+CREATE INDEX idx_empleados_codigo_tc ON empleados (codigo_tc);
 CREATE INDEX idx_empleados_tabulador_id ON empleados (tabulador_id) WHERE tabulador_id IS NOT NULL;
 CREATE INDEX idx_empleados_supervisor_directo_id ON empleados (supervisor_directo_id);
 CREATE INDEX idx_empleados_evaluador_id ON empleados (evaluador_id) WHERE evaluador_id IS NOT NULL;
 
 -- ====================================================================================
--- 8. VISTAS DE CORRELACIÓN ORGANIZACIONAL Y SALARIAL
+-- 9. VISTAS DE CORRELACIÓN ORGANIZACIONAL Y SALARIAL
 -- ====================================================================================
 
 -- ------------------------------------------------------------------------------------
@@ -288,6 +347,7 @@ SELECT
     
     -- Cargo
     c.cargo_id,
+    c.codigo AS cargo_codigo,
     c.nombre AS cargo_nombre,
     
     -- Tabulador / Banda Salarial
@@ -298,10 +358,15 @@ SELECT
     t.salario_minimo_80 AS salario_minimo_banda,
     t.salario_maximo_120 AS salario_maximo_banda,
     
-    -- Departamento y su Jefe
+    -- Departamento, Centro de Costo y Jefe
     dep.departamento_id,
     dep.codigo AS departamento_codigo,
     dep.nombre AS departamento_nombre,
+    dep.codigo_cc,
+    cc.descripcion AS centro_costo_descripcion,
+    e.codigo_tc,
+    tc.nombre AS tipo_costo_nombre,
+    tc.descripcion AS tipo_costo_descripcion,
     dep.jefe_departamento_id,
     CONCAT(jefe_dep.nombres, ' ', jefe_dep.apellidos) AS jefe_departamento_nombre,
     
@@ -338,11 +403,13 @@ SELECT
     END AS tipo_evaluador
 
 FROM empleados e
-INNER JOIN cargos c ON e.cargo_id = c.cargo_id
-INNER JOIN departamentos dep ON e.departamento_id = dep.departamento_id
-INNER JOIN gerencias g ON dep.gerencia_id = g.gerencia_id
-INNER JOIN direcciones d ON g.direccion_id = d.direccion_id
-INNER JOIN empresas emp ON d.empresa_id = emp.empresa_id
+LEFT JOIN cargos c ON e.codigo_cargo = c.codigo
+LEFT JOIN departamentos dep ON e.codigo_departamento = dep.codigo
+LEFT JOIN centros_costos cc ON dep.codigo_cc = cc.codigo_cc
+LEFT JOIN tipo_costos tc ON e.codigo_tc = tc.codigo_tc
+LEFT JOIN gerencias g ON dep.codigo_gerencia = g.codigo
+LEFT JOIN direcciones d ON g.codigo_direccion = d.codigo
+LEFT JOIN empresas emp ON d.empresa_id = emp.empresa_id
 LEFT JOIN tabulador_empresas t ON e.tabulador_id = t.tabulador_id
 LEFT JOIN empleados sup ON e.supervisor_directo_id = sup.empleado_id
 LEFT JOIN empleados ev ON e.evaluador_id = ev.empleado_id
@@ -374,3 +441,11 @@ SELECT
     t.updated_at
 FROM tabulador_empresas t
 INNER JOIN empresas e ON t.empresa_id = e.empresa_id;
+
+-- ------------------------------------------------------------------------------------
+-- Vistas 3 y 4: Compatibilidad de Vistas de Costos
+-- ------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW tipos_costos AS SELECT * FROM tipo_costos;
+CREATE OR REPLACE VIEW "TipoCostos" AS SELECT tipo_costo_id, codigo_tc AS "Codigo_TC", nombre AS "Nombre", descripcion AS "Descripcion", activo AS "Activo", created_at, updated_at FROM tipo_costos;
+CREATE OR REPLACE VIEW centros_costo AS SELECT * FROM centros_costos;
+CREATE OR REPLACE VIEW "CentrosCostos" AS SELECT centro_costo_id, codigo_cc AS "Codigo_CC", descripcion AS "Descripcion", activo AS "Activo", created_at, updated_at FROM centros_costos;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Network, User, GitFork, Filter } from 'lucide-react';
-import { departamentosApi, gerenciasApi, empleadosApi, formatDepartamentoCodigo } from '../../lib/insforge';
-import type { Departamento, Gerencia, Empleado } from '../../lib/types';
+import { Plus, Edit2, Trash2, Network, User, GitFork, Filter, PieChart } from 'lucide-react';
+import { departamentosApi, gerenciasApi, empleadosApi, centrosCostosApi, formatDepartamentoCodigo } from '../../lib/insforge';
+import type { Departamento, Gerencia, Empleado, CentroCosto } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -13,10 +13,12 @@ export const DepartamentosModule: React.FC = () => {
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [gerencias, setGerencias] = useState<Gerencia[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [centrosCostos, setCentrosCostos] = useState<CentroCosto[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter state
   const [selectedGerenciaFilter, setSelectedGerenciaFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedCcFilter, setSelectedCcFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +28,7 @@ export const DepartamentosModule: React.FC = () => {
 
   // Form State
   const [codigoGerencia, setCodigoGerencia] = useState<string>('');
+  const [codigoCc, setCodigoCc] = useState<string>('');
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -44,16 +47,19 @@ export const DepartamentosModule: React.FC = () => {
         { data: deps, error: errDeps },
         { data: gers, error: errGers },
         { data: emps, error: errEmps },
+        { data: ccs },
       ] = await Promise.all([
         departamentosApi.getAll(),
         gerenciasApi.getAll(),
         empleadosApi.getAll(),
+        centrosCostosApi.getAll(),
       ]);
 
       if (errDeps) toast.error('No se pudieron cargar los departamentos');
       setDepartamentos(deps || []);
       setGerencias(gers || []);
       setEmpleados(emps || []);
+      setCentrosCostos(ccs || []);
     } finally {
       setLoading(false);
     }
@@ -87,6 +93,7 @@ export const DepartamentosModule: React.FC = () => {
     setModalMode('create');
     setSelectedDepartamento(null);
     setCodigoGerencia(gerencias[0]?.codigo || '');
+    setCodigoCc('');
     setCodigo(getNextDepartamentoConsecutive(departamentos));
     setNombre('');
     setDescripcion('');
@@ -99,6 +106,7 @@ export const DepartamentosModule: React.FC = () => {
     setModalMode('edit');
     setSelectedDepartamento(dep);
     setCodigoGerencia(dep.codigo_gerencia || '');
+    setCodigoCc(dep.codigo_cc || '');
     setCodigo(formatDepartamentoCodigo(dep.codigo));
     setNombre(dep.nombre);
     setDescripcion(dep.descripcion || '');
@@ -119,6 +127,7 @@ export const DepartamentosModule: React.FC = () => {
       if (modalMode === 'create') {
         const { data, error } = await departamentosApi.create({
           codigo_gerencia: codigoGerencia ? codigoGerencia.trim() : null,
+          codigo_cc: codigoCc ? codigoCc.trim() : null,
           codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -136,6 +145,7 @@ export const DepartamentosModule: React.FC = () => {
       } else if (selectedDepartamento) {
         const { data, error } = await departamentosApi.update(selectedDepartamento.departamento_id, {
           codigo_gerencia: codigoGerencia ? codigoGerencia.trim() : null,
+          codigo_cc: codigoCc ? codigoCc.trim() : null,
           codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -189,6 +199,11 @@ export const DepartamentosModule: React.FC = () => {
     return ger ? ger.nombre : gerCode;
   };
 
+  const getCentroCostoInfo = (ccCode?: string | null) => {
+    if (!ccCode) return null;
+    return centrosCostos.find((c) => c.codigo_cc === ccCode);
+  };
+
   const getJefeName = (jId: number | null) => {
     if (!jId) return null;
     const emp = empleados.find((e) => e.empleado_id === jId);
@@ -196,8 +211,9 @@ export const DepartamentosModule: React.FC = () => {
   };
 
   const filteredDepartamentos = departamentos.filter((dep) => {
-    if (selectedGerenciaFilter === 'ALL') return true;
-    return dep.codigo_gerencia === selectedGerenciaFilter;
+    if (selectedGerenciaFilter !== 'ALL' && dep.codigo_gerencia !== selectedGerenciaFilter) return false;
+    if (selectedCcFilter !== 'ALL' && dep.codigo_cc !== selectedCcFilter) return false;
+    return true;
   });
 
   const columns: Column<Departamento>[] = [
@@ -236,6 +252,26 @@ export const DepartamentosModule: React.FC = () => {
       ),
     },
     {
+      key: 'codigo_cc',
+      header: 'Centro de Costo',
+      sortable: true,
+      render: (item) => {
+        const cc = getCentroCostoInfo(item.codigo_cc);
+        return cc ? (
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-950/60 border border-cyan-800/60 text-cyan-300">
+              CC {cc.codigo_cc}
+            </span>
+            <span className="text-xs text-slate-300 truncate max-w-[130px]" title={cc.descripcion}>
+              {cc.descripcion}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-500 italic">Sin CC</span>
+        );
+      },
+    },
+    {
       key: 'jefe_departamento_id',
       header: 'Jefe de Departamento',
       sortable: true,
@@ -260,20 +296,20 @@ export const DepartamentosModule: React.FC = () => {
       render: (item) => <EstadoBooleanBadge activo={item.estado} />,
     },
     {
-      key: 'departamento_id',
+      key: 'actions',
       header: 'Acciones',
       render: (item) => (
-        <div className="flex items-center gap-1.5 justify-end">
+        <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={() => openEditModal(item)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition-colors"
             title="Editar Departamento"
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => openDeleteDialog(item)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
             title="Eliminar Departamento"
           >
             <Trash2 className="w-4 h-4" />
@@ -285,18 +321,27 @@ export const DepartamentosModule: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header & Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-white">Estructura de Departamentos</h2>
-          <p className="text-xs text-slate-400">
-            Nivel 3 de la estructura organizacional de las empresas del grupo
-          </p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 p-0.5 shadow-glow flex items-center justify-center">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <Network className="w-5 h-5 text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Departamentos</h1>
+              <p className="text-xs text-slate-400">
+                Nivel 3 de la estructura organizativa y asignación de Centros de Costos
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-glow transition-all"
+          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-glow flex items-center justify-center gap-2 transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Departamento</span>
@@ -304,25 +349,44 @@ export const DepartamentosModule: React.FC = () => {
       </div>
 
       {/* Filter Component */}
-      <div className="flex items-center gap-2">
-        <Filter className="w-4 h-4 text-slate-400" />
-        <span className="text-xs text-slate-400 font-medium">Filtrar por Gerencia:</span>
-        <select
-          value={selectedGerenciaFilter}
-          onChange={(e) =>
-            setSelectedGerenciaFilter(e.target.value)
-          }
-          className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
-        >
-          <option value="ALL">Todas las Gerencias</option>
-          {[...gerencias]
-            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-            .map((g) => (
-              <option key={g.codigo} value={g.codigo}>
-                {g.nombre} ({g.codigo})
-              </option>
-            ))}
-        </select>
+      <div className="flex flex-wrap items-center gap-4 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <span className="text-xs text-slate-400 font-medium">Filtrar por Gerencia:</span>
+          <select
+            value={selectedGerenciaFilter}
+            onChange={(e) => setSelectedGerenciaFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
+          >
+            <option value="ALL">Todas las Gerencias</option>
+            {[...gerencias]
+              .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+              .map((g) => (
+                <option key={g.codigo} value={g.codigo}>
+                  {g.nombre} ({g.codigo})
+                </option>
+              ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <PieChart className="w-4 h-4 text-cyan-400" />
+          <span className="text-xs text-slate-400 font-medium">Centro de Costo:</span>
+          <select
+            value={selectedCcFilter}
+            onChange={(e) => setSelectedCcFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-500"
+          >
+            <option value="ALL">Todos los Centros</option>
+            {[...centrosCostos]
+              .sort((a, b) => a.codigo_cc.localeCompare(b.codigo_cc))
+              .map((cc) => (
+                <option key={cc.codigo_cc} value={cc.codigo_cc}>
+                  CC {cc.codigo_cc} - {cc.descripcion}
+                </option>
+              ))}
+          </select>
+        </div>
       </div>
 
       {/* DataTable */}
@@ -330,8 +394,8 @@ export const DepartamentosModule: React.FC = () => {
         data={filteredDepartamentos}
         columns={columns}
         loading={loading}
-        searchKeys={['codigo', 'nombre', 'descripcion', 'codigo_gerencia']}
-        searchPlaceholder="Buscar por código, nombre o descripción..."
+        searchKeys={['codigo', 'nombre', 'descripcion', 'codigo_gerencia', 'codigo_cc']}
+        searchPlaceholder="Buscar por código, nombre, descripción o centro de costo..."
         exportFilename="departamentos_nivel_3"
       />
 
@@ -344,25 +408,47 @@ export const DepartamentosModule: React.FC = () => {
         maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Gerencia Padre (Nivel 2) *
-            </label>
-            <select
-              required
-              value={codigoGerencia}
-              onChange={(e) => setCodigoGerencia(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
-            >
-              <option value="" disabled>-- Selecciona una Gerencia --</option>
-              {[...gerencias]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                .map((g) => (
-                  <option key={g.codigo} value={g.codigo}>
-                    {g.nombre} ({g.codigo})
-                  </option>
-                ))}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Gerencia Padre (Nivel 2) *
+              </label>
+              <select
+                required
+                value={codigoGerencia}
+                onChange={(e) => setCodigoGerencia(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+              >
+                <option value="" disabled>-- Selecciona una Gerencia --</option>
+                {[...gerencias]
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                  .map((g) => (
+                    <option key={g.codigo} value={g.codigo}>
+                      {g.nombre} ({g.codigo})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Centro de Costos (Código CC)
+              </label>
+              <select
+                value={codigoCc}
+                onChange={(e) => setCodigoCc(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
+              >
+                <option value="">-- Sin Centro de Costo Asignado --</option>
+                {[...centrosCostos]
+                  .sort((a, b) => a.codigo_cc.localeCompare(b.codigo_cc))
+                  .map((cc) => (
+                    <option key={cc.codigo_cc} value={cc.codigo_cc}>
+                      {cc.codigo_cc} — {cc.descripcion}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

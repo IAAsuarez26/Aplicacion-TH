@@ -6,6 +6,8 @@ import { AuthPage } from './components/auth/AuthPage';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { EmpresasModule } from './components/empresas/EmpresasModule';
 import { TabuladorModule } from './components/tabulador/TabuladorModule';
+import { TipoCostosModule } from './components/costos/TipoCostosModule';
+import { CentrosCostosModule } from './components/costos/CentrosCostosModule';
 import { DireccionesModule } from './components/direcciones/DireccionesModule';
 import { GerenciasModule } from './components/gerencias/GerenciasModule';
 import { DepartamentosModule } from './components/departamentos/DepartamentosModule';
@@ -61,6 +63,8 @@ export const App: React.FC = () => {
 
       {activeTab === 'empresas' && <EmpresasModule />}
       {activeTab === 'tabulador' && <TabuladorModule />}
+      {activeTab === 'tipo_costos' && <TipoCostosModule />}
+      {activeTab === 'centros_costos' && <CentrosCostosModule />}
       {activeTab === 'direcciones' && <DireccionesModule />}
       {activeTab === 'gerencias' && <GerenciasModule />}
       {activeTab === 'departamentos' && <DepartamentosModule />}

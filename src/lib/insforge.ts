@@ -1,5 +1,7 @@
 import { createClient } from '@insforge/sdk';
 import type {
+  TipoCosto,
+  CentroCosto,
   Empresa,
   TabuladorEmpresa,
   Cargo,
@@ -257,6 +259,186 @@ export const tabuladorApi = {
       return { data: data?.[0] as PosicionSalarialEval || null, error };
     } catch (err: any) {
       return { data: null, error: err };
+    }
+  },
+};
+
+// ====================================================================================
+// 0.2 API: TIPOS DE COSTOS (MOD, MOI, Gastos)
+// ====================================================================================
+export const tipoCostosApi = {
+  async getAll(): Promise<{ data: TipoCosto[]; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('tipo_costos')
+        .select('*')
+        .order('codigo_tc', { ascending: true });
+
+      logDebug('tipoCostos.getAll', { data, error });
+      return { data: (data as TipoCosto[]) || [], error };
+    } catch (err: any) {
+      console.error('Error fetching tipo_costos:', err);
+      return { data: [], error: err };
+    }
+  },
+
+  async getById(tipo_costo_id: number): Promise<{ data: TipoCosto | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('tipo_costos')
+        .select('*')
+        .eq('tipo_costo_id', tipo_costo_id)
+        .single();
+
+      return { data: (data as TipoCosto) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async create(tipoCosto: Omit<TipoCosto, 'tipo_costo_id' | 'created_at' | 'updated_at'>): Promise<{ data: TipoCosto | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('tipo_costos')
+        .insert([{
+          codigo_tc: tipoCosto.codigo_tc.trim(),
+          nombre: tipoCosto.nombre.trim(),
+          descripcion: tipoCosto.descripcion?.trim() || null,
+          activo: tipoCosto.activo !== undefined ? tipoCosto.activo : true,
+        }])
+        .select();
+
+      logDebug('tipoCostos.create', { data, error });
+      return { data: data?.[0] as TipoCosto || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async update(tipo_costo_id: number, tipoCosto: Partial<TipoCosto>): Promise<{ data: TipoCosto | null; error: any }> {
+    try {
+      const payload: any = { ...tipoCosto };
+      delete payload.tipo_costo_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+
+      if (payload.codigo_tc) payload.codigo_tc = payload.codigo_tc.trim();
+      if (payload.nombre) payload.nombre = payload.nombre.trim();
+      if (payload.descripcion !== undefined) payload.descripcion = payload.descripcion ? payload.descripcion.trim() : null;
+
+      const { data, error } = await insforge.database
+        .from('tipo_costos')
+        .update(payload)
+        .eq('tipo_costo_id', tipo_costo_id)
+        .select();
+
+      logDebug('tipoCostos.update', { data, error });
+      return { data: data?.[0] as TipoCosto || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async delete(tipo_costo_id: number): Promise<{ success: boolean; error: any }> {
+    try {
+      const { error } = await insforge.database
+        .from('tipo_costos')
+        .delete()
+        .eq('tipo_costo_id', tipo_costo_id);
+
+      logDebug('tipoCostos.delete', { error });
+      return { success: !error, error };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  },
+};
+
+// ====================================================================================
+// 0.3 API: CENTROS DE COSTOS
+// ====================================================================================
+export const centrosCostosApi = {
+  async getAll(): Promise<{ data: CentroCosto[]; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('centros_costos')
+        .select('*')
+        .order('codigo_cc', { ascending: true });
+
+      logDebug('centrosCostos.getAll', { data, error });
+      return { data: (data as CentroCosto[]) || [], error };
+    } catch (err: any) {
+      console.error('Error fetching centros_costos:', err);
+      return { data: [], error: err };
+    }
+  },
+
+  async getById(centro_costo_id: number): Promise<{ data: CentroCosto | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('centros_costos')
+        .select('*')
+        .eq('centro_costo_id', centro_costo_id)
+        .single();
+
+      return { data: (data as CentroCosto) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async create(centroCosto: Omit<CentroCosto, 'centro_costo_id' | 'created_at' | 'updated_at'>): Promise<{ data: CentroCosto | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('centros_costos')
+        .insert([{
+          codigo_cc: centroCosto.codigo_cc.trim(),
+          descripcion: centroCosto.descripcion.trim(),
+          activo: centroCosto.activo !== undefined ? centroCosto.activo : true,
+        }])
+        .select();
+
+      logDebug('centrosCostos.create', { data, error });
+      return { data: data?.[0] as CentroCosto || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async update(centro_costo_id: number, centroCosto: Partial<CentroCosto>): Promise<{ data: CentroCosto | null; error: any }> {
+    try {
+      const payload: any = { ...centroCosto };
+      delete payload.centro_costo_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+
+      if (payload.codigo_cc) payload.codigo_cc = payload.codigo_cc.trim();
+      if (payload.descripcion) payload.descripcion = payload.descripcion.trim();
+
+      const { data, error } = await insforge.database
+        .from('centros_costos')
+        .update(payload)
+        .eq('centro_costo_id', centro_costo_id)
+        .select();
+
+      logDebug('centrosCostos.update', { data, error });
+      return { data: data?.[0] as CentroCosto || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async delete(centro_costo_id: number): Promise<{ success: boolean; error: any }> {
+    try {
+      const { error } = await insforge.database
+        .from('centros_costos')
+        .delete()
+        .eq('centro_costo_id', centro_costo_id);
+
+      logDebug('centrosCostos.delete', { error });
+      return { success: !error, error };
+    } catch (err: any) {
+      return { success: false, error: err };
     }
   },
 };
@@ -765,6 +947,7 @@ export const departamentosApi = {
       const finalCodigo = formatDepartamentoCodigo(departamento.codigo) || departamento.codigo.trim();
       const insertPayload: any = {
         codigo_gerencia: departamento.codigo_gerencia ? departamento.codigo_gerencia.trim() : null,
+        codigo_cc: departamento.codigo_cc ? departamento.codigo_cc.trim() : null,
         codigo: finalCodigo,
         nombre: departamento.nombre.trim(),
         descripcion: departamento.descripcion?.trim() || null,
@@ -809,6 +992,8 @@ export const departamentosApi = {
       delete payload.gerencia;
       delete payload.gerencia_nombre;
       delete payload.direccion_nombre;
+      delete payload.centro_costo;
+      delete payload.centro_costo_descripcion;
       delete payload.jefe_departamento;
       delete payload.jefe_nombre;
       delete payload.total_empleados;
@@ -817,6 +1002,9 @@ export const departamentosApi = {
       if (payload.nombre) payload.nombre = payload.nombre.trim();
       if (payload.codigo_gerencia !== undefined) {
         payload.codigo_gerencia = payload.codigo_gerencia ? payload.codigo_gerencia.trim() : null;
+      }
+      if (payload.codigo_cc !== undefined) {
+        payload.codigo_cc = payload.codigo_cc ? payload.codigo_cc.trim() : null;
       }
       if (payload.jefe_departamento_id !== undefined) {
         payload.jefe_departamento_id = payload.jefe_departamento_id ? Number(payload.jefe_departamento_id) : null;
@@ -884,6 +1072,7 @@ export const empleadosApi = {
         telefono: empleado.telefono?.trim() || null,
         codigo_cargo: empleado.codigo_cargo.trim(),
         codigo_departamento: empleado.codigo_departamento.trim(),
+        codigo_tc: empleado.codigo_tc ? empleado.codigo_tc.trim() : null,
         tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
         supervisor_directo_id: empleado.supervisor_directo_id ? Number(empleado.supervisor_directo_id) : null,
         evaluador_id: empleado.evaluador_id ? Number(empleado.evaluador_id) : null,
@@ -923,6 +1112,8 @@ export const empleadosApi = {
       delete payload.updated_at;
       delete payload.cargo;
       delete payload.departamento;
+      delete payload.tipo_costo;
+      delete payload.tipo_costo_descripcion;
       delete payload.tabulador;
       delete payload.supervisor_directo;
       delete payload.evaluador;
@@ -937,6 +1128,9 @@ export const empleadosApi = {
       if (payload.apellidos) payload.apellidos = payload.apellidos.trim();
       if (payload.codigo_cargo) payload.codigo_cargo = payload.codigo_cargo.trim();
       if (payload.codigo_departamento) payload.codigo_departamento = payload.codigo_departamento.trim();
+      if (payload.codigo_tc !== undefined) {
+        payload.codigo_tc = payload.codigo_tc ? payload.codigo_tc.trim() : null;
+      }
       if (payload.tabulador_id !== undefined) {
         payload.tabulador_id = payload.tabulador_id ? Number(payload.tabulador_id) : null;
       }

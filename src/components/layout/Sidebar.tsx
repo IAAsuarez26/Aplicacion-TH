@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Database,
   PanelLeftClose,
+  Coins,
+  PieChart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,6 +24,8 @@ export type NavigationTab =
   | 'dashboard'
   | 'empresas'
   | 'tabulador'
+  | 'tipo_costos'
+  | 'centros_costos'
   | 'direcciones'
   | 'gerencias'
   | 'departamentos'
@@ -76,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      group: 'ESTRUCTURA CORPORATIVA',
+      group: 'ESTRUCTURA CORPORATIVA & FINANZAS',
       items: [
         {
           id: 'empresas',
@@ -89,6 +93,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'Tabulador Salarial',
           icon: Layers,
           badge: '80-120%',
+        },
+        {
+          id: 'tipo_costos',
+          label: 'Tipos de Costos',
+          icon: Coins,
+          badge: 'MOD/MOI',
+        },
+        {
+          id: 'centros_costos',
+          label: 'Centros de Costos',
+          icon: PieChart,
+          badge: '01-15',
         },
       ],
     },
@@ -178,10 +194,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-                Talento Humano
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">
-                  TH
+              <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
+                Portal TH
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-brand-500/20 text-brand-300 font-semibold border border-brand-500/30">
+                  v2.0
                 </span>
               </h1>
               <p className="text-xs text-slate-400 font-medium">Gestión Organizacional</p>
@@ -191,26 +207,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Desktop collapse button */}
           {setIsCollapsed && (
             <button
-              onClick={() => setIsCollapsed(true)}
-              className="hidden lg:flex p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-colors"
-              title="Ocultar barra lateral"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Ocultar menú lateral"
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Navigation Groups */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-          {navigationItems.map((group, groupIdx) => (
-            <div key={groupIdx} className="space-y-1">
-              <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400/90 mb-2">
+        {/* Navigation items scroll area */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
+          {navigationItems.map((group, gIdx) => (
+            <div key={gIdx} className="space-y-1.5">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 {group.group}
               </div>
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
-
                 return (
                   <button
                     key={item.id}
@@ -218,18 +233,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       setActiveTab(item.id);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
                       isActive
                         ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-glow'
-                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
+                        : item.highlight
+                        ? 'text-brand-300 hover:text-white hover:bg-slate-800/80 bg-brand-950/30 border border-brand-500/20'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon
-                        className={`w-4 h-4 transition-colors ${
-                          isActive
-                            ? 'text-white'
-                            : 'text-slate-400 group-hover:text-brand-400'
+                        className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
+                          isActive ? 'text-white' : item.highlight ? 'text-brand-400' : 'text-slate-400 group-hover:text-slate-200'
                         }`}
                       />
                       <span>{item.label}</span>
@@ -238,16 +253,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <div className="flex items-center gap-2">
                       {item.badge && (
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium ${
                             isActive
                               ? 'bg-white/20 text-white'
-                              : 'bg-slate-800 text-slate-400 group-hover:text-slate-200'
+                              : 'bg-slate-800 text-slate-400 border border-slate-700/60'
                           }`}
                         >
                           {item.badge}
                         </span>
                       )}
-                      {isActive && <ChevronRight className="w-4 h-4 text-white/70" />}
+                      <ChevronRight
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          isActive ? 'text-white translate-x-0.5' : 'text-slate-600 group-hover:text-slate-400'
+                        }`}
+                      />
                     </div>
                   </button>
                 );
@@ -256,39 +275,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </nav>
 
-        {/* Database Status & User Profile Footer */}
-        <div className="p-4 border-t border-slate-800/80 space-y-3">
-          {/* InsForge Status Indicator */}
-          <div className="px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800/60 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[11px] font-medium text-slate-300">InsForge TH_PB</span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Online
-            </span>
-          </div>
-
-          {/* User Session Profile */}
-          <div className="flex items-center justify-between px-2 pt-1">
+        {/* User Session Footer */}
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
-                {user?.name ? user.name.charAt(0) : user?.email?.charAt(0) || 'U'}
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 p-0.5 text-xs font-bold text-white flex items-center justify-center shrink-0">
+                <span className="bg-slate-900 w-full h-full rounded-[10px] flex items-center justify-center">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
               </div>
               <div className="overflow-hidden">
-                <div className="text-xs font-semibold text-white truncate">
-                  {user?.name || 'Administrador'}
-                </div>
-                <div className="text-[11px] text-slate-400 truncate">
-                  {user?.email || 'admin@th.local'}
+                <p className="text-xs font-semibold text-white truncate">{user?.email || 'Usuario'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <p className="text-[10px] text-slate-400">En línea (InsForge DB)</p>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => signOut()}
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800/80 transition-colors"
               title="Cerrar Sesión"
             >
               <LogOut className="w-4 h-4" />

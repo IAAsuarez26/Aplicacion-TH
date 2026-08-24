@@ -96,9 +96,29 @@ export interface Gerencia {
   total_empleados?: number;
 }
 
+export interface TipoCosto {
+  tipo_costo_id: number;
+  codigo_tc: string;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CentroCosto {
+  centro_costo_id: number;
+  codigo_cc: string;
+  descripcion: string;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Departamento {
   departamento_id: number;
   codigo_gerencia: string | null;
+  codigo_cc?: string | null;
   codigo: string;
   nombre: string;
   descripcion: string | null;
@@ -110,6 +130,8 @@ export interface Departamento {
   gerencia?: Gerencia;
   gerencia_nombre?: string;
   direccion_nombre?: string;
+  centro_costo?: CentroCosto | null;
+  centro_costo_descripcion?: string | null;
   jefe_departamento?: Empleado | null;
   jefe_nombre?: string | null;
   total_empleados?: number;
@@ -126,6 +148,7 @@ export interface Empleado {
   telefono: string | null;
   codigo_cargo: string;
   codigo_departamento: string;
+  codigo_tc?: string | null;
   tabulador_id?: number | null;
   supervisor_directo_id: number | null;
   evaluador_id: number | null;
@@ -136,6 +159,9 @@ export interface Empleado {
   // Relaciones pobladas
   cargo?: Cargo;
   departamento?: Departamento;
+  tipo_costo?: TipoCosto | null;
+  tipo_costo_nombre?: string | null;
+  tipo_costo_descripcion?: string | null;
   tabulador?: TabuladorEmpresa | null;
   supervisor_directo?: Empleado | null;
   evaluador?: Empleado | null;
@@ -185,6 +211,11 @@ export interface OrganigramaRow {
   departamento_id: number;
   departamento_codigo: string;
   departamento_nombre: string;
+  codigo_cc?: string | null;
+  centro_costo_descripcion?: string | null;
+  codigo_tc?: string | null;
+  tipo_costo_nombre?: string | null;
+  tipo_costo_descripcion?: string | null;
   jefe_departamento_id: number | null;
   jefe_departamento_nombre: string | null;
   gerencia_id: number;
