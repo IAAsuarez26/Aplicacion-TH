@@ -18,7 +18,6 @@ import {
   UserCheck,
   UserPlus,
   Layers,
-  DollarSign,
   Coins,
 } from 'lucide-react';
 import { empleadosApi, cargosApi, departamentosApi, tabuladorApi, tipoCostosApi } from '../../lib/insforge';
@@ -404,14 +403,12 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         const tab = getTabuladorInfo(row.tabulador_id);
         return tab ? (
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono font-bold text-xs px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50">
-                {tab.codigo_banda}
-              </span>
-              <span className="text-[10px] text-slate-400">
-                (${tab.salario_minimo_80.toLocaleString()} - ${tab.salario_maximo_120.toLocaleString()})
-              </span>
-            </div>
+            <span
+              className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 inline-block"
+              title={tab.cargos_referencia ? `Cargos ref: ${tab.cargos_referencia}` : undefined}
+            >
+              {tab.codigo_banda}
+            </span>
           </div>
         ) : (
           <span className="text-xs text-slate-500 italic">Sin Banda</span>
@@ -831,7 +828,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 <option value="">-- Sin Banda Salarial Asignada --</option>
                 {tabuladores.map((t) => (
                   <option key={t.tabulador_id} value={t.tabulador_id}>
-                    {t.codigo_banda} — Mediana: ${t.salario_mediana_100.toLocaleString()}
+                    {t.codigo_banda}{t.cargos_referencia ? ` — ${t.cargos_referencia}` : ''}
                   </option>
                 ))}
               </select>
@@ -1018,21 +1015,6 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   <div className="text-xs text-slate-300">
                     <span className="text-slate-400 font-medium">Cargos de Referencia: </span>
                     {tab.cargos_referencia}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-xs">
-                    <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
-                      <div className="text-[10px] text-slate-400">Mínimo (80%)</div>
-                      <div className="text-slate-300 mt-0.5">${Number(tab.salario_minimo_80).toFixed(2)}</div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-center">
-                      <div className="text-[10px] text-emerald-400 font-semibold">Mediana (100%)</div>
-                      <div className="text-emerald-300 font-bold mt-0.5">${Number(tab.salario_mediana_100).toFixed(2)}</div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
-                      <div className="text-[10px] text-slate-400">Máximo (120%)</div>
-                      <div className="text-slate-300 mt-0.5">${Number(tab.salario_maximo_120).toFixed(2)}</div>
-                    </div>
                   </div>
                 </div>
               ) : null;
