@@ -9,7 +9,6 @@ import {
   XCircle,
   Layers,
   AlertCircle,
-  Hash,
 } from 'lucide-react';
 import { denominacionesCargosApi, cargosApi } from '../../lib/insforge';
 import type { DenominacionCargo, Cargo } from '../../lib/types';
@@ -213,8 +212,7 @@ export const DenominacionesCargosModule: React.FC = () => {
       sortable: true,
       className: 'w-32',
       render: (item) => (
-        <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-800/50 shadow-sm inline-flex items-center gap-1.5">
-          <Hash className="w-3 h-3 text-indigo-400" />
+        <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-lg bg-indigo-950/60 text-indigo-300 border border-indigo-800/50 shadow-sm inline-block">
           {item.codigo_dc}
         </span>
       ),

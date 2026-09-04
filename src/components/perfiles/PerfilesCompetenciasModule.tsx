@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Layers,
   AlertCircle,
-  Hash,
   ShieldCheck,
   UserCheck,
 } from 'lucide-react';
@@ -228,8 +227,7 @@ export const PerfilesCompetenciasModule: React.FC = () => {
       sortable: true,
       className: 'w-32',
       render: (item) => (
-        <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-lg bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 shadow-sm inline-flex items-center gap-1.5">
-          <Hash className="w-3 h-3 text-cyan-400" />
+        <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-lg bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 shadow-sm inline-block">
           {item.codigo_pc}
         </span>
       ),
