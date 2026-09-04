@@ -47,11 +47,19 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
     },
     cargos: {
       title: 'Catálogo de Cargos',
-      subtitle: 'Maestro de Cargos',
+      subtitle: 'Maestro de Cargos y vinculación con Denominaciones (DC)',
+    },
+    denominaciones_cargos: {
+      title: 'Denominaciones de Cargos (Catálogo DC)',
+      subtitle: 'Clasificación homologada para estandarización y agrupación corporativa de puestos',
     },
     empleados: {
       title: 'Ficha Maestra de Empleados',
-      subtitle: 'Registro integral del personal, supervisores directos y evaluadores asignados',
+      subtitle: 'Registro integral del personal, supervisores directos, perfiles (PC) y evaluadores asignados',
+    },
+    perfiles_competencias: {
+      title: 'Perfiles de Competencias (Catálogo PC)',
+      subtitle: 'Segmentación de capacidades y competencias funcionales (Administrativo, Líder, Operativo)',
     },
     historial: {
       title: 'Historial de Traslados y Ascensos',

@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Briefcase, CheckCircle2, XCircle } from 'lucide-react';
-import { cargosApi, empleadosApi, formatCargoCodigo } from '../../lib/insforge';
-import type { Cargo, Empleado } from '../../lib/types';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Briefcase,
+  CheckCircle2,
+  XCircle,
+  Tag,
+  AlertCircle,
+  Filter,
+  Layers,
+} from 'lucide-react';
+import { cargosApi, empleadosApi, denominacionesCargosApi, formatCargoCodigo } from '../../lib/insforge';
+import type { Cargo, Empleado, DenominacionCargo } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -12,7 +23,12 @@ export const CargosModule: React.FC = () => {
   const toast = useToast();
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [denominaciones, setDenominaciones] = useState<DenominacionCargo[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [filtroDenominacion, setFiltroDenominacion] = useState<string | 'ALL'>('ALL');
+  const [filtroEstado, setFiltroEstado] = useState<string>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +39,7 @@ export const CargosModule: React.FC = () => {
 
   // Form State
   const [codigo, setCodigo] = useState('');
+  const [codigoDc, setCodigoDc] = useState<string>('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [estado, setEstado] = useState(true);
@@ -35,14 +52,16 @@ export const CargosModule: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [{ data: cData, error: cErr }, { data: eData }] = await Promise.all([
+      const [{ data: cData, error: cErr }, { data: eData }, { data: dData }] = await Promise.all([
         cargosApi.getAll(),
         empleadosApi.getAll(),
+        denominacionesCargosApi.getAll(),
       ]);
 
       if (cErr) toast.error('No se pudieron cargar los cargos');
       setCargos(cData || []);
       setEmpleados(eData || []);
+      setDenominaciones(dData || []);
     } finally {
       setLoading(false);
     }
@@ -79,6 +98,7 @@ export const CargosModule: React.FC = () => {
     setSelectedCargo(null);
     setNextConsecutiveId(nextId);
     setCodigo(nextCodigo);
+    setCodigoDc('');
     setNombre('');
     setDescripcion('');
     setEstado(true);
@@ -89,6 +109,7 @@ export const CargosModule: React.FC = () => {
     setModalMode('edit');
     setSelectedCargo(cargo);
     setCodigo(formatCargoCodigo(cargo.codigo));
+    setCodigoDc(cargo.codigo_dc || '');
     setNombre(cargo.nombre);
     setDescripcion(cargo.descripcion || '');
     setEstado(cargo.estado);
@@ -106,8 +127,9 @@ export const CargosModule: React.FC = () => {
     try {
       if (modalMode === 'create') {
         const autoCodigo = formatCargoCodigo(codigo) || `Cargo-${String(nextConsecutiveId).padStart(4, '0')}`;
-        const { data, error } = await cargosApi.create({
+        const { error } = await cargosApi.create({
           codigo: autoCodigo,
+          codigo_dc: codigoDc || null,
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           estado,
@@ -121,8 +143,9 @@ export const CargosModule: React.FC = () => {
           loadData();
         }
       } else if (selectedCargo) {
-        const { data, error } = await cargosApi.update(selectedCargo.cargo_id, {
+        const { error } = await cargosApi.update(selectedCargo.cargo_id, {
           codigo: formatCargoCodigo(codigo),
+          codigo_dc: codigoDc || null,
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
           estado,
@@ -172,30 +195,52 @@ export const CargosModule: React.FC = () => {
     return empleados.filter((e) => e.codigo_cargo === cargoCodigo).length;
   };
 
+  // KPIs
+  const totalCargos = cargos.length;
+  const cargosConDc = cargos.filter((c) => Boolean(c.codigo_dc)).length;
+  const cargosSinDc = totalCargos - cargosConDc;
+  const cargosActivos = cargos.filter((c) => c.estado).length;
+
+  // Filtered Cargos
+  const filteredCargos = cargos.filter((item) => {
+    if (filtroDenominacion !== 'ALL') {
+      if (filtroDenominacion === 'SIN_DC') {
+        if (item.codigo_dc) return false;
+      } else if (item.codigo_dc !== filtroDenominacion) {
+        return false;
+      }
+    }
+    if (filtroEstado === 'ACTIVO' && !item.estado) return false;
+    if (filtroEstado === 'INACTIVO' && item.estado) return false;
+    return true;
+  });
+
   const columns: Column<Cargo>[] = [
     {
       key: 'cargo_id',
-      header: 'Cargo_id',
+      header: 'ID',
       sortable: true,
+      className: 'w-20',
       render: (item) => (
         <span className="font-mono font-bold text-slate-200 text-xs px-2.5 py-1 rounded-lg bg-slate-800/90 border border-slate-700">
-          {item.cargo_id}
+          #{item.cargo_id}
         </span>
       ),
     },
     {
       key: 'codigo',
-      header: 'Codigo',
+      header: 'Código',
       sortable: true,
+      className: 'w-32',
       render: (item) => (
-        <span className="font-mono font-bold text-brand-300 text-xs px-2.5 py-1 rounded-lg bg-brand-950/40 border border-brand-800/40">
+        <span className="font-mono font-bold text-brand-300 text-xs px-2.5 py-1 rounded-lg bg-brand-950/40 border border-brand-800/40 shadow-sm">
           {item.codigo}
         </span>
       ),
     },
     {
       key: 'nombre',
-      header: 'Nombre',
+      header: 'Nombre del Puesto',
       sortable: true,
       render: (item) => (
         <div>
@@ -207,14 +252,30 @@ export const CargosModule: React.FC = () => {
       ),
     },
     {
-      key: 'descripcion',
-      header: 'Descripcion',
+      key: 'codigo_dc',
+      header: 'Denominación (DC)',
       sortable: true,
-      render: (item) => (
-        <span className="text-xs text-slate-400 truncate max-w-xs block">
-          {item.descripcion || item.nombre}
-        </span>
-      ),
+      render: (item) => {
+        const dc = denominaciones.find((d) => d.codigo_dc === item.codigo_dc);
+        if (!item.codigo_dc) {
+          return (
+            <span className="inline-flex items-center gap-1 text-[11px] text-amber-400/90 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">
+              <AlertCircle className="w-3 h-3" />
+              <span>Sin clasificar</span>
+            </span>
+          );
+        }
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-950/60 text-indigo-300 border border-indigo-800/50">
+              {item.codigo_dc}
+            </span>
+            <span className="text-xs text-slate-200 font-medium">
+              {dc?.denominacion || item.codigo_dc}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'total_empleados',
@@ -236,12 +297,13 @@ export const CargosModule: React.FC = () => {
       key: 'estado',
       header: 'Estado',
       sortable: true,
+      className: 'w-28',
       render: (item) => <EstadoBooleanBadge activo={item.estado} />,
     },
     {
       key: 'acciones',
       header: 'Acciones',
-      className: 'text-right',
+      className: 'text-right w-28',
       render: (item) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
@@ -270,10 +332,10 @@ export const CargosModule: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Briefcase className="w-6 h-6 text-brand-400" />
-            Catálogo de Cargos
+            Catálogo Maestro de Cargos
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Maestro de Cargos
+            Gestión de puestos organizacionales y su vinculación con el Catálogo de Denominaciones (DC)
           </p>
         </div>
 
@@ -286,13 +348,98 @@ export const CargosModule: React.FC = () => {
         </button>
       </div>
 
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Total Cargos
+            </span>
+            <Briefcase className="w-4 h-4 text-brand-400" />
+          </div>
+          <p className="text-2xl font-bold text-white mt-2">{totalCargos}</p>
+          <span className="text-[11px] text-slate-500">Puestos definidos</span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
+              Con Denominación
+            </span>
+            <Tag className="w-4 h-4 text-indigo-400" />
+          </div>
+          <p className="text-2xl font-bold text-indigo-400 mt-2">{cargosConDc}</p>
+          <span className="text-[11px] text-slate-500">Clasificados con Código_DC</span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Sin Clasificar
+            </span>
+            <AlertCircle className="w-4 h-4 text-amber-400" />
+          </div>
+          <p className="text-2xl font-bold text-amber-400 mt-2">{cargosSinDc}</p>
+          <span className="text-[11px] text-slate-500">Pendientes de asignar DC</span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              Cargos Activos
+            </span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-400 mt-2">{cargosActivos}</p>
+          <span className="text-[11px] text-slate-500">En uso operativo</span>
+        </div>
+      </div>
+
+      {/* Filter Toolbar */}
+      <div className="p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold">
+          <Filter className="w-4 h-4 text-brand-400" />
+          <span>Filtros rápidos:</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Denominacion Filter */}
+          <select
+            value={filtroDenominacion}
+            onChange={(e) => setFiltroDenominacion(e.target.value)}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="ALL">Todas las Denominaciones</option>
+            <option value="SIN_DC">-- Sin Clasificar (Sin DC) --</option>
+            {[...denominaciones]
+              .sort((a, b) => a.denominacion.localeCompare(b.denominacion, 'es', { sensitivity: 'base' }))
+              .map((d) => (
+                <option key={d.codigo_dc} value={d.codigo_dc}>
+                  {d.codigo_dc} - {d.denominacion}
+                </option>
+              ))}
+          </select>
+
+          {/* Estado Filter */}
+          <select
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
+          >
+            <option value="ALL">Todos los Estados</option>
+            <option value="ACTIVO">Solo Activos</option>
+            <option value="INACTIVO">Solo Inactivos</option>
+          </select>
+        </div>
+      </div>
+
       {/* DataTable */}
       <DataTable
-        data={cargos}
+        data={filteredCargos}
         columns={columns}
         loading={loading}
-        searchKeys={['cargo_id', 'codigo', 'nombre', 'descripcion']}
-        searchPlaceholder="Buscar por ID, código o nombre de cargo..."
+        searchKeys={['cargo_id', 'codigo', 'nombre', 'descripcion', 'codigo_dc']}
+        searchPlaceholder="Buscar por ID, código, nombre o denominación DC..."
         exportFilename="catalogo_cargos"
       />
 
@@ -301,7 +448,7 @@ export const CargosModule: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? 'Registrar Nuevo Cargo' : 'Editar Cargo'}
-        subtitle="Catálogo de Cargos"
+        subtitle="Catálogo Maestro de Cargos"
         maxWidth="lg"
       >
         <form onSubmit={handleSave} className="space-y-4">
@@ -375,6 +522,29 @@ export const CargosModule: React.FC = () => {
               placeholder="Ej. Supervisor de Elaboración"
               className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Denominación del Cargo (Catálogo DC)
+            </label>
+            <select
+              value={codigoDc}
+              onChange={(e) => setCodigoDc(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">-- Sin Denominación Asignada --</option>
+              {[...denominaciones]
+                .sort((a, b) => a.denominacion.localeCompare(b.denominacion, 'es', { sensitivity: 'base' }))
+                .map((dc) => (
+                  <option key={dc.codigo_dc} value={dc.codigo_dc}>
+                    {dc.codigo_dc} - {dc.denominacion}
+                  </option>
+                ))}
+            </select>
+            <p className="text-[10px] text-slate-500 mt-1">
+              Clasificación estandarizada para agrupar cargos homogéneos (ej. DC-0001 Analista, DC-0010 Gerente).
+            </p>
           </div>
 
           <div>

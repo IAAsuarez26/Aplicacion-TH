@@ -1,6 +1,7 @@
 // Tipos e Interfaces del Sistema de Gestión de Talento Humano (TH)
 
 export type EstadoLaboral = 'ACTIVO' | 'INACTIVO' | 'VACACIONES' | 'LICENCIA';
+export type Genero = 'Mujer' | 'Hombre';
 
 export interface Empresa {
   empresa_id: number;
@@ -46,14 +47,36 @@ export interface TabuladorEmpresa {
   razon_social?: string;
 }
 
+export interface DenominacionCargo {
+  denominacion_cargo_id: number;
+  codigo_dc: string;
+  denominacion: string;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PerfilCompetencia {
+  perfil_competencia_id: number;
+  codigo_pc: string;
+  perfil: string;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Cargo {
   cargo_id: number;
   codigo: string;
+  codigo_dc?: string | null;
   nombre: string;
   descripcion: string | null;
   estado: boolean;
   created_at: string;
   updated_at: string;
+  // Relaciones
+  denominacion?: DenominacionCargo | null;
+  denominacion_nombre?: string | null;
   // Conteo auxiliar
   total_empleados?: number;
 }
@@ -149,6 +172,9 @@ export interface Empleado {
   codigo_cargo: string;
   codigo_departamento: string;
   codigo_tc?: string | null;
+  codigo_pc?: string | null;
+  genero?: Genero | string | null;
+  sede?: string | null;
   tabulador_id?: number | null;
   supervisor_directo_id: number | null;
   evaluador_id: number | null;
@@ -162,6 +188,8 @@ export interface Empleado {
   tipo_costo?: TipoCosto | null;
   tipo_costo_nombre?: string | null;
   tipo_costo_descripcion?: string | null;
+  perfil_competencia?: PerfilCompetencia | null;
+  perfil_competencia_nombre?: string | null;
   tabulador?: TabuladorEmpresa | null;
   supervisor_directo?: Empleado | null;
   evaluador?: Empleado | null;
@@ -192,6 +220,8 @@ export interface OrganigramaRow {
   codigo_empleado: string;
   documento_identidad: string | null;
   nombre_completo_empleado: string;
+  genero?: string | null;
+  sede?: string | null;
   email_empleado: string;
   telefono_empleado: string | null;
   estado_laboral: EstadoLaboral | string;
@@ -201,7 +231,12 @@ export interface OrganigramaRow {
   empresa_razon_social?: string;
   empresa_nombre_corto?: string;
   cargo_id: number;
+  cargo_codigo: string;
   cargo_nombre: string;
+  codigo_dc?: string | null;
+  cargo_denominacion?: string | null;
+  codigo_pc?: string | null;
+  perfil_competencia_nombre?: string | null;
   tabulador_id?: number | null;
   banda_codigo?: string | null;
   banda_cargos_referencia?: string | null;

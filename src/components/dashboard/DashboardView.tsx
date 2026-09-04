@@ -266,6 +266,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 { label: 'Tabulador Salarial (80%-120%)', tab: 'tabulador' as NavigationTab, count: metrics?.totalBandasTabulador },
                 { label: 'Empleados & Ficha Personal', tab: 'empleados' as NavigationTab, count: metrics?.totalEmpleados },
                 { label: 'Catálogo de Cargos', tab: 'cargos' as NavigationTab, count: metrics?.totalCargos },
+                { label: 'Denominaciones de Cargos (DC)', tab: 'denominaciones_cargos' as NavigationTab },
+                { label: 'Perfiles de Competencias (PC)', tab: 'perfiles_competencias' as NavigationTab },
                 { label: 'Direcciones (Nivel 1)', tab: 'direcciones' as NavigationTab, count: metrics?.totalDirecciones },
                 { label: 'Gerencias (Nivel 2)', tab: 'gerencias' as NavigationTab, count: metrics?.totalGerencias },
                 { label: 'Departamentos (Nivel 3)', tab: 'departamentos' as NavigationTab, count: metrics?.totalDepartamentos },

@@ -17,6 +17,8 @@ import {
   PanelLeftClose,
   Coins,
   PieChart,
+  Tag,
+  Award,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -30,7 +32,9 @@ export type NavigationTab =
   | 'gerencias'
   | 'departamentos'
   | 'cargos'
+  | 'denominaciones_cargos'
   | 'empleados'
+  | 'perfiles_competencias'
   | 'historial'
   | 'organigrama'
   | 'responsables';
@@ -137,10 +141,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: Briefcase,
         },
         {
+          id: 'denominaciones_cargos',
+          label: 'Denominaciones (DC)',
+          icon: Tag,
+          badge: 'DC',
+        },
+        {
           id: 'empleados',
           label: 'Ficha de Empleados',
           icon: Users,
           highlight: true,
+        },
+        {
+          id: 'perfiles_competencias',
+          label: 'Perfiles de Competencias',
+          icon: Award,
+          badge: 'PC',
         },
         {
           id: 'historial',

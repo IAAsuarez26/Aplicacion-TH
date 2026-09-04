@@ -2,6 +2,8 @@ import { createClient } from '@insforge/sdk';
 import type {
   TipoCosto,
   CentroCosto,
+  DenominacionCargo,
+  PerfilCompetencia,
   Empresa,
   TabuladorEmpresa,
   Cargo,
@@ -443,6 +445,184 @@ export const centrosCostosApi = {
   },
 };
 
+// ====================================================================================
+// 0.4 API: DENOMINACIONES DE CARGOS
+// ====================================================================================
+export const denominacionesCargosApi = {
+  async getAll(): Promise<{ data: DenominacionCargo[]; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('denominaciones_cargos')
+        .select('*')
+        .order('codigo_dc', { ascending: true });
+
+      logDebug('denominacionesCargos.getAll', { data, error });
+      return { data: (data as DenominacionCargo[]) || [], error };
+    } catch (err: any) {
+      console.error('Error fetching denominaciones_cargos:', err);
+      return { data: [], error: err };
+    }
+  },
+
+  async getById(denominacion_cargo_id: number): Promise<{ data: DenominacionCargo | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('denominaciones_cargos')
+        .select('*')
+        .eq('denominacion_cargo_id', denominacion_cargo_id)
+        .single();
+
+      return { data: (data as DenominacionCargo) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async create(item: Omit<DenominacionCargo, 'denominacion_cargo_id' | 'created_at' | 'updated_at'>): Promise<{ data: DenominacionCargo | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('denominaciones_cargos')
+        .insert([{
+          codigo_dc: item.codigo_dc.trim(),
+          denominacion: item.denominacion.trim(),
+          activo: item.activo !== undefined ? item.activo : true,
+        }])
+        .select();
+
+      logDebug('denominacionesCargos.create', { data, error });
+      return { data: (data?.[0] as DenominacionCargo) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async update(denominacion_cargo_id: number, item: Partial<DenominacionCargo>): Promise<{ data: DenominacionCargo | null; error: any }> {
+    try {
+      const payload: any = { ...item };
+      delete payload.denominacion_cargo_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+
+      if (payload.codigo_dc) payload.codigo_dc = payload.codigo_dc.trim();
+      if (payload.denominacion) payload.denominacion = payload.denominacion.trim();
+
+      const { data, error } = await insforge.database
+        .from('denominaciones_cargos')
+        .update(payload)
+        .eq('denominacion_cargo_id', denominacion_cargo_id)
+        .select();
+
+      logDebug('denominacionesCargos.update', { data, error });
+      return { data: (data?.[0] as DenominacionCargo) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async delete(denominacion_cargo_id: number): Promise<{ success: boolean; error: any }> {
+    try {
+      const { error } = await insforge.database
+        .from('denominaciones_cargos')
+        .delete()
+        .eq('denominacion_cargo_id', denominacion_cargo_id);
+
+      logDebug('denominacionesCargos.delete', { error });
+      return { success: !error, error };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  },
+};
+
+// ====================================================================================
+// 0.5 API: PERFILES DE COMPETENCIAS
+// ====================================================================================
+export const perfilesCompetenciasApi = {
+  async getAll(): Promise<{ data: PerfilCompetencia[]; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('perfiles_competencias')
+        .select('*')
+        .order('codigo_pc', { ascending: true });
+
+      logDebug('perfilesCompetencias.getAll', { data, error });
+      return { data: (data as PerfilCompetencia[]) || [], error };
+    } catch (err: any) {
+      console.error('Error fetching perfiles_competencias:', err);
+      return { data: [], error: err };
+    }
+  },
+
+  async getById(perfil_competencia_id: number): Promise<{ data: PerfilCompetencia | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('perfiles_competencias')
+        .select('*')
+        .eq('perfil_competencia_id', perfil_competencia_id)
+        .single();
+
+      return { data: (data as PerfilCompetencia) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async create(item: Omit<PerfilCompetencia, 'perfil_competencia_id' | 'created_at' | 'updated_at'>): Promise<{ data: PerfilCompetencia | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('perfiles_competencias')
+        .insert([{
+          codigo_pc: item.codigo_pc.trim(),
+          perfil: item.perfil.trim(),
+          activo: item.activo !== undefined ? item.activo : true,
+        }])
+        .select();
+
+      logDebug('perfilesCompetencias.create', { data, error });
+      return { data: (data?.[0] as PerfilCompetencia) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async update(perfil_competencia_id: number, item: Partial<PerfilCompetencia>): Promise<{ data: PerfilCompetencia | null; error: any }> {
+    try {
+      const payload: any = { ...item };
+      delete payload.perfil_competencia_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+
+      if (payload.codigo_pc) payload.codigo_pc = payload.codigo_pc.trim();
+      if (payload.perfil) payload.perfil = payload.perfil.trim();
+
+      const { data, error } = await insforge.database
+        .from('perfiles_competencias')
+        .update(payload)
+        .eq('perfil_competencia_id', perfil_competencia_id)
+        .select();
+
+      logDebug('perfilesCompetencias.update', { data, error });
+      return { data: (data?.[0] as PerfilCompetencia) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async delete(perfil_competencia_id: number): Promise<{ success: boolean; error: any }> {
+    try {
+      const { error } = await insforge.database
+        .from('perfiles_competencias')
+        .delete()
+        .eq('perfil_competencia_id', perfil_competencia_id);
+
+      logDebug('perfilesCompetencias.delete', { error });
+      return { success: !error, error };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  },
+};
+
 // Helper para formato consistente de código de Cargo (Cargo-XXXX)
 export const formatCargoCodigo = (input: string | number | undefined | null): string => {
   if (!input) return '';
@@ -566,6 +746,7 @@ export const cargosApi = {
 
       const insertPayload: any = {
         codigo: finalCodigo,
+        codigo_dc: cargo.codigo_dc ? cargo.codigo_dc.trim() : null,
         nombre: cargo.nombre.trim(),
         descripcion: cargo.descripcion?.trim() || null,
         estado: cargo.estado !== undefined ? cargo.estado : true,
@@ -606,9 +787,14 @@ export const cargosApi = {
       delete payload.created_at;
       delete payload.updated_at;
       delete payload.total_empleados;
+      delete payload.denominacion;
+      delete payload.denominacion_nombre;
 
       if (payload.codigo) payload.codigo = formatCargoCodigo(payload.codigo);
       if (payload.nombre) payload.nombre = payload.nombre.trim();
+      if (payload.codigo_dc !== undefined) {
+        payload.codigo_dc = payload.codigo_dc ? payload.codigo_dc.trim() : null;
+      }
 
       const { data, error } = await insforge.database
         .from('cargos')
@@ -1073,6 +1259,9 @@ export const empleadosApi = {
         codigo_cargo: empleado.codigo_cargo.trim(),
         codigo_departamento: empleado.codigo_departamento.trim(),
         codigo_tc: empleado.codigo_tc ? empleado.codigo_tc.trim() : null,
+        codigo_pc: empleado.codigo_pc ? empleado.codigo_pc.trim() : null,
+        genero: empleado.genero ? (empleado.genero.trim() as any) : null,
+        sede: empleado.sede ? empleado.sede.trim() : null,
         tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
         supervisor_directo_id: empleado.supervisor_directo_id ? Number(empleado.supervisor_directo_id) : null,
         evaluador_id: empleado.evaluador_id ? Number(empleado.evaluador_id) : null,
@@ -1118,6 +1307,8 @@ export const empleadosApi = {
       delete payload.supervisor_directo;
       delete payload.evaluador;
       delete payload.nombre_completo;
+      delete payload.perfil_competencia;
+      delete payload.perfil_competencia_nombre;
 
       if (payload.codigo_empleado) payload.codigo_empleado = payload.codigo_empleado.trim();
       if (payload.email) payload.email = payload.email.trim().toLowerCase();
@@ -1130,6 +1321,15 @@ export const empleadosApi = {
       if (payload.codigo_departamento) payload.codigo_departamento = payload.codigo_departamento.trim();
       if (payload.codigo_tc !== undefined) {
         payload.codigo_tc = payload.codigo_tc ? payload.codigo_tc.trim() : null;
+      }
+      if (payload.codigo_pc !== undefined) {
+        payload.codigo_pc = payload.codigo_pc ? payload.codigo_pc.trim() : null;
+      }
+      if (payload.genero !== undefined) {
+        payload.genero = payload.genero ? payload.genero.trim() : null;
+      }
+      if (payload.sede !== undefined) {
+        payload.sede = payload.sede ? payload.sede.trim() : null;
       }
       if (payload.tabulador_id !== undefined) {
         payload.tabulador_id = payload.tabulador_id ? Number(payload.tabulador_id) : null;

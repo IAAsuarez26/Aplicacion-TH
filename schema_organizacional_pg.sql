@@ -16,6 +16,8 @@ DROP VIEW IF EXISTS tipos_costos CASCADE;
 DROP VIEW IF EXISTS "TipoCostos" CASCADE;
 DROP VIEW IF EXISTS centros_costo CASCADE;
 DROP VIEW IF EXISTS "CentrosCostos" CASCADE;
+DROP VIEW IF EXISTS "Denominaciones_Cargos" CASCADE;
+DROP VIEW IF EXISTS "Perfiles_Competencias" CASCADE;
 
 DROP FUNCTION IF EXISTS sp_obtener_subordinados(INT) CASCADE;
 DROP FUNCTION IF EXISTS fn_evaluar_posicion_salarial(VARCHAR, VARCHAR, NUMERIC) CASCADE;
@@ -27,6 +29,8 @@ DROP TABLE IF EXISTS departamentos CASCADE;
 DROP TABLE IF EXISTS gerencias CASCADE;
 DROP TABLE IF EXISTS direcciones CASCADE;
 DROP TABLE IF EXISTS cargos CASCADE;
+DROP TABLE IF EXISTS perfiles_competencias CASCADE;
+DROP TABLE IF EXISTS denominaciones_cargos CASCADE;
 DROP TABLE IF EXISTS centros_costos CASCADE;
 DROP TABLE IF EXISTS tipo_costos CASCADE;
 DROP TABLE IF EXISTS tabulador_empresas CASCADE;
@@ -153,6 +157,44 @@ CREATE TRIGGER trg_centros_costos_updated_at
 BEFORE UPDATE ON centros_costos
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- ------------------------------------------------------------------------------------
+-- Tabla: denominaciones_cargos (Catálogo Maestro de Denominaciones de Cargos)
+-- Origen: Denominaciones_Cargos.xlsx
+-- ------------------------------------------------------------------------------------
+CREATE TABLE denominaciones_cargos (
+    denominacion_cargo_id SERIAL PRIMARY KEY,
+    codigo_dc VARCHAR(20) NOT NULL UNIQUE,
+    denominacion VARCHAR(150) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_denominaciones_cargos_updated_at
+BEFORE UPDATE ON denominaciones_cargos
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE VIEW "Denominaciones_Cargos" AS SELECT * FROM denominaciones_cargos;
+
+-- ------------------------------------------------------------------------------------
+-- Tabla: perfiles_competencias (Catálogo Maestro de Perfiles de Competencia)
+-- Origen: Perfiles_Competencias.xlsx
+-- ------------------------------------------------------------------------------------
+CREATE TABLE perfiles_competencias (
+    perfil_competencia_id SERIAL PRIMARY KEY,
+    codigo_pc VARCHAR(20) NOT NULL UNIQUE,
+    perfil VARCHAR(150) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_perfiles_competencias_updated_at
+BEFORE UPDATE ON perfiles_competencias
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE VIEW "Perfiles_Competencias" AS SELECT * FROM perfiles_competencias;
+
 -- ====================================================================================
 -- 6. TABLAS DE ESTRUCTURA ORGANIZACIONAL
 -- ====================================================================================
@@ -163,6 +205,7 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TABLE cargos (
     cargo_id SERIAL PRIMARY KEY,
     codigo VARCHAR(20) NOT NULL UNIQUE,
+    codigo_dc VARCHAR(20) NULL REFERENCES denominaciones_cargos (codigo_dc) ON UPDATE CASCADE ON DELETE RESTRICT,
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT,
     estado BOOLEAN NOT NULL DEFAULT TRUE,
@@ -251,6 +294,9 @@ CREATE TABLE empleados (
     codigo_departamento VARCHAR(20) NOT NULL REFERENCES departamentos (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
     departamento_id INT NULL REFERENCES departamentos (departamento_id) ON DELETE RESTRICT,
     codigo_tc VARCHAR(20) NULL REFERENCES tipo_costos (codigo_tc) ON UPDATE CASCADE ON DELETE RESTRICT,
+    codigo_pc VARCHAR(20) NULL REFERENCES perfiles_competencias (codigo_pc) ON UPDATE CASCADE ON DELETE RESTRICT,
+    genero VARCHAR(20) NULL CHECK (genero IS NULL OR genero IN ('Mujer', 'Hombre')),
+    sede VARCHAR(100) NULL,
     tabulador_id INT NULL REFERENCES tabulador_empresas (tabulador_id) ON DELETE SET NULL,
     supervisor_directo_id INT REFERENCES empleados (empleado_id) ON DELETE RESTRICT,
     evaluador_id INT REFERENCES empleados (empleado_id) ON DELETE SET NULL,
@@ -309,6 +355,14 @@ CREATE INDEX idx_tipo_costos_activos ON tipo_costos (activo) WHERE activo = TRUE
 CREATE INDEX idx_centros_costos_codigo ON centros_costos (codigo_cc);
 CREATE INDEX idx_centros_costos_activos ON centros_costos (activo) WHERE activo = TRUE;
 
+CREATE INDEX idx_denominaciones_cargos_codigo_dc ON denominaciones_cargos (codigo_dc);
+CREATE INDEX idx_denominaciones_cargos_activos ON denominaciones_cargos (activo) WHERE activo = TRUE;
+
+CREATE INDEX idx_perfiles_competencias_codigo_pc ON perfiles_competencias (codigo_pc);
+CREATE INDEX idx_perfiles_competencias_activos ON perfiles_competencias (activo) WHERE activo = TRUE;
+
+CREATE INDEX idx_cargos_codigo_dc ON cargos (codigo_dc);
+
 CREATE INDEX idx_direcciones_empresa_id ON direcciones (empresa_id);
 CREATE INDEX idx_gerencias_direccion_id ON gerencias (direccion_id);
 CREATE INDEX idx_departamentos_gerencia_id ON departamentos (gerencia_id);
@@ -317,6 +371,9 @@ CREATE INDEX idx_departamentos_codigo_cc ON departamentos (codigo_cc);
 CREATE INDEX idx_empleados_departamento_id ON empleados (departamento_id);
 CREATE INDEX idx_empleados_cargo_id ON empleados (cargo_id);
 CREATE INDEX idx_empleados_codigo_tc ON empleados (codigo_tc);
+CREATE INDEX idx_empleados_codigo_pc ON empleados (codigo_pc);
+CREATE INDEX idx_empleados_genero ON empleados (genero);
+CREATE INDEX idx_empleados_sede ON empleados (sede);
 CREATE INDEX idx_empleados_tabulador_id ON empleados (tabulador_id) WHERE tabulador_id IS NOT NULL;
 CREATE INDEX idx_empleados_supervisor_directo_id ON empleados (supervisor_directo_id);
 CREATE INDEX idx_empleados_evaluador_id ON empleados (evaluador_id) WHERE evaluador_id IS NOT NULL;
@@ -334,6 +391,8 @@ SELECT
     e.codigo_empleado,
     e.documento_identidad,
     CONCAT(e.nombres, ' ', e.apellidos) AS nombre_completo_empleado,
+    e.genero,
+    e.sede,
     e.email AS email_empleado,
     e.telefono AS telefono_empleado,
     e.estado_laboral,
@@ -345,10 +404,16 @@ SELECT
     emp.razon_social AS empresa_razon_social,
     emp.nombre_corto AS empresa_nombre_corto,
     
-    -- Cargo
+    -- Cargo y Denominación
     c.cargo_id,
     c.codigo AS cargo_codigo,
     c.nombre AS cargo_nombre,
+    c.codigo_dc,
+    dc.denominacion AS cargo_denominacion,
+
+    -- Perfil de Competencias
+    e.codigo_pc,
+    pc.perfil AS perfil_competencia_nombre,
     
     -- Tabulador / Banda Salarial
     t.tabulador_id,
@@ -404,6 +469,8 @@ SELECT
 
 FROM empleados e
 LEFT JOIN cargos c ON e.codigo_cargo = c.codigo
+LEFT JOIN denominaciones_cargos dc ON c.codigo_dc = dc.codigo_dc
+LEFT JOIN perfiles_competencias pc ON e.codigo_pc = pc.codigo_pc
 LEFT JOIN departamentos dep ON e.codigo_departamento = dep.codigo
 LEFT JOIN centros_costos cc ON dep.codigo_cc = cc.codigo_cc
 LEFT JOIN tipo_costos tc ON e.codigo_tc = tc.codigo_tc

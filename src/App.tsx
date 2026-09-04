@@ -12,7 +12,9 @@ import { DireccionesModule } from './components/direcciones/DireccionesModule';
 import { GerenciasModule } from './components/gerencias/GerenciasModule';
 import { DepartamentosModule } from './components/departamentos/DepartamentosModule';
 import { CargosModule } from './components/cargos/CargosModule';
+import { DenominacionesCargosModule } from './components/denominaciones/DenominacionesCargosModule';
 import { EmpleadosModule } from './components/empleados/EmpleadosModule';
+import { PerfilesCompetenciasModule } from './components/perfiles/PerfilesCompetenciasModule';
 import { HistorialModule } from './components/historial/HistorialModule';
 import { OrganigramaModule } from './components/organigrama/OrganigramaModule';
 import { ResponsablesModule } from './components/responsables/ResponsablesModule';
@@ -69,6 +71,7 @@ export const App: React.FC = () => {
       {activeTab === 'gerencias' && <GerenciasModule />}
       {activeTab === 'departamentos' && <DepartamentosModule />}
       {activeTab === 'cargos' && <CargosModule />}
+      {activeTab === 'denominaciones_cargos' && <DenominacionesCargosModule />}
 
       {activeTab === 'empleados' && (
         <EmpleadosModule
@@ -76,6 +79,7 @@ export const App: React.FC = () => {
           onResetInitialOpen={() => setIsNewEmployeeOpen(false)}
         />
       )}
+      {activeTab === 'perfiles_competencias' && <PerfilesCompetenciasModule />}
 
       {activeTab === 'historial' && <HistorialModule />}
       {activeTab === 'organigrama' && <OrganigramaModule />}
