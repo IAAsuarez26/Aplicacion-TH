@@ -399,7 +399,7 @@ export const OrganigramaModule: React.FC = () => {
                   .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
                   .map((emp) => (
                     <option key={emp.empleado_id} value={emp.empleado_id}>
-                      {emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
+                      {emp.documento_identidad ? `[${emp.documento_identidad}] ` : ''}{emp.nombres} {emp.apellidos} ({emp.codigo_empleado})
                     </option>
                   ))}
               </select>

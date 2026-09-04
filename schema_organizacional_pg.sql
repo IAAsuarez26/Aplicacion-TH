@@ -298,8 +298,8 @@ CREATE TABLE empleados (
     genero VARCHAR(20) NULL CHECK (genero IS NULL OR genero IN ('Mujer', 'Hombre')),
     sede VARCHAR(100) NULL,
     tabulador_id INT NULL REFERENCES tabulador_empresas (tabulador_id) ON DELETE SET NULL,
-    supervisor_directo_id INT REFERENCES empleados (empleado_id) ON DELETE RESTRICT,
-    evaluador_id INT REFERENCES empleados (empleado_id) ON DELETE SET NULL,
+    di_supervisor VARCHAR(20) NULL REFERENCES empleados (documento_identidad) ON UPDATE CASCADE ON DELETE RESTRICT,
+    di_evaluador VARCHAR(20) NULL REFERENCES empleados (documento_identidad) ON UPDATE CASCADE ON DELETE SET NULL,
     fecha_ingreso DATE NOT NULL,
     estado_laboral VARCHAR(20) NOT NULL DEFAULT 'ACTIVO' CHECK (estado_laboral IN ('ACTIVO', 'INACTIVO', 'VACACIONES', 'LICENCIA')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -375,8 +375,8 @@ CREATE INDEX idx_empleados_codigo_pc ON empleados (codigo_pc);
 CREATE INDEX idx_empleados_genero ON empleados (genero);
 CREATE INDEX idx_empleados_sede ON empleados (sede);
 CREATE INDEX idx_empleados_tabulador_id ON empleados (tabulador_id) WHERE tabulador_id IS NOT NULL;
-CREATE INDEX idx_empleados_supervisor_directo_id ON empleados (supervisor_directo_id);
-CREATE INDEX idx_empleados_evaluador_id ON empleados (evaluador_id) WHERE evaluador_id IS NOT NULL;
+CREATE INDEX idx_empleados_di_supervisor ON empleados (di_supervisor);
+CREATE INDEX idx_empleados_di_evaluador ON empleados (di_evaluador) WHERE di_evaluador IS NOT NULL;
 
 -- ====================================================================================
 -- 9. VISTAS DE CORRELACIÓN ORGANIZACIONAL Y SALARIAL
@@ -450,12 +450,12 @@ SELECT
     CONCAT(dir.nombres, ' ', dir.apellidos) AS director_ejecutivo_nombre,
     
     -- Supervisor Directo (Mando Inmediato)
-    e.supervisor_directo_id,
+    e.di_supervisor,
     CONCAT(sup.nombres, ' ', sup.apellidos) AS supervisor_directo_nombre,
     sup.email AS supervisor_directo_email,
 
     -- Evaluador de Desempeño
-    e.evaluador_id,
+    e.di_evaluador,
     CONCAT(ev.nombres, ' ', ev.apellidos) AS evaluador_especifico_nombre,
     ev.email AS evaluador_especifico_email,
 
@@ -463,7 +463,7 @@ SELECT
     COALESCE(CONCAT(ev.nombres, ' ', ev.apellidos), CONCAT(sup.nombres, ' ', sup.apellidos)) AS evaluador_efectivo_nombre,
     COALESCE(ev.email, sup.email) AS evaluador_efectivo_email,
     CASE 
-        WHEN e.evaluador_id IS NOT NULL AND e.evaluador_id <> e.supervisor_directo_id THEN 'EVALUADOR_ESPECIAL'
+        WHEN e.di_evaluador IS NOT NULL AND e.di_evaluador <> e.di_supervisor THEN 'EVALUADOR_ESPECIAL'
         ELSE 'SUPERVISOR_DIRECTO'
     END AS tipo_evaluador
 
@@ -478,8 +478,8 @@ LEFT JOIN gerencias g ON dep.codigo_gerencia = g.codigo
 LEFT JOIN direcciones d ON g.codigo_direccion = d.codigo
 LEFT JOIN empresas emp ON d.empresa_id = emp.empresa_id
 LEFT JOIN tabulador_empresas t ON e.tabulador_id = t.tabulador_id
-LEFT JOIN empleados sup ON e.supervisor_directo_id = sup.empleado_id
-LEFT JOIN empleados ev ON e.evaluador_id = ev.empleado_id
+LEFT JOIN empleados sup ON e.di_supervisor = sup.documento_identidad
+LEFT JOIN empleados ev ON e.di_evaluador = ev.documento_identidad
 LEFT JOIN empleados jefe_dep ON dep.jefe_departamento_id = jefe_dep.empleado_id
 LEFT JOIN empleados ger ON g.gerente_id = ger.empleado_id
 LEFT JOIN empleados dir ON d.director_id = dir.empleado_id;
@@ -516,3 +516,85 @@ CREATE OR REPLACE VIEW tipos_costos AS SELECT * FROM tipo_costos;
 CREATE OR REPLACE VIEW "TipoCostos" AS SELECT tipo_costo_id, codigo_tc AS "Codigo_TC", nombre AS "Nombre", descripcion AS "Descripcion", activo AS "Activo", created_at, updated_at FROM tipo_costos;
 CREATE OR REPLACE VIEW centros_costo AS SELECT * FROM centros_costos;
 CREATE OR REPLACE VIEW "CentrosCostos" AS SELECT centro_costo_id, codigo_cc AS "Codigo_CC", descripcion AS "Descripcion", activo AS "Activo", created_at, updated_at FROM centros_costos;
+
+-- ====================================================================================
+-- 10. FUNCIONES ALMACENADAS (STORED PROCEDURES / RPC)
+-- ====================================================================================
+
+-- ------------------------------------------------------------------------------------
+-- Procedimiento: sp_obtener_subordinados (Recursividad Jerárquica Directa e Indirecta)
+-- ------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_obtener_subordinados(p_supervisor_id INT)
+RETURNS TABLE (
+    nivel_jerarquico INT,
+    empleado_id INT,
+    codigo_empleado VARCHAR,
+    nombre_completo TEXT,
+    cargo VARCHAR,
+    departamento VARCHAR,
+    gerencia VARCHAR,
+    direccion VARCHAR,
+    supervisor_inmediato TEXT,
+    evaluador_efectivo TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH RECURSIVE organigrama_recursivo AS (
+        -- Nivel 1: Subordinados Directos
+        SELECT 
+            e.empleado_id,
+            e.codigo_empleado,
+            e.documento_identidad,
+            e.nombres,
+            e.apellidos,
+            e.codigo_cargo,
+            e.codigo_departamento,
+            e.di_supervisor,
+            e.di_evaluador,
+            1 AS nivel_jerarquico
+        FROM empleados e
+        INNER JOIN empleados s ON e.di_supervisor = s.documento_identidad
+        WHERE s.empleado_id = p_supervisor_id AND e.estado_laboral = 'ACTIVO'
+
+        UNION ALL
+
+        -- Niveles N: Subordinados Indirectos (Recursión)
+        SELECT 
+            sub.empleado_id,
+            sub.codigo_empleado,
+            sub.documento_identidad,
+            sub.nombres,
+            sub.apellidos,
+            sub.codigo_cargo,
+            sub.codigo_departamento,
+            sub.di_supervisor,
+            sub.di_evaluador,
+            org.nivel_jerarquico + 1
+        FROM empleados sub
+        INNER JOIN organigrama_recursivo org ON sub.di_supervisor = org.documento_identidad
+        WHERE sub.estado_laboral = 'ACTIVO'
+    )
+    SELECT 
+        o.nivel_jerarquico,
+        o.empleado_id,
+        o.codigo_empleado,
+        CONCAT(o.nombres, ' ', o.apellidos)::TEXT AS nombre_completo,
+        c.nombre::VARCHAR AS cargo,
+        dep.nombre::VARCHAR AS departamento,
+        g.nombre::VARCHAR AS gerencia,
+        d.nombre::VARCHAR AS direccion,
+        CONCAT(sup.nombres, ' ', sup.apellidos)::TEXT AS supervisor_inmediato,
+        COALESCE(CONCAT(ev.nombres, ' ', ev.apellidos), CONCAT(sup.nombres, ' ', sup.apellidos))::TEXT AS evaluador_efectivo
+    FROM organigrama_recursivo o
+    LEFT JOIN cargos c ON o.codigo_cargo = c.codigo
+    LEFT JOIN departamentos dep ON o.codigo_departamento = dep.codigo
+    LEFT JOIN gerencias g ON dep.codigo_gerencia = g.codigo
+    LEFT JOIN direcciones d ON g.codigo_direccion = d.codigo
+    LEFT JOIN empleados sup ON o.di_supervisor = sup.documento_identidad
+    LEFT JOIN empleados ev ON o.di_evaluador = ev.documento_identidad
+    ORDER BY o.nivel_jerarquico, o.apellidos, o.nombres;
+END;
+$$;
+

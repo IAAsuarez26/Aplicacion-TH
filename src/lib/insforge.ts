@@ -1263,8 +1263,8 @@ export const empleadosApi = {
         genero: empleado.genero ? (empleado.genero.trim() as any) : null,
         sede: empleado.sede ? empleado.sede.trim() : null,
         tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
-        supervisor_directo_id: empleado.supervisor_directo_id ? Number(empleado.supervisor_directo_id) : null,
-        evaluador_id: empleado.evaluador_id ? Number(empleado.evaluador_id) : null,
+        di_supervisor: empleado.di_supervisor ? empleado.di_supervisor.trim() : null,
+        di_evaluador: empleado.di_evaluador ? empleado.di_evaluador.trim() : null,
         fecha_ingreso: empleado.fecha_ingreso,
         estado_laboral: empleado.estado_laboral || 'ACTIVO',
       };
@@ -1309,6 +1309,8 @@ export const empleadosApi = {
       delete payload.nombre_completo;
       delete payload.perfil_competencia;
       delete payload.perfil_competencia_nombre;
+      delete payload.supervisor_directo_id;
+      delete payload.evaluador_id;
 
       if (payload.codigo_empleado) payload.codigo_empleado = payload.codigo_empleado.trim();
       if (payload.email) payload.email = payload.email.trim().toLowerCase();
@@ -1334,11 +1336,11 @@ export const empleadosApi = {
       if (payload.tabulador_id !== undefined) {
         payload.tabulador_id = payload.tabulador_id ? Number(payload.tabulador_id) : null;
       }
-      if (payload.supervisor_directo_id !== undefined) {
-        payload.supervisor_directo_id = payload.supervisor_directo_id ? Number(payload.supervisor_directo_id) : null;
+      if (payload.di_supervisor !== undefined) {
+        payload.di_supervisor = payload.di_supervisor ? payload.di_supervisor.trim() : null;
       }
-      if (payload.evaluador_id !== undefined) {
-        payload.evaluador_id = payload.evaluador_id ? Number(payload.evaluador_id) : null;
+      if (payload.di_evaluador !== undefined) {
+        payload.di_evaluador = payload.di_evaluador ? payload.di_evaluador.trim() : null;
       }
 
       const { data, error } = await insforge.database

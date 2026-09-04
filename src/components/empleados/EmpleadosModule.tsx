@@ -102,8 +102,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [codigoTc, setCodigoTc] = useState<string>('');
   const [codigoPc, setCodigoPc] = useState<string>('');
   const [tabuladorId, setTabuladorId] = useState<number | ''>('');
-  const [supervisorDirectoId, setSupervisorDirectoId] = useState<number | ''>('');
-  const [evaluadorId, setEvaluadorId] = useState<number | ''>('');
+  const [diSupervisor, setDiSupervisor] = useState<string>('');
+  const [diEvaluador, setDiEvaluador] = useState<string>('');
   const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().slice(0, 10));
   const [estadoLaboral, setEstadoLaboral] = useState<EstadoLaboral>('ACTIVO');
 
@@ -185,8 +185,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setCodigoTc('');
     setCodigoPc('');
     setTabuladorId('');
-    setSupervisorDirectoId('');
-    setEvaluadorId('');
+    setDiSupervisor('');
+    setDiEvaluador('');
     setFechaIngreso(new Date().toISOString().slice(0, 10));
     setEstadoLaboral('ACTIVO');
     setIsModalOpen(true);
@@ -209,8 +209,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setCodigoTc(emp.codigo_tc || '');
     setCodigoPc(emp.codigo_pc || '');
     setTabuladorId(emp.tabulador_id || '');
-    setSupervisorDirectoId(emp.supervisor_directo_id || '');
-    setEvaluadorId(emp.evaluador_id || '');
+    setDiSupervisor(emp.di_supervisor || '');
+    setDiEvaluador(emp.di_evaluador || '');
     setFechaIngreso(emp.fecha_ingreso ? emp.fecha_ingreso.slice(0, 10) : '');
     setEstadoLaboral(emp.estado_laboral);
     setIsModalOpen(true);
@@ -246,8 +246,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           genero: (genero as any) || null,
           sede: sede.trim() || null,
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
-          supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
-          evaluador_id: evaluadorId ? Number(evaluadorId) : null,
+          di_supervisor: diSupervisor.trim() || null,
+          di_evaluador: diEvaluador.trim() || null,
           fecha_ingreso: fechaIngreso,
           estado_laboral: estadoLaboral,
         });
@@ -275,8 +275,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           genero: (genero as any) || null,
           sede: sede.trim() || null,
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
-          supervisor_directo_id: supervisorDirectoId ? Number(supervisorDirectoId) : null,
-          evaluador_id: evaluadorId ? Number(evaluadorId) : null,
+          di_supervisor: diSupervisor.trim() || null,
+          di_evaluador: diEvaluador.trim() || null,
           fecha_ingreso: fechaIngreso,
           estado_laboral: estadoLaboral,
         });
@@ -337,10 +337,19 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     return depto ? depto.nombre : code;
   };
 
-  const getEmpleadoFullName = (empId: number | null) => {
-    if (!empId) return null;
-    const emp = empleados.find((e) => e.empleado_id === empId);
-    return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${empId}`;
+  const getEmpleadoByDI = (di?: string | null) => {
+    if (!di) return null;
+    return empleados.find((e) => e.documento_identidad === di);
+  };
+
+  const getEmpleadoFullName = (empIdOrDI: number | string | null | undefined) => {
+    if (!empIdOrDI) return null;
+    if (typeof empIdOrDI === 'string') {
+      const emp = empleados.find((e) => e.documento_identidad === empIdOrDI);
+      return emp ? `${emp.nombres} ${emp.apellidos}` : empIdOrDI;
+    }
+    const emp = empleados.find((e) => e.empleado_id === empIdOrDI);
+    return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${empIdOrDI}`;
   };
 
   const getTabuladorInfo = (tabId?: number | null) => {
@@ -563,25 +572,29 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       },
     },
     {
-      key: 'supervisor_directo_id',
+      key: 'di_supervisor',
       header: 'Línea de Mando',
       render: (row) => {
-        const supName = getEmpleadoFullName(row.supervisor_directo_id);
-        const evalName = getEmpleadoFullName(row.evaluador_id);
+        const supName = getEmpleadoFullName(row.di_supervisor);
+        const evalName = getEmpleadoFullName(row.di_evaluador);
         return (
           <div className="space-y-1 text-xs">
-            {supName ? (
+            {row.di_supervisor ? (
               <div className="text-slate-300 flex items-center gap-1">
                 <span className="text-slate-500 font-semibold text-[10px] uppercase">Sup:</span>
-                <span className="truncate max-w-[140px]">{supName}</span>
+                <span className="truncate max-w-[140px]" title={`${supName || ''} (${row.di_supervisor})`}>
+                  {supName || row.di_supervisor}
+                </span>
               </div>
             ) : (
               <span className="text-slate-500 italic block">Sin supervisor</span>
             )}
-            {evalName && evalName !== supName && (
+            {row.di_evaluador && row.di_evaluador !== row.di_supervisor && (
               <div className="text-brand-400 flex items-center gap-1 text-[11px]">
                 <span className="text-brand-500/70 font-semibold text-[10px] uppercase">Eval:</span>
-                <span className="truncate max-w-[140px]">{evalName}</span>
+                <span className="truncate max-w-[140px]" title={`${evalName || ''} (${row.di_evaluador})`}>
+                  {evalName || row.di_evaluador}
+                </span>
               </div>
             )}
           </div>
@@ -1130,20 +1143,20 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Supervisor Directo
+                Supervisor Directo (Cédula / DI)
               </label>
               <select
-                value={supervisorDirectoId}
-                onChange={(e) => setSupervisorDirectoId(e.target.value ? Number(e.target.value) : '')}
+                value={diSupervisor}
+                onChange={(e) => setDiSupervisor(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Sin Supervisor (Máxima Autoridad) --</option>
                 {[...empleados]
-                  .filter((e) => (modalMode === 'edit' ? e.empleado_id !== selectedEmpleado?.empleado_id : true))
+                  .filter((e) => (modalMode === 'edit' ? e.documento_identidad !== selectedEmpleado?.documento_identidad : true))
                   .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
                   .map((e) => (
-                    <option key={e.empleado_id} value={e.empleado_id}>
-                      {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
+                    <option key={e.empleado_id} value={e.documento_identidad || ''}>
+                      {e.documento_identidad} - {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
                     </option>
                   ))}
               </select>
@@ -1151,20 +1164,20 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Evaluador de Desempeño
+                Evaluador de Desempeño (Cédula / DI)
               </label>
               <select
-                value={evaluadorId}
-                onChange={(e) => setEvaluadorId(e.target.value ? Number(e.target.value) : '')}
+                value={diEvaluador}
+                onChange={(e) => setDiEvaluador(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Por defecto (Mismo Supervisor) --</option>
                 {[...empleados]
-                  .filter((e) => (modalMode === 'edit' ? e.empleado_id !== selectedEmpleado?.empleado_id : true))
+                  .filter((e) => (modalMode === 'edit' ? e.documento_identidad !== selectedEmpleado?.documento_identidad : true))
                   .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
                   .map((e) => (
-                    <option key={e.empleado_id} value={e.empleado_id}>
-                      {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
+                    <option key={e.empleado_id} value={e.documento_identidad || ''}>
+                      {e.documento_identidad} - {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
                     </option>
                   ))}
               </select>
@@ -1372,16 +1385,20 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <div className="flex items-center justify-between text-xs py-1 border-b border-slate-800">
                 <span className="text-slate-400">Supervisor Directo:</span>
                 <span className="text-slate-200 font-semibold">
-                  {getEmpleadoFullName(detailEmpleado.supervisor_directo_id) || 'Directorio Ejecutivo'}
+                  {detailEmpleado.di_supervisor
+                    ? `${getEmpleadoFullName(detailEmpleado.di_supervisor)} (${detailEmpleado.di_supervisor})`
+                    : 'Directorio Ejecutivo'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1">
                 <span className="text-slate-400">Evaluador de Desempeño:</span>
                 <span className="text-slate-200 font-semibold">
-                  {detailEmpleado.evaluador_id
-                    ? getEmpleadoFullName(detailEmpleado.evaluador_id)
-                    : getEmpleadoFullName(detailEmpleado.supervisor_directo_id) || 'Supervisor Directo'}
+                  {detailEmpleado.di_evaluador
+                    ? `${getEmpleadoFullName(detailEmpleado.di_evaluador)} (${detailEmpleado.di_evaluador})`
+                    : detailEmpleado.di_supervisor
+                    ? `${getEmpleadoFullName(detailEmpleado.di_supervisor)} (${detailEmpleado.di_supervisor})`
+                    : 'Supervisor Directo'}
                 </span>
               </div>
             </div>

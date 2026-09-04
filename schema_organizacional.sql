@@ -174,14 +174,15 @@ CREATE TABLE dbo.empleados (
     cargo_id INT NOT NULL,
     departamento_id INT NOT NULL,
     codigo_tc VARCHAR(20) NULL,     -- FK a TipoCostos
-    supervisor_directo_id INT NULL, -- Auto-referencia a otro empleado (Jefe inmediato)
-    evaluador_id INT NULL,          -- Auto-referencia a otro empleado cuando el evaluador difiere
+    di_supervisor VARCHAR(20) NULL, -- Referencia a Documento de Identidad del Jefe inmediato
+    di_evaluador VARCHAR(20) NULL,  -- Referencia a Documento de Identidad cuando el evaluador difiere
     fecha_ingreso DATE NOT NULL,
     estado_laboral VARCHAR(20) NOT NULL CONSTRAINT DF_empleados_estado DEFAULT 'ACTIVO',
     created_at DATETIME2 NOT NULL CONSTRAINT DF_empleados_created DEFAULT GETDATE(),
     updated_at DATETIME2 NOT NULL CONSTRAINT DF_empleados_updated DEFAULT GETDATE(),
     CONSTRAINT PK_empleados PRIMARY KEY CLUSTERED (empleado_id),
     CONSTRAINT UQ_empleados_codigo UNIQUE (codigo_empleado),
+    CONSTRAINT UQ_empleados_documento UNIQUE (documento_identidad),
     CONSTRAINT UQ_empleados_email UNIQUE (email),
     CONSTRAINT CK_empleados_estado CHECK (estado_laboral IN ('ACTIVO', 'INACTIVO', 'VACACIONES', 'LICENCIA'))
 );
@@ -234,12 +235,12 @@ ALTER TABLE dbo.empleados ADD CONSTRAINT FK_empleados_tipo_costos
     ON UPDATE CASCADE ON DELETE NO ACTION;
 
 ALTER TABLE dbo.empleados ADD CONSTRAINT FK_empleados_supervisor
-    FOREIGN KEY (supervisor_directo_id) REFERENCES dbo.empleados (empleado_id)
-    ON DELETE NO ACTION;
+    FOREIGN KEY (di_supervisor) REFERENCES dbo.empleados (documento_identidad)
+    ON UPDATE CASCADE ON DELETE NO ACTION;
 
 ALTER TABLE dbo.empleados ADD CONSTRAINT FK_empleados_evaluador
-    FOREIGN KEY (evaluador_id) REFERENCES dbo.empleados (empleado_id)
-    ON DELETE NO ACTION;
+    FOREIGN KEY (di_evaluador) REFERENCES dbo.empleados (documento_identidad)
+    ON UPDATE CASCADE ON DELETE NO ACTION;
 
 -- Historial de Cambios
 ALTER TABLE dbo.historial_cargos_departamentos ADD CONSTRAINT FK_historial_empleados
@@ -267,8 +268,8 @@ CREATE NONCLUSTERED INDEX IX_departamentos_codigo_cc ON dbo.departamentos (codig
 CREATE NONCLUSTERED INDEX IX_empleados_departamento_id ON dbo.empleados (departamento_id);
 CREATE NONCLUSTERED INDEX IX_empleados_cargo_id ON dbo.empleados (cargo_id);
 CREATE NONCLUSTERED INDEX IX_empleados_codigo_tc ON dbo.empleados (codigo_tc);
-CREATE NONCLUSTERED INDEX IX_empleados_supervisor_directo_id ON dbo.empleados (supervisor_directo_id);
-CREATE NONCLUSTERED INDEX IX_empleados_evaluador_id ON dbo.empleados (evaluador_id) WHERE evaluador_id IS NOT NULL;
+CREATE NONCLUSTERED INDEX IX_empleados_di_supervisor ON dbo.empleados (di_supervisor);
+CREATE NONCLUSTERED INDEX IX_empleados_di_evaluador ON dbo.empleados (di_evaluador) WHERE di_evaluador IS NOT NULL;
 GO
 
 -- ====================================================================================
@@ -308,16 +309,16 @@ SELECT
     d.nombre AS direccion_nombre,
     d.director_id,
     CONCAT(dir.nombres, ' ', dir.apellidos) AS director_ejecutivo_nombre,
-    e.supervisor_directo_id,
+    e.di_supervisor,
     CONCAT(sup.nombres, ' ', sup.apellidos) AS supervisor_directo_nombre,
     sup.email AS supervisor_directo_email,
-    e.evaluador_id,
+    e.di_evaluador,
     CONCAT(ev.nombres, ' ', ev.apellidos) AS evaluador_especifico_nombre,
     ev.email AS evaluador_especifico_email,
     COALESCE(CONCAT(ev.nombres, ' ', ev.apellidos), CONCAT(sup.nombres, ' ', sup.apellidos)) AS evaluador_efectivo_nombre,
     COALESCE(ev.email, sup.email) AS evaluador_efectivo_email,
     CASE 
-        WHEN e.evaluador_id IS NOT NULL AND e.evaluador_id <> e.supervisor_directo_id THEN 'EVALUADOR_ESPECIAL'
+        WHEN e.di_evaluador IS NOT NULL AND e.di_evaluador <> e.di_supervisor THEN 'EVALUADOR_ESPECIAL'
         ELSE 'SUPERVISOR_DIRECTO'
     END AS tipo_evaluador
 FROM dbo.empleados e
@@ -327,8 +328,8 @@ LEFT JOIN dbo.CentrosCostos cc ON dep.codigo_cc = cc.Codigo_CC
 LEFT JOIN dbo.TipoCostos tc ON e.codigo_tc = tc.Codigo_TC
 INNER JOIN dbo.gerencias g ON dep.gerencia_id = g.gerencia_id
 INNER JOIN dbo.direcciones d ON g.direccion_id = d.direccion_id
-LEFT JOIN dbo.empleados sup ON e.supervisor_directo_id = sup.empleado_id
-LEFT JOIN dbo.empleados ev ON e.evaluador_id = ev.empleado_id
+LEFT JOIN dbo.empleados sup ON e.di_supervisor = sup.documento_identidad
+LEFT JOIN dbo.empleados ev ON e.di_evaluador = ev.documento_identidad
 LEFT JOIN dbo.empleados jefe_dep ON dep.jefe_departamento_id = jefe_dep.empleado_id
 LEFT JOIN dbo.empleados ger ON g.gerente_id = ger.empleado_id
 LEFT JOIN dbo.empleados dir ON d.director_id = dir.empleado_id;
