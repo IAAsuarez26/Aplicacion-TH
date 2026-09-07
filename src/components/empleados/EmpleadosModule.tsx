@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus,
   Edit2,
@@ -22,6 +22,7 @@ import {
   MapPin,
   Tag,
   Award,
+  RotateCcw,
 } from 'lucide-react';
 import {
   empleadosApi,
@@ -31,6 +32,9 @@ import {
   tipoCostosApi,
   perfilesCompetenciasApi,
   denominacionesCargosApi,
+  empresasApi,
+  direccionesApi,
+  gerenciasApi,
 } from '../../lib/insforge';
 import type {
   Empleado,
@@ -41,12 +45,22 @@ import type {
   PerfilCompetencia,
   DenominacionCargo,
   EstadoLaboral,
+  Empresa,
+  Direccion,
+  Gerencia,
 } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { EstadoLaboralBadge } from '../common/Badge';
 import { useToast } from '../common/Toast';
+
+export interface EmpleadoConEmpresa extends Empleado {
+  empresa_id?: number;
+  empresa_nombre?: string;
+  empresa_corto?: string;
+  empresa_codigo?: string;
+}
 
 interface EmpleadosModuleProps {
   initialCreateOpen?: boolean;
@@ -65,9 +79,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [tipoCostos, setTipoCostos] = useState<TipoCosto[]>([]);
   const [perfilesCompetencias, setPerfilesCompetencias] = useState<PerfilCompetencia[]>([]);
   const [denominaciones, setDenominaciones] = useState<DenominacionCargo[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [direcciones, setDirecciones] = useState<Direccion[]>([]);
+  const [gerencias, setGerencias] = useState<Gerencia[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string | 'ALL'>('ALL');
   const [filtroDepartamento, setFiltroDepartamento] = useState<string | 'ALL'>('ALL');
   const [filtroCargo, setFiltroCargo] = useState<string | 'ALL'>('ALL');
   const [filtroDenominacion, setFiltroDenominacion] = useState<string | 'ALL'>('ALL');
@@ -123,6 +141,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         { data: tcData },
         { data: pcData },
         { data: dcData },
+        { data: empData },
+        { data: dirData },
+        { data: gerData },
       ] = await Promise.all([
         empleadosApi.getAll(),
         cargosApi.getAll(),
@@ -131,6 +152,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         tipoCostosApi.getAll(),
         perfilesCompetenciasApi.getAll(),
         denominacionesCargosApi.getAll(),
+        empresasApi.getAll(),
+        direccionesApi.getAll(),
+        gerenciasApi.getAll(),
       ]);
 
       if (eErr) toast.error('No se pudieron cargar los colaboradores');
@@ -141,6 +165,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       setTipoCostos(tcData || []);
       setPerfilesCompetencias(pcData || []);
       setDenominaciones(dcData || []);
+      setEmpresas(empData || []);
+      setDirecciones(dirData || []);
+      setGerencias(gerData || []);
     } finally {
       setLoading(false);
     }
@@ -367,36 +394,133 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     return perfilesCompetencias.find((pc) => pc.codigo_pc === codigo_pc);
   };
 
+  // Helper de jerarquía organizacional completa: Empleado -> Departamento -> Gerencia -> Dirección -> Empresa
+  const getEmpleadoHierarchy = (emp: Empleado) => {
+    const depto = departamentos.find((d) => d.codigo === emp.codigo_departamento);
+    const ger = depto?.codigo_gerencia ? gerencias.find((g) => g.codigo === depto.codigo_gerencia) : null;
+    const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
+    let empFound = dir?.empresa_id ? empresas.find((e) => e.empresa_id === dir.empresa_id) : null;
+
+    // Fallback por tabulador si aún no está enlazada la gerencia/dirección
+    if (!empFound && emp.tabulador_id) {
+      const tab = tabuladores.find((t) => t.tabulador_id === emp.tabulador_id);
+      if (tab?.empresa_id) {
+        empFound = empresas.find((e) => e.empresa_id === tab.empresa_id) || null;
+      }
+    }
+
+    return {
+      departamento: depto,
+      gerencia: ger,
+      direccion: dir,
+      empresa: empFound,
+    };
+  };
+
+  const getEmpleadoEmpresa = (emp: Empleado): Empresa | null => {
+    return getEmpleadoHierarchy(emp).empresa || null;
+  };
+
   const sedesDisponibles = Array.from(
     new Set(empleados.map((e) => e.sede?.trim()).filter(Boolean))
   ) as string[];
 
-  const filteredEmpleados = empleados.filter((emp) => {
-    if (filtroDepartamento !== 'ALL' && emp.codigo_departamento !== filtroDepartamento) return false;
-    if (filtroCargo !== 'ALL' && emp.codigo_cargo !== filtroCargo) return false;
-    if (filtroDenominacion !== 'ALL') {
-      const cargo = cargos.find((c) => c.codigo === emp.codigo_cargo);
-      if (filtroDenominacion === 'SIN_DC') {
-        if (cargo?.codigo_dc) return false;
-      } else if (cargo?.codigo_dc !== filtroDenominacion) {
-        return false;
-      }
-    }
-    if (filtroTipoCosto !== 'ALL' && emp.codigo_tc !== filtroTipoCosto) return false;
-    if (filtroPerfil !== 'ALL') {
-      if (filtroPerfil === 'SIN_PC') {
-        if (emp.codigo_pc) return false;
-      } else if (emp.codigo_pc !== filtroPerfil) {
-        return false;
-      }
-    }
-    if (filtroSede !== 'ALL' && emp.sede !== filtroSede) return false;
-    if (filtroGenero !== 'ALL' && emp.genero !== filtroGenero) return false;
-    if (filtroEstado !== 'ALL' && emp.estado_laboral !== filtroEstado) return false;
-    return true;
-  });
+  // Empleados enriquecidos con datos calculados de Empresa
+  const empleadosConEmpresa: EmpleadoConEmpresa[] = useMemo(() => {
+    return empleados.map((emp) => {
+      const hierarchy = getEmpleadoHierarchy(emp);
+      return {
+        ...emp,
+        empresa_id: hierarchy.empresa?.empresa_id,
+        empresa_nombre: hierarchy.empresa?.razon_social || '',
+        empresa_corto: hierarchy.empresa?.nombre_corto || hierarchy.empresa?.codigo || '',
+        empresa_codigo: hierarchy.empresa?.codigo || '',
+      };
+    });
+  }, [empleados, departamentos, gerencias, direcciones, empresas, tabuladores]);
 
-  const columns: Column<Empleado>[] = [
+  // Departamentos filtrados por la empresa actualmente seleccionada
+  const departamentosFiltrados = useMemo(() => {
+    if (filtroEmpresa === 'ALL' || filtroEmpresa === 'SIN_EMPRESA') {
+      return departamentos;
+    }
+    return departamentos.filter((dep) => {
+      const ger = dep.codigo_gerencia ? gerencias.find((g) => g.codigo === dep.codigo_gerencia) : null;
+      const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
+      return dir ? String(dir.empresa_id) === filtroEmpresa : false;
+    });
+  }, [departamentos, gerencias, direcciones, filtroEmpresa]);
+
+  const filteredEmpleados = useMemo(() => {
+    return empleadosConEmpresa.filter((emp) => {
+      if (filtroEmpresa !== 'ALL') {
+        if (filtroEmpresa === 'SIN_EMPRESA') {
+          if (emp.empresa_id) return false;
+        } else if (String(emp.empresa_id) !== filtroEmpresa) {
+          return false;
+        }
+      }
+      if (filtroDepartamento !== 'ALL' && emp.codigo_departamento !== filtroDepartamento) return false;
+      if (filtroCargo !== 'ALL' && emp.codigo_cargo !== filtroCargo) return false;
+      if (filtroDenominacion !== 'ALL') {
+        const cargo = cargos.find((c) => c.codigo === emp.codigo_cargo);
+        if (filtroDenominacion === 'SIN_DC') {
+          if (cargo?.codigo_dc) return false;
+        } else if (cargo?.codigo_dc !== filtroDenominacion) {
+          return false;
+        }
+      }
+      if (filtroTipoCosto !== 'ALL' && emp.codigo_tc !== filtroTipoCosto) return false;
+      if (filtroPerfil !== 'ALL') {
+        if (filtroPerfil === 'SIN_PC') {
+          if (emp.codigo_pc) return false;
+        } else if (emp.codigo_pc !== filtroPerfil) {
+          return false;
+        }
+      }
+      if (filtroSede !== 'ALL' && emp.sede !== filtroSede) return false;
+      if (filtroGenero !== 'ALL' && emp.genero !== filtroGenero) return false;
+      if (filtroEstado !== 'ALL' && emp.estado_laboral !== filtroEstado) return false;
+      return true;
+    });
+  }, [
+    empleadosConEmpresa,
+    filtroEmpresa,
+    filtroDepartamento,
+    filtroCargo,
+    filtroDenominacion,
+    filtroTipoCosto,
+    filtroPerfil,
+    filtroSede,
+    filtroGenero,
+    filtroEstado,
+    cargos,
+  ]);
+
+  const hasActiveFilters =
+    filtroEmpresa !== 'ALL' ||
+    filtroDepartamento !== 'ALL' ||
+    filtroDenominacion !== 'ALL' ||
+    filtroPerfil !== 'ALL' ||
+    filtroTipoCosto !== 'ALL' ||
+    filtroSede !== 'ALL' ||
+    filtroGenero !== 'ALL' ||
+    filtroCargo !== 'ALL' ||
+    filtroEstado !== 'ALL';
+
+  const resetAllFilters = () => {
+    setFiltroEmpresa('ALL');
+    setFiltroDepartamento('ALL');
+    setFiltroDenominacion('ALL');
+    setFiltroPerfil('ALL');
+    setFiltroTipoCosto('ALL');
+    setFiltroSede('ALL');
+    setFiltroGenero('ALL');
+    setFiltroCargo('ALL');
+    setFiltroEstado('ALL');
+  };
+
+  const columns: Column<EmpleadoConEmpresa>[] = [
     {
       key: 'codigo_empleado',
       header: 'Código / DNI',
@@ -459,6 +583,15 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div>
             <div className="font-medium text-slate-200">{getCargoName(row.codigo_cargo)}</div>
             <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+              {row.empresa_corto ? (
+                <span
+                  className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 inline-flex items-center gap-1 shadow-sm"
+                  title={`Empresa: ${row.empresa_nombre || row.empresa_corto} (${row.empresa_codigo})`}
+                >
+                  <Building2 className="w-2.5 h-2.5 text-emerald-400" />
+                  {row.empresa_corto}
+                </span>
+              ) : null}
               <span className="text-xs text-brand-400/90">{getDepartamentoName(row.codigo_departamento)}</span>
               {dcInfo && (
                 <span
@@ -717,17 +850,63 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
           <Filter className="w-4 h-4 text-brand-400" />
           <span>Filtros avanzados:</span>
+          {filtroEmpresa !== 'ALL' && (
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+              Empresa activa
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Empresa Filter */}
+          <select
+            value={filtroEmpresa}
+            onChange={(e) => {
+              const newEmpresa = e.target.value;
+              setFiltroEmpresa(newEmpresa);
+              if (newEmpresa !== 'ALL' && newEmpresa !== 'SIN_EMPRESA' && filtroDepartamento !== 'ALL') {
+                const depto = departamentos.find((d) => d.codigo === filtroDepartamento);
+                const ger = depto?.codigo_gerencia ? gerencias.find((g) => g.codigo === depto.codigo_gerencia) : null;
+                const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
+                if (!dir || String(dir.empresa_id) !== newEmpresa) {
+                  setFiltroDepartamento('ALL');
+                }
+              }
+            }}
+            className="px-3 py-1.5 bg-slate-950 border border-emerald-700/60 text-emerald-300 font-semibold rounded-lg text-xs focus:outline-none focus:border-emerald-400 shadow-sm"
+          >
+            <option value="ALL">Todas las Empresas ({empleados.length})</option>
+            {empresas.map((emp) => {
+              const count = empleadosConEmpresa.filter((e) => e.empresa_id === emp.empresa_id).length;
+              return (
+                <option key={emp.empresa_id} value={String(emp.empresa_id)}>
+                  {emp.nombre_corto ? `${emp.nombre_corto} - ` : ''}{emp.razon_social} ({count})
+                </option>
+              );
+            })}
+            {(() => {
+              const sinEmpresaCount = empleadosConEmpresa.filter((e) => !e.empresa_id).length;
+              if (sinEmpresaCount > 0) {
+                return (
+                  <option value="SIN_EMPRESA">-- Sin Empresa Asignada ({sinEmpresaCount}) --</option>
+                );
+              }
+              return null;
+            })()}
+          </select>
+
           {/* Departamento Filter */}
           <select
             value={filtroDepartamento}
             onChange={(e) => setFiltroDepartamento(e.target.value)}
             className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
           >
-            <option value="ALL">Todos los Departamentos</option>
-            {[...departamentos]
+            <option value="ALL">
+              {filtroEmpresa !== 'ALL' && filtroEmpresa !== 'SIN_EMPRESA'
+                ? `Todos los Departamentos (${departamentosFiltrados.length})`
+                : 'Todos los Departamentos'}
+            </option>
+            {[...departamentosFiltrados]
               .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
               .map((d) => (
                 <option key={d.codigo} value={d.codigo}>
@@ -837,6 +1016,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <option value="VACACIONES">VACACIONES</option>
             <option value="LICENCIA">LICENCIA</option>
           </select>
+
+          {/* Limpiar Filtros */}
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
+              title="Restablecer todos los filtros"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Limpiar</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -856,8 +1047,11 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           'sede',
           'codigo_pc',
           'codigo_tc',
+          'empresa_nombre',
+          'empresa_corto',
+          'empresa_codigo',
         ]}
-        searchPlaceholder="Buscar por nombre, cédula, cargo, departamento o perfil..."
+        searchPlaceholder="Buscar por nombre, cédula, empresa, cargo, departamento o perfil..."
         exportFilename="plantilla_empleados"
       />
 
@@ -1245,14 +1439,93 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 <p className="text-xs text-brand-300 font-medium">
                   {getCargoName(detailEmpleado.codigo_cargo)} ({detailEmpleado.codigo_cargo})
                 </p>
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex flex-wrap items-center gap-2 mt-1.5">
                   <EstadoLaboralBadge estado={detailEmpleado.estado_laboral} />
+                  {(() => {
+                    const empComp = getEmpleadoEmpresa(detailEmpleado);
+                    if (empComp) {
+                      return (
+                        <span className="text-xs font-semibold text-emerald-300 bg-emerald-950/80 border border-emerald-800/60 px-2.5 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
+                          <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                          {empComp.nombre_corto ? `${empComp.nombre_corto} - ` : ''}{empComp.razon_social}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   <span className="text-[10px] text-slate-400 font-mono">
                     ID: {detailEmpleado.documento_identidad || 'Sin DNI'}
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* Adscripción Corporativa (Empresa, Dirección, Gerencia, Departamento) */}
+            {(() => {
+              const hierarchy = getEmpleadoHierarchy(detailEmpleado);
+              return (
+                <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-emerald-400" />
+                    Adscripción Corporativa (Empresa & Estructura)
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    <div className="p-3 rounded-xl bg-slate-950/70 border border-emerald-800/40">
+                      <span className="text-[10px] text-emerald-400 font-semibold uppercase block mb-1">
+                        Empresa
+                      </span>
+                      <span className="text-slate-200 font-bold truncate block" title={hierarchy.empresa?.razon_social || 'Sin asignar'}>
+                        {hierarchy.empresa ? (hierarchy.empresa.nombre_corto || hierarchy.empresa.codigo) : 'Sin asignar'}
+                      </span>
+                      {hierarchy.empresa?.razon_social && (
+                        <span className="text-[10px] text-slate-400 truncate block mt-0.5" title={hierarchy.empresa.razon_social}>
+                          {hierarchy.empresa.razon_social}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-950/70 border border-purple-800/40">
+                      <span className="text-[10px] text-purple-400 font-semibold uppercase block mb-1">
+                        Dirección
+                      </span>
+                      <span className="text-slate-200 font-bold truncate block" title={hierarchy.direccion?.nombre || 'Sin asignar'}>
+                        {hierarchy.direccion?.nombre || 'Sin asignar'}
+                      </span>
+                      {hierarchy.direccion?.codigo && (
+                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                          {hierarchy.direccion.codigo}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-950/70 border border-indigo-800/40">
+                      <span className="text-[10px] text-indigo-400 font-semibold uppercase block mb-1">
+                        Gerencia
+                      </span>
+                      <span className="text-slate-200 font-bold truncate block" title={hierarchy.gerencia?.nombre || 'Sin asignar'}>
+                        {hierarchy.gerencia?.nombre || 'Sin asignar'}
+                      </span>
+                      {hierarchy.gerencia?.codigo && (
+                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                          {hierarchy.gerencia.codigo}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-950/70 border border-brand-800/40">
+                      <span className="text-[10px] text-brand-400 font-semibold uppercase block mb-1">
+                        Departamento
+                      </span>
+                      <span className="text-slate-200 font-bold truncate block" title={hierarchy.departamento?.nombre || detailEmpleado.codigo_departamento}>
+                        {hierarchy.departamento?.nombre || detailEmpleado.codigo_departamento}
+                      </span>
+                      {hierarchy.departamento?.codigo && (
+                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                          {hierarchy.departamento.codigo}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Info grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">

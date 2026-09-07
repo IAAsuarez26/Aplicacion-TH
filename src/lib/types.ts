@@ -178,8 +178,6 @@ export interface Empleado {
   tabulador_id?: number | null;
   di_supervisor: string | null;
   di_evaluador: string | null;
-  supervisor_directo_id?: number | null;
-  evaluador_id?: number | null;
   fecha_ingreso: string;
   estado_laboral: EstadoLaboral;
   created_at: string;
@@ -274,8 +272,6 @@ export interface OrganigramaRow {
   evaluador_efectivo_nombre: string | null;
   evaluador_efectivo_email: string | null;
   tipo_evaluador: 'EVALUADOR_ESPECIAL' | 'SUPERVISOR_DIRECTO';
-  supervisor_directo_id?: number | null;
-  evaluador_id?: number | null;
 }
 
 export interface ResumenResponsable {

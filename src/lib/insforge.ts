@@ -1309,8 +1309,6 @@ export const empleadosApi = {
       delete payload.nombre_completo;
       delete payload.perfil_competencia;
       delete payload.perfil_competencia_nombre;
-      delete payload.supervisor_directo_id;
-      delete payload.evaluador_id;
 
       if (payload.codigo_empleado) payload.codigo_empleado = payload.codigo_empleado.trim();
       if (payload.email) payload.email = payload.email.trim().toLowerCase();
