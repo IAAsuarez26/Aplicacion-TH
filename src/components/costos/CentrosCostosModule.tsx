@@ -9,6 +9,9 @@ import {
   Tag,
   Building2,
   Layers,
+  Filter,
+  ChevronDown,
+  RotateCcw,
 } from 'lucide-react';
 import { centrosCostosApi, departamentosApi } from '../../lib/insforge';
 import type { CentroCosto, Departamento } from '../../lib/types';
@@ -23,6 +26,11 @@ export const CentrosCostosModule: React.FC = () => {
   const [centrosCostos, setCentrosCostos] = useState<CentroCosto[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter state
+  const [selectedCcFilter, setSelectedCcFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedDeptoFilter, setSelectedDeptoFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedEstadoFilter, setSelectedEstadoFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -238,6 +246,36 @@ export const CentrosCostosModule: React.FC = () => {
     },
   ];
 
+  const hasActiveFilters =
+    selectedCcFilter !== 'ALL' ||
+    selectedDeptoFilter !== 'ALL' ||
+    selectedEstadoFilter !== 'ALL';
+
+  const activeFiltersCount = [
+    selectedCcFilter !== 'ALL',
+    selectedDeptoFilter !== 'ALL',
+    selectedEstadoFilter !== 'ALL',
+  ].filter(Boolean).length;
+
+  const resetAllFilters = () => {
+    setSelectedCcFilter('ALL');
+    setSelectedDeptoFilter('ALL');
+    setSelectedEstadoFilter('ALL');
+  };
+
+  const filteredCentrosCostos = centrosCostos.filter((cc) => {
+    if (selectedCcFilter !== 'ALL' && cc.codigo_cc !== selectedCcFilter) return false;
+    if (selectedDeptoFilter !== 'ALL') {
+      const dep = departamentos.find((d) => d.codigo === selectedDeptoFilter);
+      if (dep?.codigo_cc !== cc.codigo_cc) return false;
+    }
+    if (selectedEstadoFilter !== 'ALL') {
+      const isActivo = selectedEstadoFilter === 'ACTIVO';
+      if (cc.activo !== isActivo) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header & Stats */}
@@ -299,9 +337,113 @@ export const CentrosCostosModule: React.FC = () => {
         </div>
       </div>
 
+      {/* Filter Component */}
+      <div className="p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl backdrop-blur-xl shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
+            <Filter className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Filtros
+          </span>
+          {hasActiveFilters && (
+            <span className="px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30 text-[10px] font-semibold">
+              {activeFiltersCount} {activeFiltersCount === 1 ? 'activo' : 'activos'}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* 1. Centros de Costos */}
+          <div className="relative min-w-[190px] flex-1 sm:flex-initial">
+            <select
+              value={selectedCcFilter}
+              onChange={(e) => setSelectedCcFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedCcFilter !== 'ALL'
+                  ? 'border-cyan-500/80 bg-cyan-500/10 text-cyan-300 font-semibold ring-1 ring-cyan-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Centro de Costo"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Centros de Costos</option>
+              {[...centrosCostos]
+                .sort((a, b) => a.codigo_cc.localeCompare(b.codigo_cc))
+                .map((cc) => (
+                  <option key={cc.codigo_cc} value={cc.codigo_cc} className="bg-slate-900 text-slate-200">
+                    CC {cc.codigo_cc} - {cc.descripcion}
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedCcFilter !== 'ALL' ? 'text-cyan-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 2. Departamentos */}
+          <div className="relative min-w-[190px] flex-1 sm:flex-initial">
+            <select
+              value={selectedDeptoFilter}
+              onChange={(e) => setSelectedDeptoFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedDeptoFilter !== 'ALL'
+                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Departamento Vinculado"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Departamentos</option>
+              {[...departamentos]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                .map((d) => (
+                  <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
+                    {d.nombre} ({d.codigo})
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedDeptoFilter !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 3. Estados */}
+          <div className="relative min-w-[140px] flex-1 sm:flex-initial">
+            <select
+              value={selectedEstadoFilter}
+              onChange={(e) => setSelectedEstadoFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedEstadoFilter !== 'ALL'
+                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Estado"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Estados</option>
+              <option value="ACTIVO" className="bg-slate-900 text-slate-200">Activos</option>
+              <option value="INACTIVO" className="bg-slate-900 text-slate-200">Inactivos</option>
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedEstadoFilter !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* Limpiar Filtros */}
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="px-2.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              title="Restablecer todos los filtros"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Limpiar</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* DataTable */}
       <DataTable
-        data={centrosCostos}
+        data={filteredCentrosCostos}
         columns={columns}
         loading={loading}
         searchKeys={['codigo_cc', 'descripcion']}

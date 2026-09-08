@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Layers,
   Plus,
@@ -15,6 +15,9 @@ import {
   DollarSign,
   Sparkles,
   Zap,
+  Filter,
+  ChevronDown,
+  RotateCcw,
 } from 'lucide-react';
 import { tabuladorApi, empresasApi, empleadosApi } from '../../lib/insforge';
 import type { TabuladorEmpresa, Empresa, Empleado, PosicionSalarialEval } from '../../lib/types';
@@ -31,8 +34,10 @@ export const TabuladorModule: React.FC = () => {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter by Empresa
+  // Filters
   const [selectedEmpresaFilter, setSelectedEmpresaFilter] = useState<number | 'all'>('all');
+  const [selectedBandaFilter, setSelectedBandaFilter] = useState<string | 'all'>('all');
+  const [selectedEstadoFilter, setSelectedEstadoFilter] = useState<string | 'all'>('all');
 
   // Modal State: Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -294,10 +299,40 @@ export const TabuladorModule: React.FC = () => {
     });
   };
 
+  // Bandas salariales disponibles para el combo
+  const bandasDisponibles = useMemo(() => {
+    const list = selectedEmpresaFilter === 'all'
+      ? tabuladores
+      : tabuladores.filter(t => t.empresa_id === selectedEmpresaFilter);
+    return Array.from(new Set(list.map(t => t.codigo_banda))).sort();
+  }, [tabuladores, selectedEmpresaFilter]);
+
+  const hasActiveFilters =
+    selectedEmpresaFilter !== 'all' ||
+    selectedBandaFilter !== 'all' ||
+    selectedEstadoFilter !== 'all';
+
+  const activeFiltersCount = [
+    selectedEmpresaFilter !== 'all',
+    selectedBandaFilter !== 'all',
+    selectedEstadoFilter !== 'all',
+  ].filter(Boolean).length;
+
+  const resetAllFilters = () => {
+    setSelectedEmpresaFilter('all');
+    setSelectedBandaFilter('all');
+    setSelectedEstadoFilter('all');
+  };
+
   // Filtered dataset
   const filteredData = tabuladores.filter((item) => {
-    if (selectedEmpresaFilter === 'all') return true;
-    return item.empresa_id === selectedEmpresaFilter;
+    if (selectedEmpresaFilter !== 'all' && item.empresa_id !== selectedEmpresaFilter) return false;
+    if (selectedBandaFilter !== 'all' && item.codigo_banda !== selectedBandaFilter) return false;
+    if (selectedEstadoFilter !== 'all') {
+      const isActivo = selectedEstadoFilter === 'ACTIVO';
+      if (item.activo !== isActivo) return false;
+    }
+    return true;
   });
 
   const columns: Column<TabuladorEmpresa>[] = [
@@ -510,37 +545,113 @@ export const TabuladorModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter by Empresa Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-800">
-        <button
-          onClick={() => setSelectedEmpresaFilter('all')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-            selectedEmpresaFilter === 'all'
-              ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800'
-          }`}
-        >
-          Todas las Empresas ({tabuladores.length})
-        </button>
-        {empresas.map((emp) => {
-          const count = tabuladores.filter(t => t.empresa_id === emp.empresa_id).length;
-          return (
-            <button
-              key={emp.empresa_id}
-              onClick={() => setSelectedEmpresaFilter(emp.empresa_id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-                selectedEmpresaFilter === emp.empresa_id
-                  ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+      {/* Filter Component */}
+      <div className="p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl backdrop-blur-xl shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
+            <Filter className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Filtros
+          </span>
+          {hasActiveFilters && (
+            <span className="px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30 text-[10px] font-semibold">
+              {activeFiltersCount} {activeFiltersCount === 1 ? 'activo' : 'activos'}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* 1. Empresas */}
+          <div className="relative min-w-[190px] flex-1 sm:flex-initial">
+            <select
+              value={selectedEmpresaFilter}
+              onChange={(e) => {
+                const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
+                setSelectedEmpresaFilter(val);
+                if (selectedBandaFilter !== 'all') {
+                  setSelectedBandaFilter('all');
+                }
+              }}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedEmpresaFilter !== 'all'
+                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
               }`}
+              title="Filtrar por Empresa"
             >
-              <Building className="w-3.5 h-3.5 text-slate-400" />
-              <span>
-                {emp.codigo} - {emp.nombre_corto || emp.razon_social} ({count})
-              </span>
+              <option value="all" className="bg-slate-900 text-slate-200">Empresas</option>
+              {empresas.map((emp) => {
+                const count = tabuladores.filter(t => t.empresa_id === emp.empresa_id).length;
+                return (
+                  <option key={emp.empresa_id} value={emp.empresa_id} className="bg-slate-900 text-slate-200">
+                    {emp.codigo} - {emp.nombre_corto || emp.razon_social} ({count})
+                  </option>
+                );
+              })}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedEmpresaFilter !== 'all' ? 'text-brand-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 2. Bandas */}
+          <div className="relative min-w-[160px] flex-1 sm:flex-initial">
+            <select
+              value={selectedBandaFilter}
+              onChange={(e) => setSelectedBandaFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedBandaFilter !== 'all'
+                  ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Banda Salarial"
+            >
+              <option value="all" className="bg-slate-900 text-slate-200">Bandas</option>
+              {bandasDisponibles.map((banda) => (
+                <option key={banda} value={banda} className="bg-slate-900 text-slate-200">
+                  Banda {banda}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedBandaFilter !== 'all' ? 'text-indigo-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 3. Estados */}
+          <div className="relative min-w-[140px] flex-1 sm:flex-initial">
+            <select
+              value={selectedEstadoFilter}
+              onChange={(e) => setSelectedEstadoFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedEstadoFilter !== 'all'
+                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Estado"
+            >
+              <option value="all" className="bg-slate-900 text-slate-200">Estados</option>
+              <option value="ACTIVO" className="bg-slate-900 text-slate-200">Activas</option>
+              <option value="INACTIVO" className="bg-slate-900 text-slate-200">Inactivas</option>
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedEstadoFilter !== 'all' ? 'text-emerald-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* Limpiar Filtros */}
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="px-2.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              title="Restablecer todos los filtros"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Limpiar</span>
             </button>
-          );
-        })}
+          )}
+        </div>
       </div>
 
       {/* Main Table */}
