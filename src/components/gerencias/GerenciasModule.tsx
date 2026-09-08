@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, GitFork, User, Building2, Filter } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit2, Trash2, GitFork, User, Building2, Filter, ChevronDown, RotateCcw } from 'lucide-react';
 import { gerenciasApi, direccionesApi, empleadosApi, formatGerenciaCodigo } from '../../lib/insforge';
 import type { Gerencia, Direccion, Empleado } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
@@ -17,6 +17,7 @@ export const GerenciasModule: React.FC = () => {
 
   // Filter state
   const [selectedDireccionFilter, setSelectedDireccionFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedGerenciaFilter, setSelectedGerenciaFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -195,9 +196,30 @@ export const GerenciasModule: React.FC = () => {
     return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${gId}`;
   };
 
+  // Gerencias filtradas por dirección para el combo
+  const gerenciasDisponibles = useMemo(() => {
+    if (selectedDireccionFilter === 'ALL') return gerencias;
+    return gerencias.filter((g) => g.codigo_direccion === selectedDireccionFilter);
+  }, [gerencias, selectedDireccionFilter]);
+
+  const hasActiveFilters =
+    selectedDireccionFilter !== 'ALL' ||
+    selectedGerenciaFilter !== 'ALL';
+
+  const activeFiltersCount = [
+    selectedDireccionFilter !== 'ALL',
+    selectedGerenciaFilter !== 'ALL',
+  ].filter(Boolean).length;
+
+  const resetAllFilters = () => {
+    setSelectedDireccionFilter('ALL');
+    setSelectedGerenciaFilter('ALL');
+  };
+
   const filteredGerencias = gerencias.filter((g) => {
-    if (selectedDireccionFilter === 'ALL') return true;
-    return g.codigo_direccion === selectedDireccionFilter;
+    if (selectedDireccionFilter !== 'ALL' && g.codigo_direccion !== selectedDireccionFilter) return false;
+    if (selectedGerenciaFilter !== 'ALL' && g.codigo !== selectedGerenciaFilter) return false;
+    return true;
   });
 
   const columns: Column<Gerencia>[] = [
@@ -304,25 +326,95 @@ export const GerenciasModule: React.FC = () => {
       </div>
 
       {/* Filter Component */}
-      <div className="flex items-center gap-2">
-        <Filter className="w-4 h-4 text-slate-400" />
-        <span className="text-xs text-slate-400 font-medium">Filtrar por Dirección:</span>
-        <select
-          value={selectedDireccionFilter}
-          onChange={(e) =>
-            setSelectedDireccionFilter(e.target.value)
-          }
-          className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500"
-        >
-          <option value="ALL">Todas las Direcciones</option>
-          {[...direcciones]
-            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-            .map((d) => (
-              <option key={d.codigo} value={d.codigo}>
-                {d.nombre} ({d.codigo})
-              </option>
-            ))}
-        </select>
+      <div className="p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl backdrop-blur-xl shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
+            <Filter className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Filtros
+          </span>
+          {hasActiveFilters && (
+            <span className="px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30 text-[10px] font-semibold">
+              {activeFiltersCount} {activeFiltersCount === 1 ? 'activo' : 'activos'}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* 1. Direcciones */}
+          <div className="relative min-w-[190px] flex-1 sm:flex-initial">
+            <select
+              value={selectedDireccionFilter}
+              onChange={(e) => {
+                const newDir = e.target.value;
+                setSelectedDireccionFilter(newDir);
+                if (newDir !== 'ALL' && selectedGerenciaFilter !== 'ALL') {
+                  const ger = gerencias.find((g) => g.codigo === selectedGerenciaFilter);
+                  if (ger && ger.codigo_direccion !== newDir) {
+                    setSelectedGerenciaFilter('ALL');
+                  }
+                }
+              }}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedDireccionFilter !== 'ALL'
+                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Dirección"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Direcciones</option>
+              {[...direcciones]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                .map((d) => (
+                  <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
+                    {d.nombre} ({d.codigo})
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedDireccionFilter !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 2. Gerencias */}
+          <div className="relative min-w-[190px] flex-1 sm:flex-initial">
+            <select
+              value={selectedGerenciaFilter}
+              onChange={(e) => setSelectedGerenciaFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedGerenciaFilter !== 'ALL'
+                  ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Gerencia"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Gerencias</option>
+              {[...gerenciasDisponibles]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                .map((g) => (
+                  <option key={g.codigo} value={g.codigo} className="bg-slate-900 text-slate-200">
+                    {g.nombre} ({g.codigo})
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedGerenciaFilter !== 'ALL' ? 'text-indigo-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* Limpiar Filtros */}
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="px-2.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              title="Restablecer todos los filtros"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Limpiar</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* DataTable */}
