@@ -23,6 +23,7 @@ import {
   Tag,
   Award,
   RotateCcw,
+  ChevronDown,
 } from 'lucide-react';
 import {
   empleadosApi,
@@ -497,16 +498,19 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     cargos,
   ]);
 
-  const hasActiveFilters =
-    filtroEmpresa !== 'ALL' ||
-    filtroDepartamento !== 'ALL' ||
-    filtroDenominacion !== 'ALL' ||
-    filtroPerfil !== 'ALL' ||
-    filtroTipoCosto !== 'ALL' ||
-    filtroSede !== 'ALL' ||
-    filtroGenero !== 'ALL' ||
-    filtroCargo !== 'ALL' ||
-    filtroEstado !== 'ALL';
+  const activeFiltersCount = [
+    filtroEmpresa !== 'ALL',
+    filtroDepartamento !== 'ALL',
+    filtroCargo !== 'ALL',
+    filtroPerfil !== 'ALL',
+    filtroDenominacion !== 'ALL',
+    filtroTipoCosto !== 'ALL',
+    filtroSede !== 'ALL',
+    filtroGenero !== 'ALL',
+    filtroEstado !== 'ALL',
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   const resetAllFilters = () => {
     setFiltroEmpresa('ALL');
@@ -846,188 +850,290 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       </div>
 
       {/* Filter Toolbar */}
-      <div className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-          <Filter className="w-4 h-4 text-brand-400" />
-          <span>Filtros avanzados:</span>
-          {filtroEmpresa !== 'ALL' && (
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
-              Empresa activa
+      <div className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl backdrop-blur-xl shadow-sm space-y-3">
+        {/* Header toolbar */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
+              <Filter className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              Filtros
             </span>
+            {hasActiveFilters ? (
+              <span className="px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30 text-[10px] font-semibold">
+                {activeFiltersCount} {activeFiltersCount === 1 ? 'activo' : 'activos'}
+              </span>
+            ) : (
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                Sin filtros aplicados
+              </span>
+            )}
+            {filtroEmpresa !== 'ALL' && (
+              <span className="hidden sm:inline px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                Empresa activa
+              </span>
+            )}
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+              title="Restablecer todos los filtros"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Limpiar filtros</span>
+            </button>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Empresa Filter */}
-          <select
-            value={filtroEmpresa}
-            onChange={(e) => {
-              const newEmpresa = e.target.value;
-              setFiltroEmpresa(newEmpresa);
-              if (newEmpresa !== 'ALL' && newEmpresa !== 'SIN_EMPRESA' && filtroDepartamento !== 'ALL') {
-                const depto = departamentos.find((d) => d.codigo === filtroDepartamento);
-                const ger = depto?.codigo_gerencia ? gerencias.find((g) => g.codigo === depto.codigo_gerencia) : null;
-                const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
-                if (!dir || String(dir.empresa_id) !== newEmpresa) {
-                  setFiltroDepartamento('ALL');
+        {/* Combos Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-2">
+          {/* 1. Empresa Filter */}
+          <div className="relative">
+            <select
+              value={filtroEmpresa}
+              onChange={(e) => {
+                const newEmpresa = e.target.value;
+                setFiltroEmpresa(newEmpresa);
+                if (newEmpresa !== 'ALL' && newEmpresa !== 'SIN_EMPRESA' && filtroDepartamento !== 'ALL') {
+                  const depto = departamentos.find((d) => d.codigo === filtroDepartamento);
+                  const ger = depto?.codigo_gerencia ? gerencias.find((g) => g.codigo === depto.codigo_gerencia) : null;
+                  const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
+                  if (!dir || String(dir.empresa_id) !== newEmpresa) {
+                    setFiltroDepartamento('ALL');
+                  }
                 }
-              }
-            }}
-            className="px-3 py-1.5 bg-slate-950 border border-emerald-700/60 text-emerald-300 font-semibold rounded-lg text-xs focus:outline-none focus:border-emerald-400 shadow-sm"
-          >
-            <option value="ALL">Todas las Empresas ({empleados.length})</option>
-            {empresas.map((emp) => {
-              const count = empleadosConEmpresa.filter((e) => e.empresa_id === emp.empresa_id).length;
-              return (
-                <option key={emp.empresa_id} value={String(emp.empresa_id)}>
-                  {emp.nombre_corto ? `${emp.nombre_corto} - ` : ''}{emp.razon_social} ({count})
-                </option>
-              );
-            })}
-            {(() => {
-              const sinEmpresaCount = empleadosConEmpresa.filter((e) => !e.empresa_id).length;
-              if (sinEmpresaCount > 0) {
+              }}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroEmpresa !== 'ALL'
+                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Empresa"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Empresas</option>
+              {empresas.map((emp) => {
+                const count = empleadosConEmpresa.filter((e) => e.empresa_id === emp.empresa_id).length;
                 return (
-                  <option value="SIN_EMPRESA">-- Sin Empresa Asignada ({sinEmpresaCount}) --</option>
+                  <option key={emp.empresa_id} value={String(emp.empresa_id)} className="bg-slate-900 text-slate-200">
+                    {emp.nombre_corto ? `${emp.nombre_corto} - ` : ''}{emp.razon_social} ({count})
+                  </option>
                 );
-              }
-              return null;
-            })()}
-          </select>
+              })}
+              {(() => {
+                const sinEmpresaCount = empleadosConEmpresa.filter((e) => !e.empresa_id).length;
+                if (sinEmpresaCount > 0) {
+                  return (
+                    <option value="SIN_EMPRESA" className="bg-slate-900 text-slate-200">
+                      -- Sin Empresa Asignada ({sinEmpresaCount}) --
+                    </option>
+                  );
+                }
+                return null;
+              })()}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroEmpresa !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
+            }`} />
+          </div>
 
-          {/* Departamento Filter */}
-          <select
-            value={filtroDepartamento}
-            onChange={(e) => setFiltroDepartamento(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
-          >
-            <option value="ALL">
-              {filtroEmpresa !== 'ALL' && filtroEmpresa !== 'SIN_EMPRESA'
-                ? `Todos los Departamentos (${departamentosFiltrados.length})`
-                : 'Todos los Departamentos'}
-            </option>
-            {[...departamentosFiltrados]
-              .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-              .map((d) => (
-                <option key={d.codigo} value={d.codigo}>
-                  {d.nombre} ({d.codigo})
+          {/* 2. Departamento Filter */}
+          <div className="relative">
+            <select
+              value={filtroDepartamento}
+              onChange={(e) => setFiltroDepartamento(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroDepartamento !== 'ALL'
+                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Departamento"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Departamentos</option>
+              {[...departamentosFiltrados]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                .map((d) => (
+                  <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
+                    {d.nombre} ({d.codigo})
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroDepartamento !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 3. Cargo Filter */}
+          <div className="relative">
+            <select
+              value={filtroCargo}
+              onChange={(e) => setFiltroCargo(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroCargo !== 'ALL'
+                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Cargo"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Cargos</option>
+              {[...cargos]
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                .map((c) => (
+                  <option key={c.codigo} value={c.codigo} className="bg-slate-900 text-slate-200">
+                    {c.nombre} ({c.codigo})
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroCargo !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 4. Perfil Filter */}
+          <div className="relative">
+            <select
+              value={filtroPerfil}
+              onChange={(e) => setFiltroPerfil(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroPerfil !== 'ALL'
+                  ? 'border-cyan-500/80 bg-cyan-500/10 text-cyan-300 font-semibold ring-1 ring-cyan-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Perfil de Competencias"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Perfiles</option>
+              <option value="SIN_PC" className="bg-slate-900 text-slate-200">-- Sin Perfil Asignado --</option>
+              {perfilesCompetencias.map((pc) => (
+                <option key={pc.codigo_pc} value={pc.codigo_pc} className="bg-slate-900 text-slate-200">
+                  {pc.codigo_pc} - {pc.perfil}
                 </option>
               ))}
-          </select>
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroPerfil !== 'ALL' ? 'text-cyan-400' : 'text-slate-500'
+            }`} />
+          </div>
 
-          {/* Denominación Filter */}
-          <select
-            value={filtroDenominacion}
-            onChange={(e) => setFiltroDenominacion(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-          >
-            <option value="ALL">Todas las Denominaciones (DC)</option>
-            <option value="SIN_DC">-- Cargos Sin Denominación --</option>
-            {[...denominaciones]
-              .sort((a, b) => a.denominacion.localeCompare(b.denominacion, 'es', { sensitivity: 'base' }))
-              .map((dc) => (
-                <option key={dc.codigo_dc} value={dc.codigo_dc}>
-                  {dc.codigo_dc} - {dc.denominacion}
+          {/* 5. Denominación Filter */}
+          <div className="relative">
+            <select
+              value={filtroDenominacion}
+              onChange={(e) => setFiltroDenominacion(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroDenominacion !== 'ALL'
+                  ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Denominación del Cargo"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Denominaciones</option>
+              <option value="SIN_DC" className="bg-slate-900 text-slate-200">-- Cargos Sin Denominación --</option>
+              {[...denominaciones]
+                .sort((a, b) => a.denominacion.localeCompare(b.denominacion, 'es', { sensitivity: 'base' }))
+                .map((dc) => (
+                  <option key={dc.codigo_dc} value={dc.codigo_dc} className="bg-slate-900 text-slate-200">
+                    {dc.codigo_dc} - {dc.denominacion}
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroDenominacion !== 'ALL' ? 'text-indigo-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 6. Tipo de Costo Filter */}
+          <div className="relative">
+            <select
+              value={filtroTipoCosto}
+              onChange={(e) => setFiltroTipoCosto(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroTipoCosto !== 'ALL'
+                  ? 'border-amber-500/80 bg-amber-500/10 text-amber-300 font-semibold ring-1 ring-amber-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Tipo de Costo"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Tipos de Costo</option>
+              {tipoCostos.map((tc) => (
+                <option key={tc.codigo_tc} value={tc.codigo_tc} className="bg-slate-900 text-slate-200">
+                  {tc.nombre} ({tc.codigo_tc}) - {tc.descripcion}
                 </option>
               ))}
-          </select>
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroTipoCosto !== 'ALL' ? 'text-amber-400' : 'text-slate-500'
+            }`} />
+          </div>
 
-          {/* Perfil de Competencias Filter */}
-          <select
-            value={filtroPerfil}
-            onChange={(e) => setFiltroPerfil(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
-          >
-            <option value="ALL">Todos los Perfiles (PC)</option>
-            <option value="SIN_PC">-- Sin Perfil Asignado --</option>
-            {perfilesCompetencias.map((pc) => (
-              <option key={pc.codigo_pc} value={pc.codigo_pc}>
-                {pc.codigo_pc} - {pc.perfil}
-              </option>
-            ))}
-          </select>
-
-          {/* Tipo de Costo Filter */}
-          <select
-            value={filtroTipoCosto}
-            onChange={(e) => setFiltroTipoCosto(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-          >
-            <option value="ALL">Todos los Tipos de Costos</option>
-            {tipoCostos.map((tc) => (
-              <option key={tc.codigo_tc} value={tc.codigo_tc}>
-                {tc.nombre} ({tc.codigo_tc}) - {tc.descripcion}
-              </option>
-            ))}
-          </select>
-
-          {/* Sede Filter */}
-          {sedesDisponibles.length > 0 && (
+          {/* 7. Sede Filter */}
+          <div className="relative">
             <select
               value={filtroSede}
               onChange={(e) => setFiltroSede(e.target.value)}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-rose-500"
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroSede !== 'ALL'
+                  ? 'border-rose-500/80 bg-rose-500/10 text-rose-300 font-semibold ring-1 ring-rose-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Sede"
             >
-              <option value="ALL">Todas las Sedes</option>
+              <option value="ALL" className="bg-slate-900 text-slate-200">Sedes</option>
               {sedesDisponibles.map((s) => (
-                <option key={s} value={s}>
+                <option key={s} value={s} className="bg-slate-900 text-slate-200">
                   {s}
                 </option>
               ))}
             </select>
-          )}
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroSede !== 'ALL' ? 'text-rose-400' : 'text-slate-500'
+            }`} />
+          </div>
 
-          {/* Genero Filter */}
-          <select
-            value={filtroGenero}
-            onChange={(e) => setFiltroGenero(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-pink-500"
-          >
-            <option value="ALL">Todos los Géneros</option>
-            <option value="Mujer">Mujer</option>
-            <option value="Hombre">Hombre</option>
-          </select>
-
-          {/* Cargo Filter */}
-          <select
-            value={filtroCargo}
-            onChange={(e) => setFiltroCargo(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
-          >
-            <option value="ALL">Todos los Cargos</option>
-            {[...cargos]
-              .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-              .map((c) => (
-                <option key={c.codigo} value={c.codigo}>
-                  {c.nombre} ({c.codigo})
-                </option>
-              ))}
-          </select>
-
-          {/* Estado Filter */}
-          <select
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-brand-500"
-          >
-            <option value="ALL">Todos los Estados</option>
-            <option value="ACTIVO">ACTIVO</option>
-            <option value="INACTIVO">INACTIVO</option>
-            <option value="VACACIONES">VACACIONES</option>
-            <option value="LICENCIA">LICENCIA</option>
-          </select>
-
-          {/* Limpiar Filtros */}
-          {hasActiveFilters && (
-            <button
-              onClick={resetAllFilters}
-              className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
-              title="Restablecer todos los filtros"
+          {/* 8. Estado Filter */}
+          <div className="relative">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroEstado !== 'ALL'
+                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Estado Laboral"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>Limpiar</span>
-            </button>
-          )}
+              <option value="ALL" className="bg-slate-900 text-slate-200">Estados</option>
+              <option value="ACTIVO" className="bg-slate-900 text-slate-200">ACTIVO</option>
+              <option value="INACTIVO" className="bg-slate-900 text-slate-200">INACTIVO</option>
+              <option value="VACACIONES" className="bg-slate-900 text-slate-200">VACACIONES</option>
+              <option value="LICENCIA" className="bg-slate-900 text-slate-200">LICENCIA</option>
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroEstado !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
+            }`} />
+          </div>
+
+          {/* 9. Género Filter */}
+          <div className="relative">
+            <select
+              value={filtroGenero}
+              onChange={(e) => setFiltroGenero(e.target.value)}
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                filtroGenero !== 'ALL'
+                  ? 'border-pink-500/80 bg-pink-500/10 text-pink-300 font-semibold ring-1 ring-pink-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Género"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Géneros</option>
+              <option value="Mujer" className="bg-slate-900 text-slate-200">Mujer</option>
+              <option value="Hombre" className="bg-slate-900 text-slate-200">Hombre</option>
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              filtroGenero !== 'ALL' ? 'text-pink-400' : 'text-slate-500'
+            }`} />
+          </div>
         </div>
       </div>
 
