@@ -9,12 +9,13 @@ import {
   Tag,
   Building2,
   Layers,
+  GitFork,
   Filter,
   ChevronDown,
   RotateCcw,
 } from 'lucide-react';
-import { centrosCostosApi, departamentosApi } from '../../lib/insforge';
-import type { CentroCosto, Departamento } from '../../lib/types';
+import { centrosCostosApi, gerenciasApi } from '../../lib/insforge';
+import type { CentroCosto, Gerencia } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -24,12 +25,12 @@ import { useToast } from '../common/Toast';
 export const CentrosCostosModule: React.FC = () => {
   const toast = useToast();
   const [centrosCostos, setCentrosCostos] = useState<CentroCosto[]>([]);
-  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const [gerencias, setGerencias] = useState<Gerencia[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter state
   const [selectedCcFilter, setSelectedCcFilter] = useState<string | 'ALL'>('ALL');
-  const [selectedDeptoFilter, setSelectedDeptoFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedGerenciaFilter, setSelectedGerenciaFilter] = useState<string | 'ALL'>('ALL');
   const [selectedEstadoFilter, setSelectedEstadoFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
@@ -53,15 +54,15 @@ export const CentrosCostosModule: React.FC = () => {
     try {
       const [
         { data: ccData, error: ccErr },
-        { data: depData },
+        { data: gerData },
       ] = await Promise.all([
         centrosCostosApi.getAll(),
-        departamentosApi.getAll(),
+        gerenciasApi.getAll(),
       ]);
 
       if (ccErr) toast.error('Error al cargar centros de costos');
       setCentrosCostos(ccData || []);
-      setDepartamentos(depData || []);
+      setGerencias(gerData || []);
     } finally {
       setLoading(false);
     }
@@ -156,7 +157,7 @@ export const CentrosCostosModule: React.FC = () => {
       } else {
         toast.error(
           error?.message?.includes('violates foreign key')
-            ? 'No se puede eliminar este centro de costo porque tiene departamentos asociados.'
+            ? 'No se puede eliminar este centro de costo porque tiene gerencias asociadas.'
             : error?.message || 'Error al eliminar el centro de costo'
         );
       }
@@ -165,8 +166,8 @@ export const CentrosCostosModule: React.FC = () => {
     }
   };
 
-  const getDepartamentosLinked = (codigo_cc: string) => {
-    return departamentos.filter((d) => d.codigo_cc === codigo_cc);
+  const getGerenciasLinked = (codigo_cc: string) => {
+    return gerencias.filter((g) => g.codigo_cc === codigo_cc);
   };
 
   const columns: Column<CentroCosto>[] = [
@@ -197,18 +198,18 @@ export const CentrosCostosModule: React.FC = () => {
       ),
     },
     {
-      key: 'departamentos_count' as any,
-      header: 'Departamentos Vinculados',
+      key: 'gerencias_count' as any,
+      header: 'Gerencias Vinculadas',
       render: (item) => {
-        const linked = getDepartamentosLinked(item.codigo_cc);
+        const linked = getGerenciasLinked(item.codigo_cc);
         return (
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200">
-              {linked.length} deptos
+              {linked.length} gerencias
             </span>
             {linked.length > 0 && (
               <span className="text-xs text-slate-400 truncate max-w-xs">
-                {linked.map((d) => d.nombre).slice(0, 2).join(', ')}
+                {linked.map((g) => g.nombre).slice(0, 2).join(', ')}
                 {linked.length > 2 ? '...' : ''}
               </span>
             )}
@@ -248,26 +249,26 @@ export const CentrosCostosModule: React.FC = () => {
 
   const hasActiveFilters =
     selectedCcFilter !== 'ALL' ||
-    selectedDeptoFilter !== 'ALL' ||
+    selectedGerenciaFilter !== 'ALL' ||
     selectedEstadoFilter !== 'ALL';
 
   const activeFiltersCount = [
     selectedCcFilter !== 'ALL',
-    selectedDeptoFilter !== 'ALL',
+    selectedGerenciaFilter !== 'ALL',
     selectedEstadoFilter !== 'ALL',
   ].filter(Boolean).length;
 
   const resetAllFilters = () => {
     setSelectedCcFilter('ALL');
-    setSelectedDeptoFilter('ALL');
+    setSelectedGerenciaFilter('ALL');
     setSelectedEstadoFilter('ALL');
   };
 
   const filteredCentrosCostos = centrosCostos.filter((cc) => {
     if (selectedCcFilter !== 'ALL' && cc.codigo_cc !== selectedCcFilter) return false;
-    if (selectedDeptoFilter !== 'ALL') {
-      const dep = departamentos.find((d) => d.codigo === selectedDeptoFilter);
-      if (dep?.codigo_cc !== cc.codigo_cc) return false;
+    if (selectedGerenciaFilter !== 'ALL') {
+      const ger = gerencias.find((g) => g.codigo === selectedGerenciaFilter);
+      if (ger?.codigo_cc !== cc.codigo_cc) return false;
     }
     if (selectedEstadoFilter !== 'ALL') {
       const isActivo = selectedEstadoFilter === 'ACTIVO';
@@ -290,7 +291,7 @@ export const CentrosCostosModule: React.FC = () => {
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Centros de Costos</h1>
               <p className="text-xs text-slate-400">
-                Catálogo de centros de imputación financiera asignados a Departamentos (Nivel 3)
+                Catálogo de centros de imputación financiera asignados a Gerencias (Nivel 2)
               </p>
             </div>
           </div>
@@ -324,7 +325,7 @@ export const CentrosCostosModule: React.FC = () => {
           <div className="text-2xl font-bold text-white mt-2">
             {centrosCostos.filter((c) => c.activo).length}
           </div>
-          <span className="text-[11px] text-emerald-400 mt-1 block">Disponibles para departamentos</span>
+          <span className="text-[11px] text-emerald-400 mt-1 block">Disponibles para gerencias</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
@@ -380,29 +381,29 @@ export const CentrosCostosModule: React.FC = () => {
             }`} />
           </div>
 
-          {/* 2. Departamentos */}
+          {/* 2. Gerencias */}
           <div className="relative min-w-[190px] flex-1 sm:flex-initial">
             <select
-              value={selectedDeptoFilter}
-              onChange={(e) => setSelectedDeptoFilter(e.target.value)}
+              value={selectedGerenciaFilter}
+              onChange={(e) => setSelectedGerenciaFilter(e.target.value)}
               className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                selectedDeptoFilter !== 'ALL'
-                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                selectedGerenciaFilter !== 'ALL'
+                  ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
               }`}
-              title="Filtrar por Departamento Vinculado"
+              title="Filtrar por Gerencia Vinculada"
             >
-              <option value="ALL" className="bg-slate-900 text-slate-200">Departamentos</option>
-              {[...departamentos]
+              <option value="ALL" className="bg-slate-900 text-slate-200">Gerencias</option>
+              {[...gerencias]
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                .map((d) => (
-                  <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
-                    {d.nombre} ({d.codigo})
+                .map((g) => (
+                  <option key={g.codigo} value={g.codigo} className="bg-slate-900 text-slate-200">
+                    {g.nombre} ({g.codigo})
                   </option>
                 ))}
             </select>
             <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              selectedDeptoFilter !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
+              selectedGerenciaFilter !== 'ALL' ? 'text-indigo-400' : 'text-slate-500'
             }`} />
           </div>
 

@@ -124,11 +124,12 @@ CREATE TABLE dbo.direcciones (
 GO
 
 -- ------------------------------------------------------------------------------------
--- Tabla: gerencias (Nivel 2 de la Jerarquía Organizacional)
+-- Tabla: gerencias (Nivel 2 con FK a Centros de Costos)
 -- ------------------------------------------------------------------------------------
 CREATE TABLE dbo.gerencias (
     gerencia_id INT IDENTITY(1,1) NOT NULL,
     direccion_id INT NOT NULL, -- Pertenencia a Dirección
+    codigo_cc VARCHAR(20) NULL, -- FK a CentrosCostos
     codigo VARCHAR(20) NOT NULL,
     nombre NVARCHAR(150) NOT NULL,
     descripcion NVARCHAR(500) NULL,
@@ -142,12 +143,11 @@ CREATE TABLE dbo.gerencias (
 GO
 
 -- ------------------------------------------------------------------------------------
--- Tabla: departamentos (Nivel 3 con FK a Centros de Costos)
+-- Tabla: departamentos (Nivel 3 de la Jerarquía Organizacional)
 -- ------------------------------------------------------------------------------------
 CREATE TABLE dbo.departamentos (
     departamento_id INT IDENTITY(1,1) NOT NULL,
     gerencia_id INT NOT NULL, -- Pertenencia a Gerencia
-    codigo_cc VARCHAR(20) NULL, -- FK a CentrosCostos
     codigo VARCHAR(20) NOT NULL,
     nombre NVARCHAR(150) NOT NULL,
     descripcion NVARCHAR(500) NULL,
@@ -217,7 +217,7 @@ ALTER TABLE dbo.departamentos ADD CONSTRAINT FK_departamentos_gerencias
     FOREIGN KEY (gerencia_id) REFERENCES dbo.gerencias (gerencia_id)
     ON DELETE NO ACTION;
 
-ALTER TABLE dbo.departamentos ADD CONSTRAINT FK_departamentos_centros_costos
+ALTER TABLE dbo.gerencias ADD CONSTRAINT FK_gerencias_centros_costos
     FOREIGN KEY (codigo_cc) REFERENCES dbo.CentrosCostos (Codigo_CC)
     ON UPDATE CASCADE ON DELETE NO ACTION;
 
@@ -263,8 +263,8 @@ GO
 CREATE NONCLUSTERED INDEX IX_TipoCostos_Codigo ON dbo.TipoCostos (Codigo_TC);
 CREATE NONCLUSTERED INDEX IX_CentrosCostos_Codigo ON dbo.CentrosCostos (Codigo_CC);
 CREATE NONCLUSTERED INDEX IX_gerencias_direccion_id ON dbo.gerencias (direccion_id);
+CREATE NONCLUSTERED INDEX IX_gerencias_codigo_cc ON dbo.gerencias (codigo_cc);
 CREATE NONCLUSTERED INDEX IX_departamentos_gerencia_id ON dbo.departamentos (gerencia_id);
-CREATE NONCLUSTERED INDEX IX_departamentos_codigo_cc ON dbo.departamentos (codigo_cc);
 CREATE NONCLUSTERED INDEX IX_empleados_departamento_id ON dbo.empleados (departamento_id);
 CREATE NONCLUSTERED INDEX IX_empleados_cargo_id ON dbo.empleados (cargo_id);
 CREATE NONCLUSTERED INDEX IX_empleados_codigo_tc ON dbo.empleados (codigo_tc);
@@ -292,7 +292,7 @@ SELECT
     dep.departamento_id,
     dep.codigo AS departamento_codigo,
     dep.nombre AS departamento_nombre,
-    dep.codigo_cc,
+    g.codigo_cc,
     cc.Descripcion AS centro_costo_descripcion,
     e.codigo_tc,
     tc.Nombre AS tipo_costo_nombre,
@@ -324,9 +324,9 @@ SELECT
 FROM dbo.empleados e
 INNER JOIN dbo.cargos c ON e.cargo_id = c.cargo_id
 INNER JOIN dbo.departamentos dep ON e.departamento_id = dep.departamento_id
-LEFT JOIN dbo.CentrosCostos cc ON dep.codigo_cc = cc.Codigo_CC
-LEFT JOIN dbo.TipoCostos tc ON e.codigo_tc = tc.Codigo_TC
 INNER JOIN dbo.gerencias g ON dep.gerencia_id = g.gerencia_id
+LEFT JOIN dbo.CentrosCostos cc ON g.codigo_cc = cc.Codigo_CC
+LEFT JOIN dbo.TipoCostos tc ON e.codigo_tc = tc.Codigo_TC
 INNER JOIN dbo.direcciones d ON g.direccion_id = d.direccion_id
 LEFT JOIN dbo.empleados sup ON e.di_supervisor = sup.documento_identidad
 LEFT JOIN dbo.empleados ev ON e.di_evaluador = ev.documento_identidad

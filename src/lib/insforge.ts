@@ -1001,6 +1001,7 @@ export const gerenciasApi = {
       const finalCodigo = formatGerenciaCodigo(gerencia.codigo) || gerencia.codigo.trim();
       const insertPayload: any = {
         codigo_direccion: gerencia.codigo_direccion ? gerencia.codigo_direccion.trim() : null,
+        codigo_cc: gerencia.codigo_cc ? gerencia.codigo_cc.trim() : null,
         codigo: finalCodigo,
         nombre: gerencia.nombre.trim(),
         descripcion: gerencia.descripcion?.trim() || null,
@@ -1044,6 +1045,8 @@ export const gerenciasApi = {
       delete payload.updated_at;
       delete payload.direccion;
       delete payload.direccion_nombre;
+      delete payload.centro_costo;
+      delete payload.centro_costo_descripcion;
       delete payload.gerente;
       delete payload.gerente_nombre;
       delete payload.total_departamentos;
@@ -1053,6 +1056,9 @@ export const gerenciasApi = {
       if (payload.nombre) payload.nombre = payload.nombre.trim();
       if (payload.codigo_direccion !== undefined) {
         payload.codigo_direccion = payload.codigo_direccion ? payload.codigo_direccion.trim() : null;
+      }
+      if (payload.codigo_cc !== undefined) {
+        payload.codigo_cc = payload.codigo_cc ? payload.codigo_cc.trim() : null;
       }
       if (payload.gerente_id !== undefined) {
         payload.gerente_id = payload.gerente_id ? Number(payload.gerente_id) : null;
@@ -1133,7 +1139,6 @@ export const departamentosApi = {
       const finalCodigo = formatDepartamentoCodigo(departamento.codigo) || departamento.codigo.trim();
       const insertPayload: any = {
         codigo_gerencia: departamento.codigo_gerencia ? departamento.codigo_gerencia.trim() : null,
-        codigo_cc: departamento.codigo_cc ? departamento.codigo_cc.trim() : null,
         codigo: finalCodigo,
         nombre: departamento.nombre.trim(),
         descripcion: departamento.descripcion?.trim() || null,
@@ -1178,8 +1183,6 @@ export const departamentosApi = {
       delete payload.gerencia;
       delete payload.gerencia_nombre;
       delete payload.direccion_nombre;
-      delete payload.centro_costo;
-      delete payload.centro_costo_descripcion;
       delete payload.jefe_departamento;
       delete payload.jefe_nombre;
       delete payload.total_empleados;
@@ -1188,9 +1191,6 @@ export const departamentosApi = {
       if (payload.nombre) payload.nombre = payload.nombre.trim();
       if (payload.codigo_gerencia !== undefined) {
         payload.codigo_gerencia = payload.codigo_gerencia ? payload.codigo_gerencia.trim() : null;
-      }
-      if (payload.codigo_cc !== undefined) {
-        payload.codigo_cc = payload.codigo_cc ? payload.codigo_cc.trim() : null;
       }
       if (payload.jefe_departamento_id !== undefined) {
         payload.jefe_departamento_id = payload.jefe_departamento_id ? Number(payload.jefe_departamento_id) : null;

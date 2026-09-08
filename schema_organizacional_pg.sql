@@ -237,12 +237,13 @@ BEFORE UPDATE ON direcciones
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ------------------------------------------------------------------------------------
--- Tabla: gerencias (Nivel 2 de la Jerarquía Organizacional)
+-- Tabla: gerencias (Nivel 2 de la Jerarquía Organizacional, con FK a Centros de Costo)
 -- ------------------------------------------------------------------------------------
 CREATE TABLE gerencias (
     gerencia_id SERIAL PRIMARY KEY,
     direccion_id INT NULL REFERENCES direcciones (direccion_id) ON DELETE RESTRICT,
     codigo_direccion VARCHAR(20) NULL REFERENCES direcciones (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
+    codigo_cc VARCHAR(20) NULL REFERENCES centros_costos (codigo_cc) ON UPDATE CASCADE ON DELETE RESTRICT,
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT,
@@ -257,13 +258,12 @@ BEFORE UPDATE ON gerencias
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ------------------------------------------------------------------------------------
--- Tabla: departamentos (Nivel 3 de la Jerarquía Organizacional, con FK a Centros de Costo)
+-- Tabla: departamentos (Nivel 3 de la Jerarquía Organizacional)
 -- ------------------------------------------------------------------------------------
 CREATE TABLE departamentos (
     departamento_id SERIAL PRIMARY KEY,
     gerencia_id INT NULL REFERENCES gerencias (gerencia_id) ON DELETE RESTRICT,
     codigo_gerencia VARCHAR(20) NULL REFERENCES gerencias (codigo) ON UPDATE CASCADE ON DELETE RESTRICT,
-    codigo_cc VARCHAR(20) NULL REFERENCES centros_costos (codigo_cc) ON UPDATE CASCADE ON DELETE RESTRICT,
     codigo VARCHAR(20) NOT NULL UNIQUE,
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT,
@@ -365,8 +365,8 @@ CREATE INDEX idx_cargos_codigo_dc ON cargos (codigo_dc);
 
 CREATE INDEX idx_direcciones_empresa_id ON direcciones (empresa_id);
 CREATE INDEX idx_gerencias_direccion_id ON gerencias (direccion_id);
+CREATE INDEX idx_gerencias_codigo_cc ON gerencias (codigo_cc);
 CREATE INDEX idx_departamentos_gerencia_id ON departamentos (gerencia_id);
-CREATE INDEX idx_departamentos_codigo_cc ON departamentos (codigo_cc);
 
 CREATE INDEX idx_empleados_departamento_id ON empleados (departamento_id);
 CREATE INDEX idx_empleados_cargo_id ON empleados (cargo_id);
@@ -427,7 +427,7 @@ SELECT
     dep.departamento_id,
     dep.codigo AS departamento_codigo,
     dep.nombre AS departamento_nombre,
-    dep.codigo_cc,
+    g.codigo_cc,
     cc.descripcion AS centro_costo_descripcion,
     e.codigo_tc,
     tc.nombre AS tipo_costo_nombre,
@@ -472,9 +472,9 @@ LEFT JOIN cargos c ON e.codigo_cargo = c.codigo
 LEFT JOIN denominaciones_cargos dc ON c.codigo_dc = dc.codigo_dc
 LEFT JOIN perfiles_competencias pc ON e.codigo_pc = pc.codigo_pc
 LEFT JOIN departamentos dep ON e.codigo_departamento = dep.codigo
-LEFT JOIN centros_costos cc ON dep.codigo_cc = cc.codigo_cc
-LEFT JOIN tipo_costos tc ON e.codigo_tc = tc.codigo_tc
 LEFT JOIN gerencias g ON dep.codigo_gerencia = g.codigo
+LEFT JOIN centros_costos cc ON g.codigo_cc = cc.codigo_cc
+LEFT JOIN tipo_costos tc ON e.codigo_tc = tc.codigo_tc
 LEFT JOIN direcciones d ON g.codigo_direccion = d.codigo
 LEFT JOIN empresas emp ON d.empresa_id = emp.empresa_id
 LEFT JOIN tabulador_empresas t ON e.tabulador_id = t.tabulador_id

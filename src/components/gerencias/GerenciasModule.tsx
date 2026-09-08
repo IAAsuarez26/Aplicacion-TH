@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit2, Trash2, GitFork, User, Building2, Filter, ChevronDown, RotateCcw } from 'lucide-react';
-import { gerenciasApi, direccionesApi, empleadosApi, formatGerenciaCodigo } from '../../lib/insforge';
-import type { Gerencia, Direccion, Empleado } from '../../lib/types';
+import { Plus, Edit2, Trash2, GitFork, User, Building2, Filter, ChevronDown, RotateCcw, PieChart } from 'lucide-react';
+import { gerenciasApi, direccionesApi, empleadosApi, centrosCostosApi, formatGerenciaCodigo } from '../../lib/insforge';
+import type { Gerencia, Direccion, Empleado, CentroCosto } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -13,11 +13,13 @@ export const GerenciasModule: React.FC = () => {
   const [gerencias, setGerencias] = useState<Gerencia[]>([]);
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [centrosCostos, setCentrosCostos] = useState<CentroCosto[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter state
   const [selectedDireccionFilter, setSelectedDireccionFilter] = useState<string | 'ALL'>('ALL');
   const [selectedGerenciaFilter, setSelectedGerenciaFilter] = useState<string | 'ALL'>('ALL');
+  const [selectedCcFilter, setSelectedCcFilter] = useState<string | 'ALL'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +29,7 @@ export const GerenciasModule: React.FC = () => {
 
   // Form State
   const [codigoDireccion, setCodigoDireccion] = useState<string>('');
+  const [codigoCc, setCodigoCc] = useState<string>('');
   const [codigo, setCodigo] = useState('');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -45,16 +48,20 @@ export const GerenciasModule: React.FC = () => {
         { data: gers, error: errGers },
         { data: dirs, error: errDirs },
         { data: emps, error: errEmps },
+        { data: ccs, error: errCcs },
       ] = await Promise.all([
         gerenciasApi.getAll(),
         direccionesApi.getAll(),
         empleadosApi.getAll(),
+        centrosCostosApi.getAll(),
       ]);
 
       if (errGers) toast.error('No se pudieron cargar las gerencias');
+      if (errCcs) toast.error('No se pudieron cargar los centros de costos');
       setGerencias(gers || []);
       setDirecciones(dirs || []);
       setEmpleados(emps || []);
+      setCentrosCostos(ccs || []);
     } finally {
       setLoading(false);
     }
@@ -88,6 +95,7 @@ export const GerenciasModule: React.FC = () => {
     setModalMode('create');
     setSelectedGerencia(null);
     setCodigoDireccion(direcciones[0]?.codigo || '');
+    setCodigoCc('');
     setCodigo(getNextGerenciaConsecutive(gerencias));
     setNombre('');
     setDescripcion('');
@@ -100,6 +108,7 @@ export const GerenciasModule: React.FC = () => {
     setModalMode('edit');
     setSelectedGerencia(ger);
     setCodigoDireccion(ger.codigo_direccion || '');
+    setCodigoCc(ger.codigo_cc || '');
     setCodigo(formatGerenciaCodigo(ger.codigo));
     setNombre(ger.nombre);
     setDescripcion(ger.descripcion || '');
@@ -120,6 +129,7 @@ export const GerenciasModule: React.FC = () => {
       if (modalMode === 'create') {
         const { data, error } = await gerenciasApi.create({
           codigo_direccion: codigoDireccion ? codigoDireccion.trim() : null,
+          codigo_cc: codigoCc ? codigoCc.trim() : null,
           codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -137,6 +147,7 @@ export const GerenciasModule: React.FC = () => {
       } else if (selectedGerencia) {
         const { data, error } = await gerenciasApi.update(selectedGerencia.gerencia_id, {
           codigo_direccion: codigoDireccion ? codigoDireccion.trim() : null,
+          codigo_cc: codigoCc ? codigoCc.trim() : null,
           codigo: codigo.trim(),
           nombre: nombre.trim(),
           descripcion: descripcion.trim() || null,
@@ -196,6 +207,11 @@ export const GerenciasModule: React.FC = () => {
     return emp ? `${emp.nombres} ${emp.apellidos}` : `Empleado #${gId}`;
   };
 
+  const getCentroCostoInfo = (ccCode?: string | null) => {
+    if (!ccCode) return null;
+    return centrosCostos.find((c) => c.codigo_cc === ccCode);
+  };
+
   // Gerencias filtradas por dirección para el combo
   const gerenciasDisponibles = useMemo(() => {
     if (selectedDireccionFilter === 'ALL') return gerencias;
@@ -204,21 +220,25 @@ export const GerenciasModule: React.FC = () => {
 
   const hasActiveFilters =
     selectedDireccionFilter !== 'ALL' ||
-    selectedGerenciaFilter !== 'ALL';
+    selectedGerenciaFilter !== 'ALL' ||
+    selectedCcFilter !== 'ALL';
 
   const activeFiltersCount = [
     selectedDireccionFilter !== 'ALL',
     selectedGerenciaFilter !== 'ALL',
+    selectedCcFilter !== 'ALL',
   ].filter(Boolean).length;
 
   const resetAllFilters = () => {
     setSelectedDireccionFilter('ALL');
     setSelectedGerenciaFilter('ALL');
+    setSelectedCcFilter('ALL');
   };
 
   const filteredGerencias = gerencias.filter((g) => {
     if (selectedDireccionFilter !== 'ALL' && g.codigo_direccion !== selectedDireccionFilter) return false;
     if (selectedGerenciaFilter !== 'ALL' && g.codigo !== selectedGerenciaFilter) return false;
+    if (selectedCcFilter !== 'ALL' && g.codigo_cc !== selectedCcFilter) return false;
     return true;
   });
 
@@ -256,6 +276,26 @@ export const GerenciasModule: React.FC = () => {
           <span>{getDireccionName(item.codigo_direccion)}</span>
         </div>
       ),
+    },
+    {
+      key: 'codigo_cc',
+      header: 'Centro de Costo',
+      sortable: true,
+      render: (item) => {
+        const cc = getCentroCostoInfo(item.codigo_cc);
+        return cc ? (
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-cyan-950/60 border border-cyan-800/60 text-cyan-300">
+              CC {cc.codigo_cc}
+            </span>
+            <span className="text-xs text-slate-300 truncate max-w-[140px]" title={cc.descripcion}>
+              {cc.descripcion}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-500 italic">Sin CC</span>
+        );
+      },
     },
     {
       key: 'gerente_id',
@@ -403,6 +443,32 @@ export const GerenciasModule: React.FC = () => {
             }`} />
           </div>
 
+          {/* 3. Centros de Costo */}
+          <div className="relative min-w-[190px] flex-1 sm:flex-initial">
+            <select
+              value={selectedCcFilter}
+              onChange={(e) => setSelectedCcFilter(e.target.value)}
+              className={`w-full pl-3 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
+                selectedCcFilter !== 'ALL'
+                  ? 'border-cyan-500/80 bg-cyan-500/10 text-cyan-300 font-semibold ring-1 ring-cyan-500/30'
+                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+              }`}
+              title="Filtrar por Centro de Costo"
+            >
+              <option value="ALL" className="bg-slate-900 text-slate-200">Centros de Costo</option>
+              {[...centrosCostos]
+                .sort((a, b) => a.codigo_cc.localeCompare(b.codigo_cc))
+                .map((cc) => (
+                  <option key={cc.codigo_cc} value={cc.codigo_cc} className="bg-slate-900 text-slate-200">
+                    CC {cc.codigo_cc} - {cc.descripcion}
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+              selectedCcFilter !== 'ALL' ? 'text-cyan-400' : 'text-slate-500'
+            }`} />
+          </div>
+
           {/* Limpiar Filtros */}
           {hasActiveFilters && (
             <button
@@ -422,7 +488,7 @@ export const GerenciasModule: React.FC = () => {
         data={filteredGerencias}
         columns={columns}
         loading={loading}
-        searchKeys={['codigo', 'nombre', 'descripcion', 'codigo_direccion']}
+        searchKeys={['codigo', 'nombre', 'descripcion', 'codigo_direccion', 'codigo_cc']}
         searchPlaceholder="Buscar por código, nombre o descripción..."
         exportFilename="gerencias_nivel_2"
       />
@@ -452,6 +518,27 @@ export const GerenciasModule: React.FC = () => {
                 .map((d) => (
                   <option key={d.codigo} value={d.codigo}>
                     {d.nombre} ({d.codigo})
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Centro de Costo Asignado (Opcional)
+            </label>
+            <select
+              value={codigoCc}
+              onChange={(e) => setCodigoCc(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-brand-500"
+            >
+              <option value="">-- Sin Centro de Costo asignado --</option>
+              {[...centrosCostos]
+                .filter((c) => c.activo || c.codigo_cc === codigoCc)
+                .sort((a, b) => a.codigo_cc.localeCompare(b.codigo_cc))
+                .map((cc) => (
+                  <option key={cc.codigo_cc} value={cc.codigo_cc}>
+                    CC {cc.codigo_cc} — {cc.descripcion}
                   </option>
                 ))}
             </select>

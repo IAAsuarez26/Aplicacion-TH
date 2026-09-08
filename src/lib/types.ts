@@ -103,6 +103,7 @@ export interface Direccion {
 export interface Gerencia {
   gerencia_id: number;
   codigo_direccion: string | null;
+  codigo_cc?: string | null;
   codigo: string;
   nombre: string;
   descripcion: string | null;
@@ -113,6 +114,8 @@ export interface Gerencia {
   // Relaciones
   direccion?: Direccion;
   direccion_nombre?: string;
+  centro_costo?: CentroCosto | null;
+  centro_costo_descripcion?: string | null;
   gerente?: Empleado | null;
   gerente_nombre?: string | null;
   total_departamentos?: number;
@@ -141,7 +144,6 @@ export interface CentroCosto {
 export interface Departamento {
   departamento_id: number;
   codigo_gerencia: string | null;
-  codigo_cc?: string | null;
   codigo: string;
   nombre: string;
   descripcion: string | null;
@@ -153,8 +155,6 @@ export interface Departamento {
   gerencia?: Gerencia;
   gerencia_nombre?: string;
   direccion_nombre?: string;
-  centro_costo?: CentroCosto | null;
-  centro_costo_descripcion?: string | null;
   jefe_departamento?: Empleado | null;
   jefe_nombre?: string | null;
   total_empleados?: number;
