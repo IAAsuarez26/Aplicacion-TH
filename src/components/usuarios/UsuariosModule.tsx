@@ -24,6 +24,7 @@ import {
   Info,
   Check,
   UserX,
+  Trash2,
 } from 'lucide-react';
 import { usuariosApi, rolesApi } from '../../lib/insforge';
 import type { Usuario, Rol, RolCodigo } from '../../lib/types';
@@ -254,6 +255,30 @@ export const UsuariosModule: React.FC = () => {
       toast.error(err.message || 'Error al restablecer contraseña.');
     } finally {
       setSubmittingResetPassword(false);
+    }
+  };
+
+  // Handle Eliminar Usuario
+  const handleDeleteUser = async (userToDelete: Usuario) => {
+    if (userToDelete.auth_user_id === currentUser?.id) {
+      toast.error('No puedes eliminar tu propia cuenta de usuario en sesión.');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario ${userToDelete.nombre} (${userToDelete.email})? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      const res = await usuariosApi.delete(userToDelete.auth_user_id);
+      if (res.success) {
+        toast.success(`Usuario ${userToDelete.nombre} eliminado exitosamente.`);
+        await loadData();
+      } else {
+        toast.error(res.error || 'No se pudo eliminar el usuario.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al eliminar usuario.');
     }
   };
 
@@ -593,6 +618,24 @@ export const UsuariosModule: React.FC = () => {
                             }
                           >
                             {u.activo ? <UserX className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Eliminar Usuario */}
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            disabled={isCurrent}
+                            className={`p-1.5 rounded-lg border transition-colors ${
+                              isCurrent
+                                ? 'bg-slate-950/40 text-slate-600 border-slate-800/40 cursor-not-allowed'
+                                : 'bg-slate-950 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border-slate-800 hover:border-rose-500/40'
+                            }`}
+                            title={
+                              isCurrent
+                                ? 'No puedes eliminar tu propia cuenta'
+                                : 'Eliminar Usuario Permanentemente'
+                            }
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

@@ -1738,5 +1738,26 @@ export const usuariosApi = {
       return { success: false, error: err.message || 'Error de conexión' };
     }
   },
+
+  async delete(auth_user_id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await insforge.database.rpc('sp_eliminar_usuario', {
+        p_auth_user_id: auth_user_id,
+      });
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al eliminar usuario' };
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, error: result.message || 'No se pudo eliminar el usuario' };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error de conexión' };
+    }
+  },
 };
 
