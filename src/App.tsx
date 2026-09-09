@@ -18,12 +18,20 @@ import { PerfilesCompetenciasModule } from './components/perfiles/PerfilesCompet
 import { HistorialModule } from './components/historial/HistorialModule';
 import { OrganigramaModule } from './components/organigrama/OrganigramaModule';
 import { ResponsablesModule } from './components/responsables/ResponsablesModule';
+import { UsuariosModule } from './components/usuarios/UsuariosModule';
 import { Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, canAccessTab, canManageUsers } = useAuth();
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [isNewEmployeeOpen, setIsNewEmployeeOpen] = useState(false);
+
+  // Redirigir a dashboard si el usuario no tiene permisos para la pestaña activa
+  React.useEffect(() => {
+    if (user && !canAccessTab(activeTab)) {
+      setActiveTab('dashboard');
+    }
+  }, [activeTab, user, canAccessTab]);
 
   // Loading Splash Screen
   if (loading) {
@@ -84,6 +92,7 @@ export const App: React.FC = () => {
       {activeTab === 'historial' && <HistorialModule />}
       {activeTab === 'organigrama' && <OrganigramaModule />}
       {activeTab === 'responsables' && <ResponsablesModule />}
+      {activeTab === 'usuarios' && canManageUsers && <UsuariosModule />}
     </Layout>
   );
 };

@@ -17,6 +17,9 @@ import type {
   SubordinadoRow,
   DashboardMetrics,
   PosicionSalarialEval,
+  Rol,
+  Usuario,
+  RolCodigo,
 } from './types';
 
 // Credenciales desde variables de entorno
@@ -1555,3 +1558,185 @@ export const dashboardApi = {
     }
   },
 };
+
+// ====================================================================================
+// 7. API: ROLES Y PERFILES
+// ====================================================================================
+export const rolesApi = {
+  async getAll(): Promise<{ data: Rol[]; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('roles')
+        .select('*')
+        .order('role_id', { ascending: true });
+
+      logDebug('roles.getAll', { data, error });
+      return { data: (data as Rol[]) || [], error };
+    } catch (err: any) {
+      console.error('Error fetching roles:', err);
+      return { data: [], error: err };
+    }
+  },
+
+  async getByCodigo(codigo: string): Promise<{ data: Rol | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('roles')
+        .select('*')
+        .eq('codigo', codigo)
+        .single();
+
+      return { data: (data as Rol) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+};
+
+// ====================================================================================
+// 8. API: USUARIOS DE LA PLATAFORMA
+// ====================================================================================
+export const usuariosApi = {
+  async getAll(): Promise<{ data: Usuario[]; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('vw_usuarios_roles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      logDebug('usuarios.getAll', { data, error });
+      return { data: (data as Usuario[]) || [], error };
+    } catch (err: any) {
+      console.error('Error fetching usuarios:', err);
+      return { data: [], error: err };
+    }
+  },
+
+  async getByAuthId(auth_user_id: string): Promise<{ data: Usuario | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('vw_usuarios_roles')
+        .select('*')
+        .eq('auth_user_id', auth_user_id)
+        .single();
+
+      return { data: (data as Usuario) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async getByEmail(email: string): Promise<{ data: Usuario | null; error: any }> {
+    try {
+      const { data, error } = await insforge.database
+        .from('vw_usuarios_roles')
+        .select('*')
+        .eq('email', email.toLowerCase().trim())
+        .single();
+
+      return { data: (data as Usuario) || null, error };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  },
+
+  async create(payload: {
+    email: string;
+    password: string;
+    nombre: string;
+    rol_codigo: RolCodigo | string;
+    telefono?: string;
+    cargo?: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const { data, error } = await insforge.database.rpc('sp_crear_usuario', {
+        p_email: payload.email.trim().toLowerCase(),
+        p_password: payload.password,
+        p_nombre: payload.nombre.trim(),
+        p_rol_codigo: payload.rol_codigo,
+        p_telefono: payload.telefono?.trim() || null,
+        p_cargo: payload.cargo?.trim() || null,
+      });
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al crear usuario' };
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, error: result.message || 'No se pudo crear el usuario' };
+      }
+
+      return { success: true, data: result };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error de conexión' };
+    }
+  },
+
+  async updateRole(auth_user_id: string, nuevo_rol_codigo: RolCodigo | string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const { data, error } = await insforge.database.rpc('sp_asignar_rol_usuario', {
+        p_auth_user_id: auth_user_id,
+        p_nuevo_rol_codigo: nuevo_rol_codigo,
+      });
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al asignar rol' };
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, error: result.message || 'No se pudo actualizar el rol' };
+      }
+
+      return { success: true, data: result };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error de conexión' };
+    }
+  },
+
+  async updateStatus(auth_user_id: string, activo: boolean): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const { data, error } = await insforge.database.rpc('sp_cambiar_estado_usuario', {
+        p_auth_user_id: auth_user_id,
+        p_activo: activo,
+      });
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al cambiar estado' };
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, error: result.message || 'No se pudo cambiar el estado' };
+      }
+
+      return { success: true, data: result };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error de conexión' };
+    }
+  },
+
+  async resetPassword(auth_user_id: string, new_password: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await insforge.database.rpc('sp_admin_cambiar_password', {
+        p_auth_user_id: auth_user_id,
+        p_new_password: new_password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al restablecer contraseña' };
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, error: result.message || 'No se pudo restablecer la contraseña' };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error de conexión' };
+    }
+  },
+};
+

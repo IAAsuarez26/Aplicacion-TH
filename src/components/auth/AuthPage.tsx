@@ -601,7 +601,7 @@ export const AuthPage: React.FC = () => {
               {/* Instant Demo Admin Button */}
               <button
                 type="button"
-                onClick={loginAsDemoAdmin}
+                onClick={() => loginAsDemoAdmin()}
                 className="w-full py-2.5 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow-glow-emerald"
               >
                 <Sparkles className="w-4 h-4" />

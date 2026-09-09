@@ -1,10 +1,120 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { insforge } from '../lib/insforge';
-import type { UserProfile } from '../lib/types';
+import { insforge, usuariosApi } from '../lib/insforge';
+import type { UserProfile, RolCodigo } from '../lib/types';
+
+export const DEMO_PROFILES: Record<RolCodigo, UserProfile> = {
+  ADMIN_PLATAFORMA: {
+    id: 'usr_demo_admin_plataforma',
+    email: 'admin.plataforma@empresa.com',
+    name: 'Ing. Carlos Mendoza',
+    role: 'Administrador de la plataforma',
+    rol_codigo: 'ADMIN_PLATAFORMA',
+    permite_gestion_usuarios: true,
+    cargo: 'Administrador Principal de Sistemas',
+    emailVerified: true,
+  },
+  GERENTE_TH: {
+    id: 'usr_demo_gerente_th',
+    email: 'gerente.th@empresa.com',
+    name: 'Dra. Elena Ramos',
+    role: 'Gerente de TH',
+    rol_codigo: 'GERENTE_TH',
+    permite_gestion_usuarios: true,
+    cargo: 'Gerente Corporativo de Talento Humano',
+    emailVerified: true,
+  },
+  COORD_COMPENSACION: {
+    id: 'usr_demo_coord_comp',
+    email: 'coord.compensacion@empresa.com',
+    name: 'Lic. Roberto Gómez',
+    role: 'Coordinador de Compensación',
+    rol_codigo: 'COORD_COMPENSACION',
+    permite_gestion_usuarios: false,
+    cargo: 'Coordinador de Compensación y Beneficios',
+    emailVerified: true,
+  },
+  COORD_RECLUTAMIENTO: {
+    id: 'usr_demo_coord_rec',
+    email: 'coord.reclutamiento@empresa.com',
+    name: 'Lic. Mariana Silva',
+    role: 'Coordinador de Reclutamiento',
+    rol_codigo: 'COORD_RECLUTAMIENTO',
+    permite_gestion_usuarios: false,
+    cargo: 'Coordinador de Selección y Adquisición de Talento',
+    emailVerified: true,
+  },
+  ESPEC_RECLUTAMIENTO: {
+    id: 'usr_demo_espec_rec',
+    email: 'espec.reclutamiento@empresa.com',
+    name: 'Lic. Alejandro Castillo',
+    role: 'Especialista de reclutamiento',
+    rol_codigo: 'ESPEC_RECLUTAMIENTO',
+    permite_gestion_usuarios: false,
+    cargo: 'Especialista de Atracción de Talento',
+    emailVerified: true,
+  },
+};
+
+/**
+ * Función de autorización para validar acceso a módulos/pestañas
+ */
+export const checkTabPermission = (tab: string, rolCodigo?: string | null): boolean => {
+  if (!rolCodigo) return false;
+
+  // 1. Administrador de la plataforma y Gerente de TH tienen acceso a TODO (incluyendo usuarios)
+  if (rolCodigo === 'ADMIN_PLATAFORMA' || rolCodigo === 'GERENTE_TH') {
+    return true;
+  }
+
+  // 2. Tab de usuarios restringido EXCLUSIVAMENTE para Admin y Gerente TH
+  if (tab === 'usuarios') {
+    return false;
+  }
+
+  // 3. Pestañas universales para personal autorizado de TH
+  if (['dashboard', 'cargos', 'denominaciones_cargos', 'empleados', 'organigrama'].includes(tab)) {
+    return true;
+  }
+
+  // 4. Coordinador de Compensación: Finanzas, tabuladores, costos y estructura
+  if (rolCodigo === 'COORD_COMPENSACION') {
+    return [
+      'empresas',
+      'tabulador',
+      'tipo_costos',
+      'centros_costos',
+      'direcciones',
+      'gerencias',
+      'departamentos',
+      'responsables',
+    ].includes(tab);
+  }
+
+  // 5. Coordinador de Reclutamiento: Reclutamiento, perfiles PC, estructura organizativa y traslados
+  if (rolCodigo === 'COORD_RECLUTAMIENTO') {
+    return [
+      'perfiles_competencias',
+      'historial',
+      'direcciones',
+      'gerencias',
+      'departamentos',
+      'responsables',
+    ].includes(tab);
+  }
+
+  // 6. Especialista de reclutamiento: Ficha y perfiles de competencias
+  if (rolCodigo === 'ESPEC_RECLUTAMIENTO') {
+    return ['perfiles_competencias'].includes(tab);
+  }
+
+  return false;
+};
 
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
+  canManageUsers: boolean;
+  canAccessTab: (tab: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ data?: any; error?: any; requireVerification?: boolean }>;
   verifyEmailOtp: (email: string, otp: string) => Promise<{ data?: any; error?: any }>;
@@ -13,8 +123,10 @@ interface AuthContextType {
   resetPasswordWithToken: (token: string, newPassword: string) => Promise<{ success?: boolean; error?: any }>;
   signInWithProvider: (provider: 'google' | 'github') => Promise<void>;
   signOut: () => Promise<void>;
-  loginAsDemoAdmin: () => void;
+  loginAsDemoAdmin: (roleKey?: RolCodigo) => void;
+  switchDemoRole: (roleKey: RolCodigo) => void;
   updateProfileName: (name: string) => Promise<{ success: boolean; error?: any }>;
+  refreshUserRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +134,52 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Helper para consultar perfil extendido y rol en public.usuarios
+  const enrichUserProfile = async (authUser: any): Promise<UserProfile> => {
+    try {
+      const { data: dbUser } = await usuariosApi.getByAuthId(authUser.id);
+      if (dbUser) {
+        return {
+          id: authUser.id,
+          email: authUser.email,
+          name: dbUser.nombre || authUser.name || authUser.profile?.name || authUser.email.split('@')[0],
+          avatar_url: authUser.avatar_url || authUser.profile?.avatar_url,
+          role: dbUser.rol_nombre || 'Administrador de la plataforma',
+          rol_codigo: dbUser.rol_codigo,
+          permite_gestion_usuarios: dbUser.permite_gestion_usuarios ?? (dbUser.rol_codigo === 'ADMIN_PLATAFORMA' || dbUser.rol_codigo === 'GERENTE_TH'),
+          cargo: dbUser.cargo || undefined,
+          telefono: dbUser.telefono || undefined,
+          emailVerified: authUser.emailVerified ?? true,
+        };
+      }
+    } catch (err) {
+      console.warn('Could not load user profile from DB, falling back to auth metadata:', err);
+    }
+
+    // Fallback: Si no está en public.usuarios todavía
+    const isMasterAdmin =
+      authUser.email?.toLowerCase().includes('asuarez') ||
+      authUser.is_project_admin;
+    const defaultRolCodigo: RolCodigo = isMasterAdmin
+      ? 'ADMIN_PLATAFORMA'
+      : ((authUser.profile?.rol_codigo as RolCodigo) || 'ESPEC_RECLUTAMIENTO');
+    const defaultRolNombre = isMasterAdmin
+      ? 'Administrador de la plataforma'
+      : (authUser.profile?.role || 'Especialista de reclutamiento');
+
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      name: authUser.name || authUser.profile?.name || authUser.email.split('@')[0],
+      avatar_url: authUser.avatar_url || authUser.profile?.avatar_url,
+      role: defaultRolNombre,
+      rol_codigo: defaultRolCodigo,
+      permite_gestion_usuarios: defaultRolCodigo === 'ADMIN_PLATAFORMA' || defaultRolCodigo === 'GERENTE_TH',
+      cargo: authUser.profile?.cargo || undefined,
+      emailVerified: authUser.emailVerified ?? true,
+    };
+  };
 
   // Inicializar y chequear sesión activa al cargar
   useEffect(() => {
@@ -33,15 +191,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (cancelled) return;
 
         if (data?.user && !error) {
-          const authUser = data.user as any;
-          setUser({
-            id: authUser.id,
-            email: authUser.email,
-            name: authUser.name || authUser.profile?.name || authUser.email.split('@')[0],
-            avatar_url: authUser.avatar_url || authUser.profile?.avatar_url,
-            role: 'Administrador TH',
-            emailVerified: authUser.emailVerified ?? true,
-          });
+          const profile = await enrichUserProfile(data.user);
+          if (!cancelled) {
+            setUser(profile);
+          }
         } else {
           // Chequear si hay demo user guardado en localStorage
           const savedDemo = localStorage.getItem('th_demo_user');
@@ -70,6 +223,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Refrescar el rol del usuario en caliente
+  const refreshUserRole = async () => {
+    if (!user) return;
+    if (user.id.startsWith('usr_demo')) return;
+
+    try {
+      const { data } = await insforge.auth.getCurrentUser();
+      if (data?.user) {
+        const refreshed = await enrichUserProfile(data.user);
+        setUser(refreshed);
+      }
+    } catch (err) {
+      console.warn('Error refreshing user role:', err);
+    }
+  };
+
   // 1. Iniciar sesión con email y contraseña
   const signIn = async (email: string, password: string) => {
     try {
@@ -84,15 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data?.user) {
-        const authUser = data.user as any;
-        const profile: UserProfile = {
-          id: authUser.id,
-          email: authUser.email,
-          name: authUser.name || authUser.profile?.name || authUser.email.split('@')[0],
-          avatar_url: authUser.avatar_url || authUser.profile?.avatar_url,
-          role: 'Administrador TH',
-          emailVerified: true,
-        };
+        const profile = await enrichUserProfile(data.user);
         setUser(profile);
       }
 
@@ -121,14 +282,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data?.accessToken && data?.user) {
-        const authUser = data.user as any;
-        const profile: UserProfile = {
-          id: authUser.id,
-          email: authUser.email,
-          name: name?.trim() || authUser.email.split('@')[0],
-          role: 'Administrador TH',
-          emailVerified: true,
-        };
+        const profile = await enrichUserProfile(data.user);
         setUser(profile);
       }
 
@@ -151,14 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data?.user) {
-        const authUser = data.user as any;
-        const profile: UserProfile = {
-          id: authUser.id,
-          email: authUser.email,
-          name: authUser.name || authUser.email.split('@')[0],
-          role: 'Administrador TH',
-          emailVerified: true,
-        };
+        const profile = await enrichUserProfile(data.user);
         setUser(profile);
       }
 
@@ -228,20 +375,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 9. Acceso directo como Demo Admin (para pruebas y presentaciones)
-  const loginAsDemoAdmin = () => {
-    const demoUser: UserProfile = {
-      id: 'usr_demo_admin_th',
-      email: 'admin.th@empresa.com',
-      name: 'Ing. Carlos Mendoza (Admin)',
-      role: 'Director de Talento Humano',
-      emailVerified: true,
-    };
-    localStorage.setItem('th_demo_user', JSON.stringify(demoUser));
-    setUser(demoUser);
+  // 9. Acceso directo como Demo (con roles configurables para pruebas)
+  const loginAsDemoAdmin = (roleKey: RolCodigo = 'ADMIN_PLATAFORMA') => {
+    const selectedDemo = DEMO_PROFILES[roleKey] || DEMO_PROFILES.ADMIN_PLATAFORMA;
+    localStorage.setItem('th_demo_user', JSON.stringify(selectedDemo));
+    setUser(selectedDemo);
   };
 
-  // 10. Actualizar nombre de perfil
+  // 10. Cambiar rol en caliente cuando se está en modo Demo
+  const switchDemoRole = (roleKey: RolCodigo) => {
+    if (!DEMO_PROFILES[roleKey]) return;
+    const selectedDemo = DEMO_PROFILES[roleKey];
+    localStorage.setItem('th_demo_user', JSON.stringify(selectedDemo));
+    setUser(selectedDemo);
+  };
+
+  // 11. Actualizar nombre de perfil
   const updateProfileName = async (name: string) => {
     try {
       if (user?.id.startsWith('usr_demo')) {
@@ -263,11 +412,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Determinación de privilegios
+  const canManageUsers = Boolean(
+    user?.permite_gestion_usuarios ||
+    user?.rol_codigo === 'ADMIN_PLATAFORMA' ||
+    user?.rol_codigo === 'GERENTE_TH'
+  );
+
+  const canAccessTab = (tab: string): boolean => {
+    return checkTabPermission(tab, user?.rol_codigo);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
+        canManageUsers,
+        canAccessTab,
         signIn,
         signUp,
         verifyEmailOtp,
@@ -277,7 +439,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithProvider,
         signOut,
         loginAsDemoAdmin,
+        switchDemoRole,
         updateProfileName,
+        refreshUserRole,
       }}
     >
       {children}
@@ -292,3 +456,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

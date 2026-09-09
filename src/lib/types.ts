@@ -299,12 +299,54 @@ export interface SubordinadoRow {
   evaluador_efectivo: string | null;
 }
 
+export type RolCodigo =
+  | 'ADMIN_PLATAFORMA'
+  | 'GERENTE_TH'
+  | 'COORD_COMPENSACION'
+  | 'COORD_RECLUTAMIENTO'
+  | 'ESPEC_RECLUTAMIENTO';
+
+export interface Rol {
+  role_id: number;
+  codigo: RolCodigo | string;
+  nombre: string;
+  descripcion: string | null;
+  permite_gestion_usuarios: boolean;
+  color: string;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Usuario {
+  usuario_id: number;
+  auth_user_id: string;
+  email: string;
+  nombre: string;
+  rol_codigo: RolCodigo | string;
+  rol_nombre?: string;
+  rol_descripcion?: string | null;
+  permite_gestion_usuarios?: boolean;
+  rol_color?: string;
+  activo: boolean;
+  telefono: string | null;
+  cargo: string | null;
+  creado_por_id: string | null;
+  ultimo_acceso: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
   name?: string;
   avatar_url?: string;
   role?: string;
+  rol_codigo?: RolCodigo | string;
+  permite_gestion_usuarios?: boolean;
+  cargo?: string;
+  telefono?: string;
   emailVerified?: boolean;
 }
 

@@ -73,9 +73,31 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
       title: 'Inventario de Responsables por Área',
       subtitle: 'Vista unificada de líderes asignados a Direcciones, Gerencias y Departamentos',
     },
+    usuarios: {
+      title: 'Gestión de Usuarios, Roles y Seguridad',
+      subtitle: 'Administración de accesos institucionales, asignación de perfiles y niveles de autorización',
+    },
   };
 
   const currentInfo = titles[activeTab] || titles.dashboard;
+
+  const isDemoUser = user?.id.startsWith('usr_demo');
+
+  const getRoleColor = (rolCodigo?: string) => {
+    switch (rolCodigo) {
+      case 'ADMIN_PLATAFORMA':
+        return 'text-purple-300 bg-purple-500/10 border-purple-500/30';
+      case 'GERENTE_TH':
+        return 'text-blue-300 bg-blue-500/10 border-blue-500/30';
+      case 'COORD_COMPENSACION':
+        return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
+      case 'COORD_RECLUTAMIENTO':
+        return 'text-amber-300 bg-amber-500/10 border-amber-500/30';
+      case 'ESPEC_RECLUTAMIENTO':
+      default:
+        return 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30';
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-4 md:px-8 py-4">
@@ -105,22 +127,24 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
           </div>
         </div>
 
-        {/* Right: Actions & Links */}
+        {/* Right: Actions, Demo Switcher & User Badge */}
         <div className="flex items-center gap-2.5 sm:gap-3">
           {/* User badge */}
-          <div className="flex items-center gap-2 pl-2">
+          <div className="flex items-center gap-2.5 pl-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-sm">
               <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-200">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
-            <div className="hidden xl:block text-left">
+            <div className="hidden sm:block text-left">
               <p className="text-xs font-semibold text-slate-200 leading-none">
-                {user?.name || user?.email.split('@')[0]}
+                {user?.name || user?.email?.split('@')[0]}
               </p>
-              <p className="text-[10px] text-brand-400 font-medium mt-0.5">
-                {user?.role || 'Admin'}
-              </p>
+              <div className="mt-1">
+                <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getRoleColor(user?.rol_codigo)}`}>
+                  {user?.role || 'Administrador'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

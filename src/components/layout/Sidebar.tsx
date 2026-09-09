@@ -37,7 +37,8 @@ export type NavigationTab =
   | 'perfiles_competencias'
   | 'historial'
   | 'organigrama'
-  | 'responsables';
+  | 'responsables'
+  | 'usuarios';
 
 interface SidebarProps {
   activeTab: NavigationTab;
@@ -69,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   setIsCollapsed,
 }) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, canAccessTab } = useAuth();
 
   const navigationItems: NavGroup[] = [
     {
@@ -181,7 +182,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         },
       ],
     },
+    {
+      group: 'SEGURIDAD & ACCESOS',
+      items: [
+        {
+          id: 'usuarios',
+          label: 'Gestión de Usuarios & Roles',
+          icon: ShieldCheck,
+          badge: 'Admin',
+          highlight: true,
+        },
+      ],
+    },
   ];
+
+  const visibleNavigationGroups = React.useMemo(() => {
+    return navigationItems
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => canAccessTab(item.id)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [navigationItems, canAccessTab]);
 
   return (
     <>
@@ -234,7 +256,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation items scroll area */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
-          {navigationItems.map((group, gIdx) => (
+          {visibleNavigationGroups.map((group, gIdx) => (
             <div key={gIdx} className="space-y-1.5">
               <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 {group.group}
@@ -301,10 +323,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-semibold text-white truncate">{user?.email || 'Usuario'}</p>
+                <p className="text-xs font-semibold text-white truncate">{user?.name || user?.email || 'Usuario'}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <p className="text-[10px] text-slate-400">En línea (InsForge DB)</p>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <p className="text-[10px] text-brand-300 font-medium truncate">{user?.role || 'En línea'}</p>
                 </div>
               </div>
             </div>
