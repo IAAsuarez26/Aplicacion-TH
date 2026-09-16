@@ -86,3 +86,254 @@
 .animate-pulse-glow {
   animation: pulseGlow 3s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   MODO CLARO (LIGHT THEME) - PALETA PROFESIONAL DE AZUL Y BLANCO
+   ========================================================================== */
+html.light {
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: #f4f8fc !important;
+  color: #0f172a !important;
+}
+
+/* Contenedores y Fondos Principales */
+html.light .bg-slate-950 {
+  background-color: #f4f8fc !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-slate-900\/95,
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/70,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/40,
+html.light .bg-slate-900\/30,
+html.light .bg-slate-900\/20 {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/60,
+html.light .bg-slate-950\/50,
+html.light .bg-slate-950\/40,
+html.light .bg-slate-950\/30 {
+  background-color: #f0f6fc !important;
+}
+
+html.light .bg-slate-800 {
+  background-color: #eff6ff !important;
+}
+
+html.light .bg-slate-800\/90,
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/60,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/40 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-slate-850 {
+  background-color: #f8fbff !important;
+}
+
+/* Tarjetas Glassmorphism en Modo Claro */
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid #dbeafe !important;
+  box-shadow: 0 4px 20px -2px rgba(30, 58, 138, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+html.light .glass-card-hover:hover {
+  background: #ffffff !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 12px 24px -10px rgba(37, 99, 235, 0.15), 0 0 20px -5px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Header & Sidebar */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 10px -2px rgba(30, 58, 138, 0.05) !important;
+}
+
+html.light aside {
+  background-color: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  box-shadow: 2px 0 16px -4px rgba(30, 58, 138, 0.05) !important;
+}
+
+html.light aside nav button:not(.bg-gradient-to-r) {
+  color: #334155 !important;
+}
+
+html.light aside nav button:not(.bg-gradient-to-r):hover {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+/* Bordes en Modo Claro */
+html.light .border-slate-800,
+html.light .border-slate-700,
+html.light .border-slate-800\/90,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/50,
+html.light .border-slate-700\/90,
+html.light .border-slate-700\/80,
+html.light .border-slate-700\/60 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Tipografía de Alto Contraste */
+html.light .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.light .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4 {
+  color: #0f172a;
+}
+
+/* Formularios: Inputs, Selects & Textareas */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Tablas & DataTables */
+html.light table {
+  border-color: #e2e8f0 !important;
+}
+
+html.light thead,
+html.light thead tr,
+html.light th {
+  background-color: #eff6ff !important;
+  color: #1e40af !important;
+  border-color: #dbeafe !important;
+}
+
+html.light tbody tr {
+  background-color: #ffffff !important;
+  border-color: #f1f5f9 !important;
+}
+
+html.light tbody tr:hover {
+  background-color: #f0f7ff !important;
+}
+
+html.light tbody td {
+  border-color: #f1f5f9 !important;
+}
+
+/* Adaptación de Gradientes Oscuros a Tonos Suaves de Azul / Pastel */
+html.light .from-purple-950\/60,
+html.light .from-purple-950\/50,
+html.light .from-purple-950\/40 {
+  --tw-gradient-from: #f5f3ff !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
+}
+
+html.light .from-indigo-950\/60,
+html.light .from-indigo-950\/50,
+html.light .from-indigo-950\/40 {
+  --tw-gradient-from: #eef2ff !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
+}
+
+html.light .from-cyan-950\/60,
+html.light .from-cyan-950\/50,
+html.light .from-cyan-950\/40 {
+  --tw-gradient-from: #ecfeff !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
+}
+
+html.light .from-emerald-950\/60,
+html.light .from-emerald-950\/50,
+html.light .from-emerald-950\/40 {
+  --tw-gradient-from: #ecfdf5 !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
+}
+
+html.light .from-amber-950\/60,
+html.light .from-amber-950\/50,
+html.light .from-amber-950\/40 {
+  --tw-gradient-from: #fffbeb !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #ffffff, var(--tw-gradient-to) !important;
+}
+
+/* Modales y Diálogos */
+html.light .fixed.inset-0.bg-slate-950\/80,
+html.light .fixed.inset-0.bg-slate-950\/70,
+html.light .fixed.inset-0.bg-black\/60,
+html.light .fixed.inset-0.bg-black\/70 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* Scrollbars en Modo Claro */
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

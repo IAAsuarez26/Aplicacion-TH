@@ -1,6 +1,7 @@
 import React from 'react';
-import { Menu, Bell, Search, User, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Menu, Bell, Search, User, Sparkles, PanelLeftClose, PanelLeftOpen, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { NavigationTab } from './Sidebar';
 
 interface HeaderProps {
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onToggleSidebar }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const titles: Record<NavigationTab, { title: string; subtitle: string }> = {
     dashboard: {
@@ -127,8 +129,36 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
           </div>
         </div>
 
-        {/* Right: Actions, Demo Switcher & User Badge */}
+        {/* Right: Actions, Theme Toggle & User Badge */}
         <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-sm group ${
+              theme === 'dark'
+                ? 'bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white'
+                : 'bg-white hover:bg-blue-50/80 border-blue-200 text-blue-900 shadow-sm'
+            }`}
+            title={theme === 'dark' ? 'Cambiar a Modo Claro (Azul y Blanco)' : 'Cambiar a Modo Oscuro'}
+            aria-label="Cambiar tema de color"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+                <span className="hidden md:inline text-xs font-semibold text-slate-300 group-hover:text-white">
+                  Modo Claro
+                </span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-blue-600 group-hover:-rotate-12 transition-transform duration-300" />
+                <span className="hidden md:inline text-xs font-semibold text-blue-900 group-hover:text-blue-950">
+                  Modo Oscuro
+                </span>
+              </>
+            )}
+          </button>
+
           {/* User badge */}
           <div className="flex items-center gap-2.5 pl-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-sm">
