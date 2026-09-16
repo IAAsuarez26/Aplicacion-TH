@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard,
   Building,
@@ -13,12 +13,16 @@ import {
   LogOut,
   Sparkles,
   ChevronRight,
+  ChevronDown,
+  ChevronsUpDown,
   Database,
   PanelLeftClose,
   Coins,
   PieChart,
   Tag,
   Award,
+  Landmark,
+  FolderTree,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -59,8 +63,11 @@ interface NavItem {
 
 interface NavGroup {
   group: string;
+  icon?: React.ComponentType<{ className?: string }>;
   items: NavItem[];
 }
+
+const STORAGE_KEY = 'th_sidebar_expanded_groups';
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
@@ -72,131 +79,140 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user, signOut, canAccessTab } = useAuth();
 
-  const navigationItems: NavGroup[] = [
-    {
-      group: 'PANEL PRINCIPAL',
-      items: [
-        {
-          id: 'dashboard',
-          label: 'Dashboard General',
-          icon: LayoutDashboard,
-          badge: 'KPIs',
-        },
-      ],
-    },
-    {
-      group: 'ESTRUCTURA CORPORATIVA & FINANZAS',
-      items: [
-        {
-          id: 'empresas',
-          label: 'Empresas & Filiales',
-          icon: Building,
-          badge: 'Grupo',
-        },
-        {
-          id: 'tabulador',
-          label: 'Tabulador Salarial',
-          icon: Layers,
-          badge: '80-120%',
-        },
-        {
-          id: 'tipo_costos',
-          label: 'Tipos de Costos',
-          icon: Coins,
-          badge: 'MOD/MOI',
-        },
-        {
-          id: 'centros_costos',
-          label: 'Centros de Costos',
-          icon: PieChart,
-          badge: '01-15',
-        },
-      ],
-    },
-    {
-      group: 'ESTRUCTURA ORGANIZATIVA',
-      items: [
-        {
-          id: 'direcciones',
-          label: 'Direcciones (Nivel 1)',
-          icon: Building2,
-        },
-        {
-          id: 'gerencias',
-          label: 'Gerencias (Nivel 2)',
-          icon: GitFork,
-        },
-        {
-          id: 'departamentos',
-          label: 'Departamentos (Nivel 3)',
-          icon: Network,
-        },
-      ],
-    },
-    {
-      group: 'GESTIÓN DE TALENTO',
-      items: [
-        {
-          id: 'cargos',
-          label: 'Catálogo de Cargos',
-          icon: Briefcase,
-        },
-        {
-          id: 'denominaciones_cargos',
-          label: 'Denominaciones (DC)',
-          icon: Tag,
-          badge: 'DC',
-        },
-        {
-          id: 'empleados',
-          label: 'Ficha de Empleados',
-          icon: Users,
-          highlight: true,
-        },
-        {
-          id: 'perfiles_competencias',
-          label: 'Perfiles de Competencias',
-          icon: Award,
-          badge: 'PC',
-        },
-        {
-          id: 'historial',
-          label: 'Historial de Traslados',
-          icon: History,
-        },
-      ],
-    },
-    {
-      group: 'JERARQUÍA & REPORTES',
-      items: [
-        {
-          id: 'organigrama',
-          label: 'Organigrama & Mando',
-          icon: Network,
-          badge: 'Live',
-        },
-        {
-          id: 'responsables',
-          label: 'Responsables por Área',
-          icon: ShieldCheck,
-        },
-      ],
-    },
-    {
-      group: 'SEGURIDAD & ACCESOS',
-      items: [
-        {
-          id: 'usuarios',
-          label: 'Gestión de Usuarios & Roles',
-          icon: ShieldCheck,
-          badge: 'Admin',
-          highlight: true,
-        },
-      ],
-    },
-  ];
+  const navigationItems: NavGroup[] = useMemo(
+    () => [
+      {
+        group: 'PANEL PRINCIPAL',
+        icon: LayoutDashboard,
+        items: [
+          {
+            id: 'dashboard',
+            label: 'Dashboard General',
+            icon: LayoutDashboard,
+            badge: 'KPIs',
+          },
+        ],
+      },
+      {
+        group: 'ESTRUCTURA CORPORATIVA & FINANZAS',
+        icon: Landmark,
+        items: [
+          {
+            id: 'empresas',
+            label: 'Empresas & Filiales',
+            icon: Building,
+            badge: 'Grupo',
+          },
+          {
+            id: 'tabulador',
+            label: 'Tabulador Salarial',
+            icon: Layers,
+            badge: '80-120%',
+          },
+          {
+            id: 'tipo_costos',
+            label: 'Tipos de Costos',
+            icon: Coins,
+            badge: 'MOD/MOI',
+          },
+          {
+            id: 'centros_costos',
+            label: 'Centros de Costos',
+            icon: PieChart,
+            badge: '01-15',
+          },
+        ],
+      },
+      {
+        group: 'ESTRUCTURA ORGANIZATIVA',
+        icon: FolderTree,
+        items: [
+          {
+            id: 'direcciones',
+            label: 'Direcciones (Nivel 1)',
+            icon: Building2,
+          },
+          {
+            id: 'gerencias',
+            label: 'Gerencias (Nivel 2)',
+            icon: GitFork,
+          },
+          {
+            id: 'departamentos',
+            label: 'Departamentos (Nivel 3)',
+            icon: Network,
+          },
+        ],
+      },
+      {
+        group: 'GESTIÓN DE TALENTO',
+        icon: Users,
+        items: [
+          {
+            id: 'cargos',
+            label: 'Catálogo de Cargos',
+            icon: Briefcase,
+          },
+          {
+            id: 'denominaciones_cargos',
+            label: 'Denominaciones (DC)',
+            icon: Tag,
+            badge: 'DC',
+          },
+          {
+            id: 'empleados',
+            label: 'Ficha de Empleados',
+            icon: Users,
+            highlight: true,
+          },
+          {
+            id: 'perfiles_competencias',
+            label: 'Perfiles de Competencias',
+            icon: Award,
+            badge: 'PC',
+          },
+          {
+            id: 'historial',
+            label: 'Historial de Traslados',
+            icon: History,
+          },
+        ],
+      },
+      {
+        group: 'JERARQUÍA & REPORTES',
+        icon: Network,
+        items: [
+          {
+            id: 'organigrama',
+            label: 'Organigrama & Mando',
+            icon: Network,
+            badge: 'Live',
+          },
+          {
+            id: 'responsables',
+            label: 'Responsables por Área',
+            icon: ShieldCheck,
+          },
+        ],
+      },
+      {
+        group: 'SEGURIDAD & ACCESOS',
+        icon: ShieldCheck,
+        items: [
+          {
+            id: 'usuarios',
+            label: 'Gestión de Usuarios & Roles',
+            icon: ShieldCheck,
+            badge: 'Admin',
+            highlight: true,
+          },
+        ],
+      },
+    ],
+    []
+  );
 
-  const visibleNavigationGroups = React.useMemo(() => {
+  const visibleNavigationGroups = useMemo(() => {
     return navigationItems
       .map((group) => ({
         ...group,
@@ -204,6 +220,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }))
       .filter((group) => group.items.length > 0);
   }, [navigationItems, canAccessTab]);
+
+  // Collapsed / Expanded state with localStorage persistence
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Error loading sidebar preferences', e);
+    }
+    return {
+      'PANEL PRINCIPAL': true,
+      'ESTRUCTURA CORPORATIVA & FINANZAS': true,
+      'ESTRUCTURA ORGANIZATIVA': true,
+      'GESTIÓN DE TALENTO': true,
+      'JERARQUÍA & REPORTES': true,
+      'SEGURIDAD & ACCESOS': true,
+    };
+  });
+
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups((prev) => {
+      const next = {
+        ...prev,
+        [groupName]: prev[groupName] !== undefined ? !prev[groupName] : false,
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const toggleAllGroups = () => {
+    const allExpanded = visibleNavigationGroups.every((g) => expandedGroups[g.group] !== false);
+    const targetState = !allExpanded;
+    const next: Record<string, boolean> = {};
+    visibleNavigationGroups.forEach((g) => {
+      next[g.group] = targetState;
+    });
+    setExpandedGroups(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch (e) {}
+  };
+
+  // Ensure active tab's parent group is always expanded
+  useEffect(() => {
+    const parentGroup = visibleNavigationGroups.find((g) =>
+      g.items.some((item) => item.id === activeTab)
+    );
+    if (parentGroup && expandedGroups[parentGroup.group] === false) {
+      setExpandedGroups((prev) => {
+        const next = { ...prev, [parentGroup.group]: true };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+    }
+  }, [activeTab, visibleNavigationGroups]);
+
+  const allAreExpanded = visibleNavigationGroups.every((g) => expandedGroups[g.group] !== false);
 
   return (
     <>
@@ -255,62 +335,124 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation items scroll area */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
-          {visibleNavigationGroups.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-1.5">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                {group.group}
-              </div>
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
-                      isActive
-                        ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-glow'
-                        : item.highlight
-                        ? 'text-brand-300 hover:text-white hover:bg-slate-800/80 bg-brand-950/30 border border-brand-500/20'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
-                          isActive ? 'text-white' : item.highlight ? 'text-brand-400' : 'text-slate-400 group-hover:text-slate-200'
+        <nav className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+          {/* Quick toggle all */}
+          <div className="flex items-center justify-between px-1 pb-1 text-[10px] font-semibold text-slate-400">
+            <span className="uppercase tracking-wider">Módulos</span>
+            <button
+              type="button"
+              onClick={toggleAllGroups}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+              title={allAreExpanded ? 'Contraer todos los grupos' : 'Expandir todos los grupos'}
+            >
+              <ChevronsUpDown className="w-3 h-3" />
+              <span>{allAreExpanded ? 'Contraer todo' : 'Expandir todo'}</span>
+            </button>
+          </div>
+
+          {visibleNavigationGroups.map((group, gIdx) => {
+            const isExpanded = expandedGroups[group.group] !== false;
+            const hasActiveItem = group.items.some((item) => item.id === activeTab);
+            const GroupIcon = group.icon;
+
+            return (
+              <div key={gIdx} className="space-y-1.5">
+                {/* Group Header Button */}
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.group)}
+                  aria-expanded={isExpanded}
+                  className={`sidebar-group-header w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer select-none group border ${
+                    hasActiveItem ? 'has-active' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 pr-1">
+                    {GroupIcon && (
+                      <GroupIcon
+                        className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                          hasActiveItem
+                            ? 'text-brand-400'
+                            : 'text-slate-400 group-hover:text-slate-200'
                         }`}
                       />
-                      <span>{item.label}</span>
-                    </div>
+                    )}
+                    <span className="text-[10.5px] font-bold tracking-wide uppercase truncate">
+                      {group.group}
+                    </span>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      {item.badge && (
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium ${
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="sidebar-group-badge text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium leading-none">
+                      {group.items.length}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 text-slate-400 ${
+                        isExpanded ? 'rotate-0' : '-rotate-90'
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {/* Group Items */}
+                {isExpanded && (
+                  <div className="space-y-1 pt-0.5 pl-1 transition-all duration-200">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setIsOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 group ${
                             isActive
-                              ? 'bg-white/20 text-white'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700/60'
+                              ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-glow'
+                              : item.highlight
+                              ? 'text-brand-300 hover:text-white hover:bg-slate-800/80 bg-brand-950/30 border border-brand-500/20'
+                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                           }`}
                         >
-                          {item.badge}
-                        </span>
-                      )}
-                      <ChevronRight
-                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                          isActive ? 'text-white translate-x-0.5' : 'text-slate-600 group-hover:text-slate-400'
-                        }`}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+                          <div className="flex items-center gap-3">
+                            <Icon
+                              className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
+                                isActive
+                                  ? 'text-white'
+                                  : item.highlight
+                                  ? 'text-brand-400'
+                                  : 'text-slate-400 group-hover:text-slate-200'
+                              }`}
+                            />
+                            <span>{item.label}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {item.badge && (
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-medium ${
+                                  isActive
+                                    ? 'bg-white/20 text-white'
+                                    : 'bg-slate-800 text-slate-400 border border-slate-700/60'
+                                }`}
+                              >
+                                {item.badge}
+                              </span>
+                            )}
+                            <ChevronRight
+                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                isActive ? 'text-white translate-x-0.5' : 'text-slate-600 group-hover:text-slate-400'
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* User Session Footer */}

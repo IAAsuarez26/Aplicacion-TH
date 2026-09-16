@@ -173,11 +173,78 @@ html.light aside {
   box-shadow: 2px 0 16px -4px rgba(30, 58, 138, 0.05) !important;
 }
 
-html.light aside nav button:not(.bg-gradient-to-r) {
+/* Sidebar Group Headers - Dark Mode (Default) */
+.sidebar-group-header {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border-color: rgba(51, 65, 85, 0.7) !important;
+  color: #94a3b8 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.sidebar-group-header:hover {
+  background: linear-gradient(135deg, rgba(51, 65, 85, 0.7) 0%, rgba(30, 41, 59, 0.85) 100%);
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #f1f5f9 !important;
+}
+
+.sidebar-group-header.has-active {
+  background: linear-gradient(135deg, rgba(49, 46, 129, 0.35) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border-color: rgba(99, 102, 241, 0.6) !important;
+  color: #e0e7ff !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.18);
+}
+
+.sidebar-group-badge {
+  background-color: rgba(30, 41, 59, 0.8);
+  color: #94a3b8;
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.sidebar-group-header.has-active .sidebar-group-badge {
+  background-color: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* Sidebar Group Headers - Light Mode */
+html.light .sidebar-group-header {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e2effe 100%) !important;
+  border-color: #cbd5e1 !important;
+  color: #1e3a8a !important;
+  box-shadow: 0 1px 3px rgba(30, 58, 138, 0.08) !important;
+}
+
+html.light .sidebar-group-header:hover {
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%) !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+
+html.light .sidebar-group-header.has-active {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  border-color: #2563eb !important;
+  color: #1e40af !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.16) !important;
+}
+
+html.light .sidebar-group-badge {
+  background-color: #e0f2fe !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+html.light .sidebar-group-header.has-active .sidebar-group-badge {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* Sidebar Nav Item Buttons en Modo Claro (no grupo header) */
+html.light aside nav button:not(.sidebar-group-header):not(.bg-gradient-to-r) {
   color: #334155 !important;
 }
 
-html.light aside nav button:not(.bg-gradient-to-r):hover {
+html.light aside nav button:not(.sidebar-group-header):not(.bg-gradient-to-r):hover {
   background-color: #eff6ff !important;
   color: #1d4ed8 !important;
 }
