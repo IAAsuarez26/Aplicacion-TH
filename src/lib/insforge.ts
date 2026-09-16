@@ -757,14 +757,6 @@ export const cargosApi = {
 
       if (cargo.cargo_id) {
         insertPayload.cargo_id = Number(cargo.cargo_id);
-      } else {
-        const match = finalCodigo.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          if (!isNaN(num) && num > 0) {
-            insertPayload.cargo_id = num;
-          }
-        }
       }
 
       const { data, error } = await insforge.database
@@ -883,14 +875,6 @@ export const direccionesApi = {
 
       if (direccion.direccion_id) {
         insertPayload.direccion_id = Number(direccion.direccion_id);
-      } else {
-        const match = finalCodigo.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          if (!isNaN(num) && num > 0) {
-            insertPayload.direccion_id = num;
-          }
-        }
       }
 
       const { data, error } = await insforge.database
@@ -1014,14 +998,6 @@ export const gerenciasApi = {
 
       if (gerencia.gerencia_id) {
         insertPayload.gerencia_id = Number(gerencia.gerencia_id);
-      } else {
-        const match = finalCodigo.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          if (!isNaN(num) && num > 0) {
-            insertPayload.gerencia_id = num;
-          }
-        }
       }
 
       const { data, error } = await insforge.database
@@ -1151,14 +1127,6 @@ export const departamentosApi = {
 
       if (departamento.departamento_id) {
         insertPayload.departamento_id = Number(departamento.departamento_id);
-      } else {
-        const match = finalCodigo.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          if (!isNaN(num) && num > 0) {
-            insertPayload.departamento_id = num;
-          }
-        }
       }
 
       const { data, error } = await insforge.database
@@ -1274,14 +1242,6 @@ export const empleadosApi = {
 
       if (empleado.empleado_id) {
         insertPayload.empleado_id = Number(empleado.empleado_id);
-      } else {
-        const match = empleado.codigo_empleado.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          if (!isNaN(num) && num > 0) {
-            insertPayload.empleado_id = num;
-          }
-        }
       }
 
       const { data, error } = await insforge.database

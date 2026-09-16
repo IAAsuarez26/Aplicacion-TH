@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit2, Trash2, GitFork, User, Building2, Filter, ChevronDown, RotateCcw, PieChart } from 'lucide-react';
-import { gerenciasApi, direccionesApi, empleadosApi, centrosCostosApi, formatGerenciaCodigo } from '../../lib/insforge';
-import type { Gerencia, Direccion, Empleado, CentroCosto } from '../../lib/types';
+import { gerenciasApi, direccionesApi, empleadosApi, centrosCostosApi, empresasApi, formatGerenciaCodigo } from '../../lib/insforge';
+import type { Gerencia, Direccion, Empleado, CentroCosto, Empresa } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
 import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -14,6 +14,7 @@ export const GerenciasModule: React.FC = () => {
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [centrosCostos, setCentrosCostos] = useState<CentroCosto[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -49,11 +50,13 @@ export const GerenciasModule: React.FC = () => {
         { data: dirs, error: errDirs },
         { data: emps, error: errEmps },
         { data: ccs, error: errCcs },
+        { data: empsList, error: errEmpsList },
       ] = await Promise.all([
         gerenciasApi.getAll(),
         direccionesApi.getAll(),
         empleadosApi.getAll(),
         centrosCostosApi.getAll(),
+        empresasApi.getAll(),
       ]);
 
       if (errGers) toast.error('No se pudieron cargar las gerencias');
@@ -62,6 +65,7 @@ export const GerenciasModule: React.FC = () => {
       setDirecciones(dirs || []);
       setEmpleados(emps || []);
       setCentrosCostos(ccs || []);
+      setEmpresas(empsList || []);
     } finally {
       setLoading(false);
     }
@@ -201,6 +205,13 @@ export const GerenciasModule: React.FC = () => {
     return dir ? dir.nombre : dirCode;
   };
 
+  const getEmpresaForDireccion = (dirCode?: string | null) => {
+    if (!dirCode) return null;
+    const dir = direcciones.find((d) => d.codigo === dirCode);
+    if (!dir || !dir.empresa_id) return null;
+    return empresas.find((e) => e.empresa_id === dir.empresa_id) || null;
+  };
+
   const getGerenteName = (gId: number | null) => {
     if (!gId) return null;
     const emp = empleados.find((e) => e.empleado_id === gId);
@@ -270,12 +281,22 @@ export const GerenciasModule: React.FC = () => {
       key: 'codigo_direccion',
       header: 'Dirección Padre (Nivel 1)',
       sortable: true,
-      render: (item) => (
-        <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
-          <Building2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
-          <span>{getDireccionName(item.codigo_direccion)}</span>
-        </div>
-      ),
+      render: (item) => {
+        const emp = getEmpresaForDireccion(item.codigo_direccion);
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+              <Building2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+              <span>{getDireccionName(item.codigo_direccion)}</span>
+            </div>
+            {emp && (
+              <span className="text-[10px] font-semibold text-cyan-400/90 pl-5">
+                {emp.nombre_corto ? `[${emp.nombre_corto}] ` : ''}{emp.razon_social}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'codigo_cc',
@@ -406,11 +427,15 @@ export const GerenciasModule: React.FC = () => {
               <option value="ALL" className="bg-slate-900 text-slate-200">Direcciones</option>
               {[...direcciones]
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                .map((d) => (
-                  <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
-                    {d.nombre} ({d.codigo})
-                  </option>
-                ))}
+                .map((d) => {
+                  const emp = empresas.find((e) => e.empresa_id === d.empresa_id);
+                  const empTag = emp ? ` [${emp.nombre_corto || emp.codigo}]` : '';
+                  return (
+                    <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
+                      {d.nombre} ({d.codigo}){empTag}
+                    </option>
+                  );
+                })}
             </select>
             <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
               selectedDireccionFilter !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
@@ -515,11 +540,15 @@ export const GerenciasModule: React.FC = () => {
               <option value="" disabled>-- Selecciona una Dirección --</option>
               {[...direcciones]
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                .map((d) => (
-                  <option key={d.codigo} value={d.codigo}>
-                    {d.nombre} ({d.codigo})
-                  </option>
-                ))}
+                .map((d) => {
+                  const emp = empresas.find((e) => e.empresa_id === d.empresa_id);
+                  const empTag = emp ? ` [${emp.nombre_corto || emp.codigo}]` : '';
+                  return (
+                    <option key={d.codigo} value={d.codigo}>
+                      {d.nombre} ({d.codigo}){empTag}
+                    </option>
+                  );
+                })}
             </select>
           </div>
 
