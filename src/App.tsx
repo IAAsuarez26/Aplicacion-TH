@@ -19,6 +19,7 @@ import { HistorialModule } from './components/historial/HistorialModule';
 import { OrganigramaModule } from './components/organigrama/OrganigramaModule';
 import { ResponsablesModule } from './components/responsables/ResponsablesModule';
 import { UsuariosModule } from './components/usuarios/UsuariosModule';
+import { HumandSyncModule } from './components/humand/HumandSyncModule';
 import { Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -92,6 +93,7 @@ export const App: React.FC = () => {
       {activeTab === 'historial' && <HistorialModule />}
       {activeTab === 'organigrama' && <OrganigramaModule />}
       {activeTab === 'responsables' && <ResponsablesModule />}
+      {activeTab === 'humand' && <HumandSyncModule />}
       {activeTab === 'usuarios' && canManageUsers && <UsuariosModule />}
     </Layout>
   );

@@ -87,6 +87,7 @@ export const checkTabPermission = (tab: string, rolCodigo?: string | null): bool
       'gerencias',
       'departamentos',
       'responsables',
+      'humand',
     ].includes(tab);
   }
 

@@ -23,6 +23,7 @@ import {
   Award,
   Landmark,
   FolderTree,
+  Share2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -42,7 +43,8 @@ export type NavigationTab =
   | 'historial'
   | 'organigrama'
   | 'responsables'
-  | 'usuarios';
+  | 'usuarios'
+  | 'humand';
 
 interface SidebarProps {
   activeTab: NavigationTab;
@@ -192,6 +194,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             id: 'responsables',
             label: 'Responsables por Área',
             icon: ShieldCheck,
+          },
+        ],
+      },
+      {
+        group: 'INTEGRACIONES & ECOSISTEMA',
+        icon: Share2,
+        items: [
+          {
+            id: 'humand',
+            label: 'Integración Humand',
+            icon: Share2,
+            badge: 'API v1',
+            highlight: true,
           },
         ],
       },

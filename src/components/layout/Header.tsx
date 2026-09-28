@@ -79,6 +79,10 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
       title: 'Gestión de Usuarios, Roles y Seguridad',
       subtitle: 'Administración de accesos institucionales, asignación de perfiles y niveles de autorización',
     },
+    humand: {
+      title: 'Integración Humand API v1',
+      subtitle: 'Sincronización de estructura organizativa, miembros y auditoría de perfiles',
+    },
   };
 
   const currentInfo = titles[activeTab] || titles.dashboard;
