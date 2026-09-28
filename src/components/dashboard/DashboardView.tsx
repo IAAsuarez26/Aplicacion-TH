@@ -96,13 +96,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Top Banner / Welcome card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-900/80 via-indigo-950/60 to-slate-900 border border-brand-500/20 p-6 md:p-8 shadow-glow">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-50 via-indigo-50/50 to-white dark:from-brand-900/80 dark:via-indigo-950/60 dark:to-slate-900 border border-blue-200/80 dark:border-brand-500/20 p-6 md:p-8 shadow-sm dark:shadow-glow">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-xl">
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Estructura Corporativa & Talento Humano
             </h2>
-            <p className="text-slate-300 text-sm mt-2 leading-relaxed">
+            <p className="text-slate-600 dark:text-slate-300 text-sm mt-2 leading-relaxed">
               Monitoreo integral de filiales, tabuladores salariales por empresa (80%-120%), unidades jerárquicas y línea de mando.
             </p>
           </div>
@@ -110,23 +110,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => onNavigate('tabulador')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium shadow-sm transition-colors"
             >
-              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <DollarSign className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               <span>Tabulador Salarial</span>
             </button>
             <button
               onClick={onOpenNewEmployee}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-glow transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-md dark:shadow-glow transition-all"
             >
               <UserPlus className="w-4 h-4" />
               <span>Nuevo Empleado</span>
             </button>
             <button
               onClick={() => onNavigate('organigrama')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium shadow-sm transition-colors"
             >
-              <Network className="w-4 h-4 text-brand-400" />
+              <Network className="w-4 h-4 text-brand-600 dark:text-brand-400" />
               <span>Organigrama</span>
             </button>
           </div>
@@ -145,13 +145,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {stat.label}
                   </p>
-                  <h3 className="text-3xl font-black text-white mt-1.5 tracking-tight">
+                  <h3 className="text-3xl font-black text-slate-900 dark:text-white mt-1.5 tracking-tight">
                     {loading ? '...' : stat.value}
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 font-medium">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 font-medium">
                     {stat.subvalue}
                   </p>
                 </div>
@@ -159,13 +159,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div
                   className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${stat.color} p-0.5 shadow-md group-hover:scale-110 transition-transform`}
                 >
-                  <div className="w-full h-full bg-slate-900/80 rounded-[14px] flex items-center justify-center text-white">
+                  <div className="w-full h-full bg-white dark:bg-slate-900/80 rounded-[14px] flex items-center justify-center text-slate-800 dark:text-white">
                     <Icon className="w-5 h-5" />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-brand-400 font-medium">
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs text-brand-600 dark:text-brand-400 font-medium">
                 <span>Explorar registros</span>
                 <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </div>

@@ -379,32 +379,32 @@ export const HumandSyncModule: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. HERO HEADER: ESTADO DE INTEGRACIÓN Y SEGURIDAD */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/70 border border-slate-800 p-6 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/70 border border-blue-200/80 dark:border-slate-800 p-6 shadow-sm dark:shadow-xl">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                 Humand Public API v1 — Enlace Activo
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
                 <Server className="w-3.5 h-3.5" />
                 Comunidad: Ponce & Benzo
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
                 <Lock className="w-3.5 h-3.5" />
                 DLP Activo: Cero Exposición Salarial
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Share2 className="w-7 h-7 text-brand-400" />
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <Share2 className="w-7 h-7 text-brand-600 dark:text-brand-400" />
               Sincronización Organizacional TH ↔ Humand
             </h1>
-            <p className="text-sm text-slate-300 max-w-3xl">
+            <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
               La Aplicación TH es la <strong>Fuente Única de la Verdad</strong>. Los cargos, departamentos y asignaciones de colaboradores administrados aquí se sincronizan automáticamente o por demanda hacia la comunidad corporativa de Humand.
             </p>
           </div>
@@ -414,7 +414,7 @@ export const HumandSyncModule: React.FC = () => {
             <button
               onClick={handleRunSimulation}
               disabled={isSimulating}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition shadow-sm disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isSimulating ? 'animate-spin' : ''}`} />
               Simulación (Dry-Run)
@@ -422,7 +422,7 @@ export const HumandSyncModule: React.FC = () => {
             <button
               onClick={handleTriggerSync}
               disabled={isSimulating}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-glow transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-md dark:shadow-glow transition disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
               Sincronizar Ahora
@@ -431,19 +431,19 @@ export const HumandSyncModule: React.FC = () => {
         </div>
 
         {/* Barra de metadatos de sincronización */}
-        <div className="mt-6 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
-              Última Sincronización: <strong className="text-slate-200">{lastSyncDate}</strong>
+              <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+              Última Sincronización: <strong className="text-slate-800 dark:text-slate-200">{lastSyncDate}</strong>
             </span>
             <span className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-slate-500" />
-              Límite de Tasa: <strong className="text-slate-200">100 req/60s (Saludable)</strong>
+              <Activity className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+              Límite de Tasa: <strong className="text-slate-800 dark:text-slate-200">100 req/60s (Saludable)</strong>
             </span>
           </div>
-          <span className="text-slate-500">
-            Base URL: <code className="text-slate-400 bg-slate-800/60 px-1.5 py-0.5 rounded">https://api-prod.humand.co/public/api/v1</code>
+          <span className="text-slate-500 dark:text-slate-500">
+            Base URL: <code className="text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-transparent px-1.5 py-0.5 rounded">https://api-prod.humand.co/public/api/v1</code>
           </span>
         </div>
       </div>
@@ -456,35 +456,35 @@ export const HumandSyncModule: React.FC = () => {
           onClick={() => handleCardClick('departamentos')}
           className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:scale-[1.02] hover:shadow-lg ${
             activeSubTab === 'departamentos'
-              ? 'bg-blue-500/10 border-2 border-blue-500/60 ring-2 ring-blue-500/20'
-              : 'bg-slate-900/60 border border-slate-800 hover:border-blue-500/40 hover:bg-slate-900/90'
+              ? 'bg-blue-50/80 dark:bg-blue-500/10 border-2 border-blue-500/60 ring-2 ring-blue-500/20'
+              : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-blue-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-400 group-hover:text-blue-300 transition-colors">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
               Departamentos
             </span>
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
               activeSubTab === 'departamentos'
-                ? 'bg-blue-500/30 text-blue-200 border border-blue-400/40'
-                : 'bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:bg-blue-500/20'
+                ? 'bg-blue-500/30 text-blue-700 dark:text-blue-200 border border-blue-400/40'
+                : 'bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20'
             }`}>
               <Building2 className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">44</span>
-            <span className="text-xs text-slate-400">de 54 en TH</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">44</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">de 54 en TH</span>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>100% activos sincronizados</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 group-hover:text-blue-400 transition-colors">
-            <span className="font-medium">
+          <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors font-medium">
+            <span>
               {activeSubTab === 'departamentos' ? 'Mostrando detalle' : 'Ver 44 departamentos'}
             </span>
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'departamentos' ? 'translate-x-1 text-blue-400' : 'group-hover:translate-x-1'}`} />
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'departamentos' ? 'translate-x-1 text-blue-600 dark:text-blue-400' : 'group-hover:translate-x-1'}`} />
           </div>
         </button>
 
@@ -494,35 +494,35 @@ export const HumandSyncModule: React.FC = () => {
           onClick={() => handleCardClick('cargos')}
           className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/50 hover:scale-[1.02] hover:shadow-lg ${
             activeSubTab === 'cargos'
-              ? 'bg-purple-500/10 border-2 border-purple-500/60 ring-2 ring-purple-500/20'
-              : 'bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 hover:bg-slate-900/90'
+              ? 'bg-purple-50/80 dark:bg-purple-500/10 border-2 border-purple-500/60 ring-2 ring-purple-500/20'
+              : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-purple-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-400 group-hover:text-purple-300 transition-colors">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
               Puestos / Cargos
             </span>
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
               activeSubTab === 'cargos'
-                ? 'bg-purple-500/30 text-purple-200 border border-purple-400/40'
-                : 'bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-500/20'
+                ? 'bg-purple-500/30 text-purple-700 dark:text-purple-200 border border-purple-400/40'
+                : 'bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 group-hover:bg-purple-100 dark:group-hover:bg-purple-500/20'
             }`}>
               <Briefcase className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">97</span>
-            <span className="text-xs text-slate-400">de 97 en TH</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">97</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">de 97 en TH</span>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>100% cobertura total</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 group-hover:text-purple-400 transition-colors">
-            <span className="font-medium">
+          <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors font-medium">
+            <span>
               {activeSubTab === 'cargos' ? 'Mostrando detalle' : 'Ver 97 cargos'}
             </span>
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'cargos' ? 'translate-x-1 text-purple-400' : 'group-hover:translate-x-1'}`} />
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'cargos' ? 'translate-x-1 text-purple-600 dark:text-purple-400' : 'group-hover:translate-x-1'}`} />
           </div>
         </button>
 
@@ -532,35 +532,35 @@ export const HumandSyncModule: React.FC = () => {
           onClick={() => handleCardClick('colaboradores')}
           className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hover:scale-[1.02] hover:shadow-lg ${
             activeSubTab === 'colaboradores'
-              ? 'bg-emerald-500/10 border-2 border-emerald-500/60 ring-2 ring-emerald-500/20'
-              : 'bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 hover:bg-slate-900/90'
+              ? 'bg-emerald-50/80 dark:bg-emerald-500/10 border-2 border-emerald-500/60 ring-2 ring-emerald-500/20'
+              : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-emerald-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-400 group-hover:text-emerald-300 transition-colors">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
               Membresías Asignadas
             </span>
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
               activeSubTab === 'colaboradores'
-                ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40'
-                : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/20'
+                ? 'bg-emerald-500/30 text-emerald-700 dark:text-emerald-200 border border-emerald-400/40'
+                : 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20'
             }`}>
               <UserCheck className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">163</span>
-            <span className="text-xs text-slate-400">de 176 en TH</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">163</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">de 176 en TH</span>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Dpto y Cargo enlazados</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 group-hover:text-emerald-400 transition-colors">
-            <span className="font-medium">
+          <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors font-medium">
+            <span>
               {activeSubTab === 'colaboradores' ? 'Mostrando detalle' : 'Ver 163 colaboradores'}
             </span>
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'colaboradores' ? 'translate-x-1 text-emerald-400' : 'group-hover:translate-x-1'}`} />
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'colaboradores' ? 'translate-x-1 text-emerald-600 dark:text-emerald-400' : 'group-hover:translate-x-1'}`} />
           </div>
         </button>
 
@@ -570,35 +570,35 @@ export const HumandSyncModule: React.FC = () => {
           onClick={() => handleCardClick('fechas')}
           className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:scale-[1.02] hover:shadow-lg ${
             activeSubTab === 'fechas'
-              ? 'bg-indigo-500/10 border-2 border-indigo-500/60 ring-2 ring-indigo-500/20'
-              : 'bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 hover:bg-slate-900/90'
+              ? 'bg-indigo-50/80 dark:bg-indigo-500/10 border-2 border-indigo-500/60 ring-2 ring-indigo-500/20'
+              : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-indigo-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-400 group-hover:text-indigo-300 transition-colors">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
               Fechas de Ingreso
             </span>
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
               activeSubTab === 'fechas'
-                ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-400/40'
-                : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/20'
+                ? 'bg-indigo-500/30 text-indigo-700 dark:text-indigo-200 border border-indigo-400/40'
+                : 'bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20'
             }`}>
               <Clock className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">100%</span>
-            <span className="text-xs text-slate-400">163 / 163 exactas</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white">100%</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">163 / 163 exactas</span>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Cero discrepancias</span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 group-hover:text-indigo-400 transition-colors">
-            <span className="font-medium">
+          <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors font-medium">
+            <span>
               {activeSubTab === 'fechas' ? 'Mostrando detalle' : 'Ver auditoría de fechas'}
             </span>
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'fechas' ? 'translate-x-1 text-indigo-400' : 'group-hover:translate-x-1'}`} />
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${activeSubTab === 'fechas' ? 'translate-x-1 text-indigo-600 dark:text-indigo-400' : 'group-hover:translate-x-1'}`} />
           </div>
         </button>
       </div>
@@ -827,23 +827,23 @@ export const HumandSyncModule: React.FC = () => {
       {/* PESTAÑA: AUDITORÍA DE FECHAS DE INGRESO (100%) */}
       {activeSubTab === 'fechas' && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-gradient-to-r from-indigo-950/40 via-slate-900/60 to-slate-900/60 border border-indigo-500/20 p-5 shadow-sm">
+          <div className="rounded-xl bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white dark:from-indigo-950/40 dark:via-slate-900/60 dark:to-slate-900/60 border border-blue-200/80 dark:border-indigo-500/20 p-5 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                   Auditoría y Comparativo de Fechas de Ingreso (TH vs. Humand)
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Verificación 1 a 1 entre el campo <code className="text-indigo-300">fecha_ingreso</code> registrado en la ficha maestra de TH y el campo <code className="text-indigo-300">hiringDate</code> asignado en la plataforma Humand.
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                  Verificación 1 a 1 entre el campo <code className="text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800/80 border border-indigo-200 dark:border-indigo-500/30 px-1.5 py-0.5 rounded font-semibold">fecha_ingreso</code> registrado en la ficha maestra de TH y el campo <code className="text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800/80 border border-indigo-200 dark:border-indigo-500/30 px-1.5 py-0.5 rounded font-semibold">hiringDate</code> asignado en la plataforma Humand.
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0 bg-slate-950/50 px-4 py-2 rounded-lg border border-slate-800">
+              <div className="flex items-center gap-3 shrink-0 bg-white dark:bg-slate-950/50 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="text-right">
-                  <div className="text-xl font-bold text-emerald-400">100%</div>
-                  <div className="text-[11px] text-slate-400">163 / 163 Exactas</div>
+                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">100%</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">163 / 163 Exactas</div>
                 </div>
-                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
               </div>
