@@ -1233,11 +1233,15 @@ export const empleadosApi = {
         codigo_pc: empleado.codigo_pc ? empleado.codigo_pc.trim() : null,
         genero: empleado.genero ? (empleado.genero.trim() as any) : null,
         sede: empleado.sede ? empleado.sede.trim() : null,
+        ubicacion: empleado.ubicacion ? empleado.ubicacion.trim() : null,
+        edo_civil: empleado.edo_civil ? empleado.edo_civil.trim() : null,
+        nivel_educativo: empleado.nivel_educativo ? empleado.nivel_educativo.trim() : null,
         tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
         di_supervisor: empleado.di_supervisor ? empleado.di_supervisor.trim() : null,
         di_evaluador: empleado.di_evaluador ? empleado.di_evaluador.trim() : null,
         fecha_ingreso: empleado.fecha_ingreso,
         estado_laboral: empleado.estado_laboral || 'ACTIVO',
+        estatus_h: empleado.estatus_h !== undefined ? Number(empleado.estatus_h) : 1,
       };
 
       if (empleado.empleado_id) {
@@ -1293,6 +1297,18 @@ export const empleadosApi = {
       }
       if (payload.sede !== undefined) {
         payload.sede = payload.sede ? payload.sede.trim() : null;
+      }
+      if (payload.ubicacion !== undefined) {
+        payload.ubicacion = payload.ubicacion ? payload.ubicacion.trim() : null;
+      }
+      if (payload.edo_civil !== undefined) {
+        payload.edo_civil = payload.edo_civil ? payload.edo_civil.trim() : null;
+      }
+      if (payload.nivel_educativo !== undefined) {
+        payload.nivel_educativo = payload.nivel_educativo ? payload.nivel_educativo.trim() : null;
+      }
+      if (payload.estatus_h !== undefined) {
+        payload.estatus_h = Number(payload.estatus_h);
       }
       if (payload.tabulador_id !== undefined) {
         payload.tabulador_id = payload.tabulador_id ? Number(payload.tabulador_id) : null;

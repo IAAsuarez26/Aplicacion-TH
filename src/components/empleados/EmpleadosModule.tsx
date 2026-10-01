@@ -24,6 +24,8 @@ import {
   Award,
   RotateCcw,
   ChevronDown,
+  GraduationCap,
+  Share2,
 } from 'lucide-react';
 import {
   empleadosApi,
@@ -139,6 +141,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [diEvaluador, setDiEvaluador] = useState<string>('');
   const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().slice(0, 10));
   const [estadoLaboral, setEstadoLaboral] = useState<EstadoLaboral>('ACTIVO');
+  const [ubicacion, setUbicacion] = useState<string>('');
+  const [edoCivil, setEdoCivil] = useState<string>('');
+  const [nivelEducativo, setNivelEducativo] = useState<string>('');
+  const [estatusH, setEstatusH] = useState<number>(1);
 
   // Delete Dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -231,6 +237,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setDiEvaluador('');
     setFechaIngreso(new Date().toISOString().slice(0, 10));
     setEstadoLaboral('ACTIVO');
+    setUbicacion('Caracas');
+    setEdoCivil('');
+    setNivelEducativo('');
+    setEstatusH(1);
     setIsModalOpen(true);
   };
 
@@ -243,6 +253,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setApellidos(emp.apellidos);
     setGenero(emp.genero || '');
     setSede(emp.sede || '');
+    setUbicacion(emp.ubicacion || emp.sede || '');
+    setEdoCivil(emp.edo_civil || '');
+    setNivelEducativo(emp.nivel_educativo || '');
+    setEstatusH(emp.estatus_h !== undefined ? Number(emp.estatus_h) : 1);
     setEmail(emp.email);
     setEmailCorporativo(emp.email_corporativo || '');
     setTelefono(emp.telefono || '');
@@ -287,11 +301,15 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           codigo_pc: codigoPc ? codigoPc.trim() : null,
           genero: (genero as any) || null,
           sede: sede.trim() || null,
+          ubicacion: ubicacion.trim() || null,
+          edo_civil: edoCivil.trim() || null,
+          nivel_educativo: nivelEducativo.trim() || null,
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           di_supervisor: diSupervisor.trim() || null,
           di_evaluador: diEvaluador.trim() || null,
           fecha_ingreso: fechaIngreso,
           estado_laboral: estadoLaboral,
+          estatus_h: estatusH,
         });
 
         if (error) {
@@ -316,11 +334,15 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           codigo_pc: codigoPc ? codigoPc.trim() : null,
           genero: (genero as any) || null,
           sede: sede.trim() || null,
+          ubicacion: ubicacion.trim() || null,
+          edo_civil: edoCivil.trim() || null,
+          nivel_educativo: nivelEducativo.trim() || null,
           tabulador_id: tabuladorId ? Number(tabuladorId) : null,
           di_supervisor: diSupervisor.trim() || null,
           di_evaluador: diEvaluador.trim() || null,
           fecha_ingreso: fechaIngreso,
           estado_laboral: estadoLaboral,
+          estatus_h: estatusH,
         });
 
         if (error) {
@@ -735,6 +757,44 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       ),
     },
     {
+      key: 'ubicacion',
+      header: 'Ubicación (Humand)',
+      sortable: true,
+      exportValue: (row) => row.ubicacion || '',
+      render: (row) => (
+        row.ubicacion ? (
+          <span className="font-medium text-xs text-sky-300 bg-sky-950/60 border border-sky-800/50 px-2 py-0.5 rounded inline-flex items-center gap-1">
+            <MapPin className="w-3 h-3 text-sky-400 shrink-0" />
+            {row.ubicacion}
+          </span>
+        ) : (
+          <span className="text-slate-500 italic text-[11px]">Sin asignar</span>
+        )
+      ),
+      className: 'w-28',
+    },
+    {
+      key: 'edo_civil',
+      header: 'Edo. Civil / Nivel Ed.',
+      sortable: true,
+      exportValue: (row) => `${row.edo_civil || ''} / ${row.nivel_educativo || ''}`.trim(),
+      render: (row) => (
+        <div className="space-y-0.5 text-xs">
+          {row.edo_civil ? (
+            <div className="text-slate-200 font-medium">{row.edo_civil}</div>
+          ) : (
+            <div className="text-slate-500 italic text-[11px]">Sin Edo. Civil</div>
+          )}
+          {row.nivel_educativo ? (
+            <div className="text-[11px] text-brand-300/90 flex items-center gap-1">
+              <GraduationCap className="w-3 h-3 text-brand-400 shrink-0" />
+              <span>{row.nivel_educativo}</span>
+            </div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
       key: 'tabulador_id',
       header: 'Banda Salarial',
       render: (row) => {
@@ -788,7 +848,32 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       header: 'Estado',
       sortable: true,
       render: (row) => <EstadoLaboralBadge estado={row.estado_laboral} />,
-      className: 'w-28',
+      className: 'w-24',
+    },
+    {
+      key: 'estatus_h',
+      header: 'Humand',
+      sortable: true,
+      exportValue: (row) => (row.estatus_h === 1 ? 'Sincronizar' : 'Solo TH'),
+      render: (row) => (
+        row.estatus_h === 1 ? (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+            title="Habilitado para sincronizar con Humand (estatus_h = 1)"
+          >
+            <Share2 className="w-2.5 h-2.5 text-emerald-400" />
+            Humand
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700"
+            title="Registro exclusivo de Aplicación TH (estatus_h = 0)"
+          >
+            Solo TH
+          </span>
+        )
+      ),
+      className: 'w-24 text-center',
     },
     {
       key: 'acciones',
@@ -1199,6 +1284,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           'codigo_cargo',
           'codigo_departamento',
           'sede',
+          'ubicacion',
+          'edo_civil',
+          'nivel_educativo',
           'codigo_pc',
           'codigo_tc',
           'empresa_nombre',
@@ -1307,6 +1395,71 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 />
                 <MapPin className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
               </div>
+            </div>
+          </div>
+
+          {/* Ubicación (Humand), Estado Civil y Nivel Educativo */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                Ubicación (Humand)
+              </label>
+              <select
+                value={ubicacion}
+                onChange={(e) => {
+                  setUbicacion(e.target.value);
+                  if (!sede) setSede(e.target.value);
+                }}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-rose-500"
+              >
+                <option value="">-- Sin Ubicación --</option>
+                <option value="Barquisimeto">Barquisimeto</option>
+                <option value="Caracas">Caracas</option>
+                <option value="Maracaibo">Maracaibo</option>
+                <option value="Puerto Ordaz">Puerto Ordaz</option>
+                <option value="San Cristobal">San Cristobal</option>
+                <option value="Valencia">Valencia</option>
+                <option value="Yagua">Yagua</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                Estado Civil
+              </label>
+              <select
+                value={edoCivil}
+                onChange={(e) => setEdoCivil(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="">-- No especificado --</option>
+                <option value="Soltero">Soltero</option>
+                <option value="Casado">Casado</option>
+                <option value="Divorciado">Divorciado</option>
+                <option value="Viudo">Viudo</option>
+                <option value="Concubinato">Concubinato</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
+                <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />
+                Nivel Educativo
+              </label>
+              <select
+                value={nivelEducativo}
+                onChange={(e) => setNivelEducativo(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-cyan-500"
+              >
+                <option value="">-- No especificado --</option>
+                <option value="Bachiller">Bachiller</option>
+                <option value="Técnico Medio">Técnico Medio</option>
+                <option value="Técnico Superior">Técnico Superior</option>
+                <option value="Universitario">Universitario</option>
+                <option value="Posgrado">Posgrado</option>
+              </select>
             </div>
           </div>
 
@@ -1551,6 +1704,31 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
           </div>
 
+          {/* Gobernanza Humand (estatus_h) */}
+          <div className="p-3.5 rounded-xl bg-slate-950/80 border border-cyan-900/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+            <div>
+              <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                <Share2 className="w-4 h-4 text-cyan-400" />
+                Sincronización con Humand (estatus_h)
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Determina si este registro se sube y actualiza en Humand durante la sincronización.
+              </p>
+            </div>
+            <select
+              value={estatusH}
+              onChange={(e) => setEstatusH(Number(e.target.value))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border focus:outline-none transition-colors ${
+                estatusH === 1
+                  ? 'bg-cyan-950 text-cyan-300 border-cyan-700'
+                  : 'bg-slate-900 text-slate-400 border-slate-700'
+              }`}
+            >
+              <option value={1}>1 - Habilitado para Humand</option>
+              <option value={0}>0 - No sincronizar (Solo TH)</option>
+            </select>
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
             <button
               type="button"
@@ -1772,11 +1950,58 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                 <span className="text-rose-400 block mb-1 font-semibold flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5" />
-                  Sede / Ubicación
+                  Sede / Localidad
                 </span>
                 <span className="text-slate-200 font-medium">
                   {detailEmpleado.sede || <span className="text-slate-500 italic">No asignada</span>}
                 </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-rose-400 block mb-1 font-semibold flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Ubicación (Humand)
+                </span>
+                <span className="text-slate-200 font-medium">
+                  {detailEmpleado.ubicacion || detailEmpleado.sede || <span className="text-slate-500 italic">No asignada</span>}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-indigo-400 block mb-1 font-semibold flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" />
+                  Estado Civil
+                </span>
+                <span className="text-slate-200 font-medium">
+                  {detailEmpleado.edo_civil || <span className="text-slate-500 italic">No registrado</span>}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-cyan-400 block mb-1 font-semibold flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  Nivel Educativo
+                </span>
+                <span className="text-slate-200 font-medium">
+                  {detailEmpleado.nivel_educativo || <span className="text-slate-500 italic">No registrado</span>}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-cyan-400 block mb-1 font-semibold flex items-center gap-1">
+                  <Share2 className="w-3.5 h-3.5" />
+                  Integración Humand
+                </span>
+                {detailEmpleado.estatus_h === 1 ? (
+                  <span className="text-cyan-300 font-bold text-xs flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                    Habilitado (estatus_h = 1)
+                  </span>
+                ) : (
+                  <span className="text-slate-400 text-xs font-medium">
+                    Excluido (estatus_h = 0)
+                  </span>
+                )}
               </div>
             </div>
 

@@ -2,6 +2,8 @@
 
 export type EstadoLaboral = 'ACTIVO' | 'INACTIVO' | 'VACACIONES' | 'LICENCIA';
 export type Genero = 'Mujer' | 'Hombre';
+export type EstadoCivil = 'Soltero' | 'Casado' | 'Divorciado' | 'Viudo' | 'Concubinato';
+export type NivelEducativo = 'Bachiller' | 'Técnico Medio' | 'Técnico Superior' | 'Universitario' | 'Posgrado';
 
 export interface Empresa {
   empresa_id: number;
@@ -72,6 +74,7 @@ export interface Cargo {
   nombre: string;
   descripcion: string | null;
   estado: boolean;
+  estatus_h?: number;
   created_at: string;
   updated_at: string;
   // Relaciones
@@ -149,6 +152,7 @@ export interface Departamento {
   descripcion: string | null;
   jefe_departamento_id: number | null;
   estado: boolean;
+  estatus_h?: number;
   created_at: string;
   updated_at: string;
   // Relaciones
@@ -175,11 +179,15 @@ export interface Empleado {
   codigo_pc?: string | null;
   genero?: Genero | string | null;
   sede?: string | null;
+  ubicacion?: string | null;
+  edo_civil?: EstadoCivil | string | null;
+  nivel_educativo?: NivelEducativo | string | null;
   tabulador_id?: number | null;
   di_supervisor: string | null;
   di_evaluador: string | null;
   fecha_ingreso: string;
   estado_laboral: EstadoLaboral;
+  estatus_h?: number;
   created_at: string;
   updated_at: string;
   // Relaciones pobladas
