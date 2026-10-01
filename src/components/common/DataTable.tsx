@@ -7,6 +7,8 @@ export interface Column<T> {
   render?: (item: T) => React.ReactNode;
   sortable?: boolean;
   className?: string;
+  exportable?: boolean;
+  exportValue?: (item: T) => string | number | null | undefined;
 }
 
 interface DataTableProps<T> {
@@ -113,24 +115,27 @@ export function DataTable<T extends Record<string, any>>({
   const exportToCSV = () => {
     if (sortedData.length === 0) return;
 
-    const headers = columns.map((c) => `"${c.header}"`).join(',');
+    const exportColumns = columns.filter((c) => c.exportable !== false && c.key !== 'acciones');
+    const headers = exportColumns.map((c) => `"${String(c.header).replace(/"/g, '""')}"`).join(',');
     const rows = sortedData.map((item) => {
-      return columns
+      return exportColumns
         .map((c) => {
-          const val = item[c.key];
+          const val = c.exportValue ? c.exportValue(item) : item[c.key];
           return `"${String(val ?? '').replace(/"/g, '""')}"`;
         })
         .join(',');
     });
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers, ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers, ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `${exportFilename}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (

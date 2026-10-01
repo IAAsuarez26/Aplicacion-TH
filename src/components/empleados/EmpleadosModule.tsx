@@ -61,7 +61,21 @@ export interface EmpleadoConEmpresa extends Empleado {
   empresa_nombre?: string;
   empresa_corto?: string;
   empresa_codigo?: string;
+  nacionalidad?: string;
+  dni_numero?: string;
 }
+
+export const parseDocumentoIdentidad = (doc: string | null | undefined): { nacionalidad: string; dniNumero: string } => {
+  if (!doc) return { nacionalidad: '', dniNumero: '' };
+  const trimmed = doc.trim();
+  const nacMatch = trimmed.match(/^([VEve])/i);
+  const nacionalidad = nacMatch ? nacMatch[1].toUpperCase() : '';
+  const dniNumero = trimmed
+    .replace(/^([VEve])[\s\-_.]*/i, '')
+    .replace(/[-]/g, '')
+    .trim();
+  return { nacionalidad, dniNumero };
+};
 
 interface EmpleadosModuleProps {
   initialCreateOpen?: boolean;
@@ -430,12 +444,15 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const empleadosConEmpresa: EmpleadoConEmpresa[] = useMemo(() => {
     return empleados.map((emp) => {
       const hierarchy = getEmpleadoHierarchy(emp);
+      const { nacionalidad, dniNumero } = parseDocumentoIdentidad(emp.documento_identidad);
       return {
         ...emp,
         empresa_id: hierarchy.empresa?.empresa_id,
         empresa_nombre: hierarchy.empresa?.razon_social || '',
         empresa_corto: hierarchy.empresa?.nombre_corto || hierarchy.empresa?.codigo || '',
         empresa_codigo: hierarchy.empresa?.codigo || '',
+        nacionalidad,
+        dni_numero: dniNumero,
       };
     });
   }, [empleados, departamentos, gerencias, direcciones, empresas, tabuladores]);
@@ -527,26 +544,54 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const columns: Column<EmpleadoConEmpresa>[] = [
     {
       key: 'codigo_empleado',
-      header: 'Código / DNI',
+      header: 'Código',
       sortable: true,
       render: (row) => (
-        <div>
-          <span className="font-mono font-bold text-brand-300 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
-            {row.codigo_empleado}
-          </span>
-          {row.documento_identidad && (
-            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-              {row.documento_identidad}
-            </div>
-          )}
-        </div>
+        <span className="font-mono font-bold text-brand-300 text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+          {row.codigo_empleado}
+        </span>
       ),
-      className: 'w-32',
+      className: 'w-24',
+    },
+    {
+      key: 'nacionalidad',
+      header: 'Nacionalidad',
+      sortable: true,
+      exportValue: (row) => row.nacionalidad || '',
+      render: (row) => (
+        row.nacionalidad ? (
+          <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded border inline-block ${
+            row.nacionalidad === 'V'
+              ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/60'
+              : 'bg-amber-950/70 text-amber-300 border-amber-800/60'
+          }`}>
+            {row.nacionalidad}
+          </span>
+        ) : (
+          <span className="text-slate-500 italic text-[11px]">-</span>
+        )
+      ),
+      className: 'w-24 text-center',
+    },
+    {
+      key: 'dni_numero',
+      header: 'DNI',
+      sortable: true,
+      exportValue: (row) => row.dni_numero || '',
+      render: (row) => (
+        <span className="font-mono text-xs font-medium text-slate-200">
+          {row.dni_numero || (
+            <span className="text-slate-500 italic text-[11px]">Sin DNI</span>
+          )}
+        </span>
+      ),
+      className: 'w-28',
     },
     {
       key: 'nombres',
       header: 'Colaborador',
       sortable: true,
+      exportValue: (row) => `${row.nombres} ${row.apellidos || ''}`.trim(),
       render: (row) => (
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 p-0.5 text-xs font-bold text-white flex items-center justify-center shrink-0">
@@ -748,6 +793,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     {
       key: 'acciones',
       header: 'Acciones',
+      exportable: false,
       className: 'text-right w-28',
       render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
@@ -1144,6 +1190,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         loading={loading}
         searchKeys={[
           'codigo_empleado',
+          'nacionalidad',
+          'dni_numero',
           'documento_identidad',
           'nombres',
           'apellidos',
