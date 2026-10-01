@@ -57,6 +57,8 @@ import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { EstadoLaboralBadge } from '../common/Badge';
 import { useToast } from '../common/Toast';
+import { HumandSyncModal } from '../humand/HumandSyncModal';
+
 
 export interface EmpleadoConEmpresa extends Empleado {
   empresa_id?: number;
@@ -121,6 +123,11 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   // Detail Modal State
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailEmpleado, setDetailEmpleado] = useState<Empleado | null>(null);
+
+  // Humand Cascade Sync Modal State
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncTargetEmpleado, setSyncTargetEmpleado] = useState<Empleado | null>(null);
+
 
   // Form Fields
   const [codigoEmpleado, setCodigoEmpleado] = useState('');
@@ -879,9 +886,27 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'acciones',
       header: 'Acciones',
       exportable: false,
-      className: 'text-right w-28',
+      className: 'text-right w-36',
       render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => {
+              setSyncTargetEmpleado(row);
+              setIsSyncModalOpen(true);
+            }}
+            className={`p-1.5 rounded-lg border transition-colors ${
+              row.estatus_h === 1
+                ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+            title={
+              row.estatus_h === 1
+                ? 'Sincronizar a Humand (Resolución en Cascada)'
+                : 'Incorporar / Sincronizar a Humand (Resolución en Cascada)'
+            }
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={() => openDetailModal(row)}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
@@ -1992,16 +2017,30 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   <Share2 className="w-3.5 h-3.5" />
                   Integración Humand
                 </span>
-                {detailEmpleado.estatus_h === 1 ? (
-                  <span className="text-cyan-300 font-bold text-xs flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                    Habilitado (estatus_h = 1)
-                  </span>
-                ) : (
-                  <span className="text-slate-400 text-xs font-medium">
-                    Excluido (estatus_h = 0)
-                  </span>
-                )}
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  {detailEmpleado.estatus_h === 1 ? (
+                    <span className="text-cyan-300 font-bold text-xs flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                      Habilitado (estatus_h = 1)
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-xs font-medium">
+                      Excluido (estatus_h = 0)
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSyncTargetEmpleado(detailEmpleado);
+                      setIsSyncModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors flex items-center gap-1"
+                    title="Sincronizar este colaborador a Humand con resolución en cascada"
+                  >
+                    <Share2 className="w-3 h-3" />
+                    Sincronizar a Humand
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2079,6 +2118,22 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         confirmText="Eliminar Empleado"
         cancelText="Cancelar"
         variant="danger"
+      />
+
+      {/* Modal de Sincronización Real en Cascada con Humand */}
+      <HumandSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => {
+          setIsSyncModalOpen(false);
+          setSyncTargetEmpleado(null);
+        }}
+        empleado={syncTargetEmpleado}
+        allEmpleados={empleados}
+        departamentos={departamentos}
+        cargos={cargos}
+        onSyncComplete={() => {
+          loadData();
+        }}
       />
     </div>
   );

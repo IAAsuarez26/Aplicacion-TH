@@ -30,6 +30,8 @@ import { departamentosApi, cargosApi, empleadosApi } from '../../lib/insforge';
 import type { Departamento, Cargo, Empleado } from '../../lib/types';
 import { useToast } from '../common/Toast';
 import { DataTable, Column } from '../common/DataTable';
+import { HumandSyncModal } from './HumandSyncModal';
+
 
 type SyncTab = 'resumen' | 'departamentos' | 'cargos' | 'colaboradores' | 'fechas' | 'pendientes' | 'bitacora';
 
@@ -83,30 +85,32 @@ export const HumandSyncModule: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Cargar datos de la base de datos de TH
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [
+        { data: deps },
+        { data: cargos },
+        { data: emps }
+      ] = await Promise.all([
+        departamentosApi.getAll(),
+        cargosApi.getAll(),
+        empleadosApi.getAll()
+      ]);
+      setThDeps(deps || []);
+      setThCargos(cargos || []);
+      setThEmps(emps || []);
+    } catch (err) {
+      toast.error('Error cargando estructura de TH');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [
-          { data: deps },
-          { data: cargos },
-          { data: emps }
-        ] = await Promise.all([
-          departamentosApi.getAll(),
-          cargosApi.getAll(),
-          empleadosApi.getAll()
-        ]);
-        setThDeps(deps || []);
-        setThCargos(cargos || []);
-        setThEmps(emps || []);
-      } catch (err) {
-        toast.error('Error cargando estructura de TH');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
 
   // Muestra de los 13 colaboradores pendientes
   const pendientes13 = useMemo(() => {
@@ -134,26 +138,26 @@ export const HumandSyncModule: React.FC = () => {
     });
   }, [thEmps]);
 
-  // Simulación de acción Dry-Run
-  const handleRunSimulation = () => {
-    setIsSimulating(true);
-    toast.info('Iniciando conciliación y auditoría con Humand API v1...');
-    setTimeout(() => {
-      setIsSimulating(false);
-      setLastSyncDate('Hace unos segundos');
-      toast.success('Simulación completada: 163 colaboradores y 141 catálogos 100% alineados.');
-    }, 1800);
+  // Estado del Modal de Sincronización Real en Cascada
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
+  const [selectedEmpForSync, setSelectedEmpForSync] = useState<Empleado | null>(null);
+
+  // Apertura de Sincronización Global
+  const handleTriggerSync = () => {
+    setSelectedEmpForSync(null);
+    setIsSyncModalOpen(true);
   };
 
-  // Simulación de Sincronización Manual
-  const handleTriggerSync = () => {
-    setIsSimulating(true);
-    toast.info('Sincronizando estructura organizativa con Humand...');
-    setTimeout(() => {
-      setIsSimulating(false);
-      setLastSyncDate('Ahora mismo');
-      toast.success('Estructura sincronizada exitosamente con Humand (HTTP 204).');
-    }, 2200);
+  // Apertura de Simulación Dry-Run
+  const handleRunSimulation = () => {
+    setSelectedEmpForSync(null);
+    setIsSyncModalOpen(true);
+  };
+
+  // Apertura de Sincronización para un Colaborador Específico
+  const handleSyncSingleEmp = (emp: Empleado) => {
+    setSelectedEmpForSync(emp);
+    setIsSyncModalOpen(true);
   };
 
   // Columnas para tabla de asignados
@@ -227,6 +231,21 @@ export const HumandSyncModule: React.FC = () => {
         </span>
       ),
     },
+    {
+      key: 'acciones',
+      header: 'Acción',
+      className: 'text-right w-28',
+      render: (row) => (
+        <button
+          onClick={() => handleSyncSingleEmp(row)}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 transition shadow-sm"
+          title="Sincronizar a Humand (Resolución en Cascada)"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          Sincronizar
+        </button>
+      ),
+    },
   ];
 
   // Columnas para tabla de 13 pendientes
@@ -274,6 +293,21 @@ export const HumandSyncModule: React.FC = () => {
           <AlertTriangle className="w-3 h-3" />
           Falta correo corporativo en importación original
         </span>
+      ),
+    },
+    {
+      key: 'acciones',
+      header: 'Acción',
+      className: 'text-right w-32',
+      render: (row) => (
+        <button
+          onClick={() => handleSyncSingleEmp(row)}
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-sm transition"
+          title="Aprovisionar este colaborador en Humand"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          Aprovisionar
+        </button>
       ),
     },
   ];
@@ -936,6 +970,20 @@ export const HumandSyncModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Sincronización Real en Cascada */}
+      <HumandSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        empleado={selectedEmpForSync}
+        allEmpleados={thEmps}
+        departamentos={thDeps}
+        cargos={thCargos}
+        onSyncComplete={() => {
+          fetchData();
+          setLastSyncDate('Ahora mismo');
+        }}
+      />
     </div>
   );
 };
