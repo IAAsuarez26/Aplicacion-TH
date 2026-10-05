@@ -152,6 +152,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [edoCivil, setEdoCivil] = useState<string>('');
   const [nivelEducativo, setNivelEducativo] = useState<string>('');
   const [estatusH, setEstatusH] = useState<number>(1);
+  const [formEmpresaId, setFormEmpresaId] = useState<string>('');
 
   // Delete Dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -236,7 +237,11 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setEmailCorporativo('');
     setTelefono('+58414' + Math.floor(1000000 + Math.random() * 9000000));
     setCodigoCargo(cargos[0]?.codigo || '');
-    setCodigoDepartamento(departamentos[0]?.codigo || '');
+    const initialEmpId = (filtroEmpresa !== 'ALL' && filtroEmpresa !== 'SIN_EMPRESA')
+      ? filtroEmpresa
+      : (empresas[0]?.empresa_id ? String(empresas[0].empresa_id) : '');
+    setFormEmpresaId(initialEmpId);
+    setCodigoDepartamento('');
     setCodigoTc('');
     setCodigoPc('');
     setTabuladorId('');
@@ -254,6 +259,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const openEditModal = (emp: Empleado) => {
     setModalMode('edit');
     setSelectedEmpleado(emp);
+    const h = getEmpleadoHierarchy(emp);
+    const empIdStr = h.empresa?.empresa_id ? String(h.empresa.empresa_id) : '';
+    setFormEmpresaId(empIdStr);
     setCodigoEmpleado(emp.codigo_empleado);
     setDocumentoIdentidad(emp.documento_identidad || '');
     setNombres(emp.nombres);
@@ -438,12 +446,34 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     return perfilesCompetencias.find((pc) => pc.codigo_pc === codigo_pc);
   };
 
+  // Helper de jerarquía organizacional directa: Departamento -> Gerencia -> Dirección -> Empresa
+  const getDepartamentoHierarchy = (codigoDepto?: string | null) => {
+    if (!codigoDepto) return { departamento: null, gerencia: null, direccion: null, empresa: null };
+    const depto = departamentos.find((d) => d.codigo === codigoDepto);
+    if (!depto) return { departamento: null, gerencia: null, direccion: null, empresa: null };
+
+    const ger = depto.codigo_gerencia
+      ? gerencias.find((g) => g.codigo === depto.codigo_gerencia)
+      : null;
+
+    const dir = ger?.codigo_direccion
+      ? direcciones.find((d) => d.codigo === ger.codigo_direccion)
+      : null;
+
+    const empFound = dir?.empresa_id ? empresas.find((e) => e.empresa_id === dir.empresa_id) : null;
+
+    return {
+      departamento: depto,
+      gerencia: ger || null,
+      direccion: dir || null,
+      empresa: empFound || null,
+    };
+  };
+
   // Helper de jerarquía organizacional completa: Empleado -> Departamento -> Gerencia -> Dirección -> Empresa
   const getEmpleadoHierarchy = (emp: Empleado) => {
-    const depto = departamentos.find((d) => d.codigo === emp.codigo_departamento);
-    const ger = depto?.codigo_gerencia ? gerencias.find((g) => g.codigo === depto.codigo_gerencia) : null;
-    const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
-    let empFound = dir?.empresa_id ? empresas.find((e) => e.empresa_id === dir.empresa_id) : null;
+    const directH = getDepartamentoHierarchy(emp.codigo_departamento);
+    let empFound = directH.empresa;
 
     // Fallback por tabulador si aún no está enlazada la gerencia/dirección
     if (!empFound && emp.tabulador_id) {
@@ -454,9 +484,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     }
 
     return {
-      departamento: depto,
-      gerencia: ger,
-      direccion: dir,
+      departamento: directH.departamento,
+      gerencia: directH.gerencia,
+      direccion: directH.direccion,
       empresa: empFound,
     };
   };
@@ -486,17 +516,35 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     });
   }, [empleados, departamentos, gerencias, direcciones, empresas, tabuladores]);
 
-  // Departamentos filtrados por la empresa actualmente seleccionada
+  // Departamentos filtrados por la empresa actualmente seleccionada en el toolbar
   const departamentosFiltrados = useMemo(() => {
     if (filtroEmpresa === 'ALL' || filtroEmpresa === 'SIN_EMPRESA') {
       return departamentos;
     }
     return departamentos.filter((dep) => {
-      const ger = dep.codigo_gerencia ? gerencias.find((g) => g.codigo === dep.codigo_gerencia) : null;
-      const dir = ger?.codigo_direccion ? direcciones.find((d) => d.codigo === ger.codigo_direccion) : null;
-      return dir ? String(dir.empresa_id) === filtroEmpresa : false;
+      const h = getDepartamentoHierarchy(dep.codigo);
+      return h.empresa ? String(h.empresa.empresa_id) === filtroEmpresa : false;
     });
-  }, [departamentos, gerencias, direcciones, filtroEmpresa]);
+  }, [departamentos, gerencias, direcciones, empresas, filtroEmpresa]);
+
+  // Departamentos filtrados para el modal de Crear/Editar según la empresa seleccionada
+  const modalDepartamentos = useMemo(() => {
+    if (!formEmpresaId) {
+      return departamentos;
+    }
+    return departamentos.filter((d) => {
+      const h = getDepartamentoHierarchy(d.codigo);
+      return h.empresa ? String(h.empresa.empresa_id) === String(formEmpresaId) : false;
+    });
+  }, [departamentos, gerencias, direcciones, empresas, formEmpresaId]);
+
+  // Bandas salariales filtradas para el modal según la empresa seleccionada
+  const modalTabuladores = useMemo(() => {
+    if (!formEmpresaId) {
+      return tabuladores;
+    }
+    return tabuladores.filter((t) => String(t.empresa_id) === String(formEmpresaId));
+  }, [tabuladores, formEmpresaId]);
 
   const filteredEmpleados = useMemo(() => {
     return empleadosConEmpresa.filter((emp) => {
@@ -1108,13 +1156,58 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               title="Filtrar por Departamento"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Departamentos</option>
-              {[...departamentosFiltrados]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                .map((d) => (
-                  <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
-                    {d.nombre} ({d.codigo})
-                  </option>
-                ))}
+              {filtroEmpresa === 'ALL' ? (
+                <>
+                  {empresas.map((emp) => {
+                    const deptosEmp = departamentos
+                      .filter((d) => getDepartamentoHierarchy(d.codigo).empresa?.empresa_id === emp.empresa_id)
+                      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+
+                    if (deptosEmp.length === 0) return null;
+                    const empBadge = emp.nombre_corto || emp.codigo;
+                    return (
+                      <optgroup
+                        key={emp.empresa_id}
+                        label={`🏢 ${empBadge} - ${emp.razon_social}`}
+                        className="bg-slate-900 font-semibold text-brand-400"
+                      >
+                        {deptosEmp.map((d) => (
+                          <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200 font-normal">
+                            [{empBadge}] {d.nombre} ({d.codigo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                  {(() => {
+                    const sinEmp = departamentos
+                      .filter((d) => !getDepartamentoHierarchy(d.codigo).empresa)
+                      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+                    if (sinEmp.length === 0) return null;
+                    return (
+                      <optgroup label="Otros / Sin Empresa" className="bg-slate-900 text-slate-400 font-semibold">
+                        {sinEmp.map((d) => (
+                          <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-300 font-normal">
+                            {d.nombre} ({d.codigo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })()}
+                </>
+              ) : (
+                [...departamentosFiltrados]
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                  .map((d) => {
+                    const h = getDepartamentoHierarchy(d.codigo);
+                    const empBadge = h.empresa ? (h.empresa.nombre_corto || h.empresa.codigo) : '';
+                    return (
+                      <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200">
+                        {empBadge ? `[${empBadge}] ` : ''}{d.nombre} ({d.codigo})
+                      </option>
+                    );
+                  })
+              )}
             </select>
             <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
               filtroDepartamento !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
@@ -1545,68 +1638,230 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
           </div>
 
-          {/* Cargo y Departamento */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Cargo Asignado *
-              </label>
-              <select
-                required
-                value={codigoCargo}
-                onChange={(e) => setCodigoCargo(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-              >
-                <option value="" disabled>-- Selecciona un Cargo --</option>
-                {[...cargos]
-                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                  .map((c) => (
-                    <option key={c.codigo} value={c.codigo}>
-                      {c.nombre} ({c.codigo})
+          {/* Estructura Organizacional, Empresa y Puesto */}
+          <div className="pt-2 border-t border-slate-800/80 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-lg bg-brand-500/10 border border-brand-500/20 text-brand-400">
+                  <Building2 className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  Estructura Organizacional y Puesto
+                </span>
+              </div>
+              {formEmpresaId && (
+                <span className="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  Filtrando por empresa
+                </span>
+              )}
+            </div>
+
+            {/* Fila 1: Empresa, Departamento y Cargo */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* 1. Selector de Empresa / Filial */}
+              <div>
+                <label className="block text-xs font-semibold text-emerald-400 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                    Empresa / Filial *
+                  </span>
+                </label>
+                <select
+                  value={formEmpresaId}
+                  onChange={(e) => {
+                    const newEmpId = e.target.value;
+                    setFormEmpresaId(newEmpId);
+                    // Si el departamento seleccionado actualmente no pertenece a la nueva empresa, resetearlo
+                    if (codigoDepartamento && newEmpId) {
+                      const h = getDepartamentoHierarchy(codigoDepartamento);
+                      if (h.empresa && String(h.empresa.empresa_id) !== newEmpId) {
+                        setCodigoDepartamento('');
+                      }
+                    }
+                    // Si la banda salarial seleccionada no pertenece a la nueva empresa, resetearla
+                    if (tabuladorId && newEmpId) {
+                      const tab = tabuladores.find((t) => t.tabulador_id === tabuladorId);
+                      if (tab && String(tab.empresa_id) !== newEmpId) {
+                        setTabuladorId('');
+                      }
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-950 border border-emerald-500/40 focus:border-emerald-400 rounded-xl text-sm text-white focus:outline-none ring-1 ring-emerald-500/20"
+                >
+                  <option value="">-- Todas las Empresas --</option>
+                  {empresas.map((emp) => (
+                    <option key={emp.empresa_id} value={String(emp.empresa_id)}>
+                      {emp.nombre_corto ? `${emp.nombre_corto} - ` : ''}{emp.razon_social}
                     </option>
                   ))}
-              </select>
+                </select>
+              </div>
 
-              {/* Instant preview of cargo's denomination */}
-              {(() => {
-                const dcInfo = getCargoDenominacionInfo(codigoCargo);
-                if (dcInfo) {
-                  return (
-                    <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-800/40 flex items-center justify-between text-xs">
-                      <span className="text-indigo-400 text-[11px] flex items-center gap-1">
-                        <Tag className="w-3 h-3" />
-                        Denominación DC:
+              {/* 2. Selector de Departamento Asignado */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Departamento Asignado *</span>
+                  {formEmpresaId && (
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      ({modalDepartamentos.length} depto{modalDepartamentos.length === 1 ? '' : 's'})
+                    </span>
+                  )}
+                </label>
+                <select
+                  required
+                  value={codigoDepartamento}
+                  onChange={(e) => {
+                    const newDeptoCode = e.target.value;
+                    setCodigoDepartamento(newDeptoCode);
+                    // Si no había empresa seleccionada, autoseleccionar la empresa del departamento
+                    if (!formEmpresaId && newDeptoCode) {
+                      const h = getDepartamentoHierarchy(newDeptoCode);
+                      if (h.empresa?.empresa_id) {
+                        setFormEmpresaId(String(h.empresa.empresa_id));
+                      }
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+                >
+                  <option value="" disabled>-- Selecciona un Departamento --</option>
+                  {formEmpresaId ? (
+                    [...modalDepartamentos]
+                      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                      .map((d) => {
+                        const h = getDepartamentoHierarchy(d.codigo);
+                        const empBadge = h.empresa ? (h.empresa.nombre_corto || h.empresa.codigo) : '';
+                        return (
+                          <option key={d.codigo} value={d.codigo}>
+                            {empBadge ? `[${empBadge}] ` : ''}{d.nombre} ({d.codigo})
+                          </option>
+                        );
+                      })
+                  ) : (
+                    empresas.map((emp) => {
+                      const deptosEmp = modalDepartamentos
+                        .filter((d) => getDepartamentoHierarchy(d.codigo).empresa?.empresa_id === emp.empresa_id)
+                        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+                      if (deptosEmp.length === 0) return null;
+                      const empBadge = emp.nombre_corto || emp.codigo;
+                      return (
+                        <optgroup key={emp.empresa_id} label={`🏢 ${empBadge} - ${emp.razon_social}`} className="bg-slate-900 text-brand-400 font-semibold">
+                          {deptosEmp.map((d) => (
+                            <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-200 font-normal">
+                              [{empBadge}] {d.nombre} ({d.codigo})
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })
+                  )}
+                  {!formEmpresaId && (() => {
+                    const sinEmp = modalDepartamentos
+                      .filter((d) => !getDepartamentoHierarchy(d.codigo).empresa)
+                      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+                    if (sinEmp.length === 0) return null;
+                    return (
+                      <optgroup label="Sin Empresa Vinculada" className="bg-slate-900 text-slate-400 font-semibold">
+                        {sinEmp.map((d) => (
+                          <option key={d.codigo} value={d.codigo} className="bg-slate-900 text-slate-300 font-normal">
+                            {d.nombre} ({d.codigo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })()}
+                </select>
+              </div>
+
+              {/* 3. Selector de Cargo Asignado */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Cargo Asignado *
+                </label>
+                <select
+                  required
+                  value={codigoCargo}
+                  onChange={(e) => setCodigoCargo(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+                >
+                  <option value="" disabled>-- Selecciona un Cargo --</option>
+                  {[...cargos]
+                    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
+                    .map((c) => (
+                      <option key={c.codigo} value={c.codigo}>
+                        {c.nombre} ({c.codigo})
+                      </option>
+                    ))}
+                </select>
+
+                {/* Instant preview of cargo's denomination */}
+                {(() => {
+                  const dcInfo = getCargoDenominacionInfo(codigoCargo);
+                  if (dcInfo) {
+                    return (
+                      <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-800/40 flex items-center justify-between text-xs">
+                        <span className="text-indigo-400 text-[11px] flex items-center gap-1">
+                          <Tag className="w-3 h-3" />
+                          Denominación DC:
+                        </span>
+                        <span className="font-semibold text-indigo-200 text-[11px]">
+                          {dcInfo.denominacion} ({dcInfo.codigo_dc})
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+
+            {/* Tarjeta de Confirmación de Estructura Organizacional en Tiempo Real */}
+            {(() => {
+              if (!codigoDepartamento) return null;
+              const h = getDepartamentoHierarchy(codigoDepartamento);
+              if (!h.departamento) return null;
+
+              return (
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-xs shadow-inner transition-all">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5 mb-2">
+                    <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>Estructura Organizacional Confirmada</span>
+                    </div>
+                    {h.empresa && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        {h.empresa.nombre_corto || h.empresa.codigo}
                       </span>
-                      <span className="font-semibold text-indigo-200 text-[11px]">
-                        {dcInfo.denominacion} ({dcInfo.codigo_dc})
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-300 text-[11px]">
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-semibold">Empresa / Razón Social:</span>
+                      <span className="font-medium text-white truncate block" title={h.empresa?.razon_social}>
+                        {h.empresa?.razon_social || 'No asignada'}
                       </span>
                     </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Departamento Asignado *
-              </label>
-              <select
-                required
-                value={codigoDepartamento}
-                onChange={(e) => setCodigoDepartamento(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-              >
-                <option value="" disabled>-- Selecciona un Departamento --</option>
-                {[...departamentos]
-                  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }))
-                  .map((d) => (
-                    <option key={d.codigo} value={d.codigo}>
-                      {d.nombre} ({d.codigo})
-                    </option>
-                  ))}
-              </select>
-            </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-semibold">Dirección:</span>
+                      <span className="font-medium text-slate-200 truncate block" title={h.direccion?.nombre}>
+                        {h.direccion?.nombre || 'No asignada'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-semibold">Gerencia:</span>
+                      <span className="font-medium text-slate-200 truncate block" title={h.gerencia?.nombre}>
+                        {h.gerencia?.nombre || 'No asignada'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-semibold">Centro de Costos:</span>
+                      <span className="font-semibold text-amber-300 block">
+                        {h.gerencia?.codigo_cc || 'Sin CC'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Tipo de Costo, Perfil de Competencias y Banda Salarial */}
@@ -1648,8 +1903,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Banda Salarial
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                <span>Banda Salarial</span>
+                {formEmpresaId && (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    ({modalTabuladores.length} banda{modalTabuladores.length === 1 ? '' : 's'})
+                  </span>
+                )}
               </label>
               <select
                 value={tabuladorId}
@@ -1657,11 +1917,28 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               >
                 <option value="">-- Sin Banda --</option>
-                {tabuladores.map((t) => (
-                  <option key={t.tabulador_id} value={t.tabulador_id}>
-                    {t.codigo_banda}
-                  </option>
-                ))}
+                {formEmpresaId ? (
+                  modalTabuladores.map((t) => (
+                    <option key={t.tabulador_id} value={t.tabulador_id}>
+                      {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </option>
+                  ))
+                ) : (
+                  empresas.map((emp) => {
+                    const tabsEmp = modalTabuladores.filter((t) => t.empresa_id === emp.empresa_id);
+                    if (tabsEmp.length === 0) return null;
+                    const empBadge = emp.nombre_corto || emp.codigo;
+                    return (
+                      <optgroup key={emp.empresa_id} label={`🏢 Bandas ${empBadge}`}>
+                        {tabsEmp.map((t) => (
+                          <option key={t.tabulador_id} value={t.tabulador_id}>
+                            [{empBadge}] {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })
+                )}
               </select>
             </div>
           </div>

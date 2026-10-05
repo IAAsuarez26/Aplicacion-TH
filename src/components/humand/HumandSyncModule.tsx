@@ -382,7 +382,7 @@ export const HumandSyncModule: React.FC = () => {
   const filteredAsignados = useMemo(() => {
     if (!searchQuery.trim()) return asignados163;
     const q = searchQuery.toLowerCase();
-    return asignados163.filter(e => 
+    return asignados163.filter(e =>
       e.nombres.toLowerCase().includes(q) ||
       e.apellidos.toLowerCase().includes(q) ||
       String(e.documento_identidad).includes(q) ||
@@ -394,8 +394,8 @@ export const HumandSyncModule: React.FC = () => {
   const filteredDeps = useMemo(() => {
     if (!searchQuery.trim()) return thDeps;
     const q = searchQuery.toLowerCase();
-    return thDeps.filter(d => 
-      d.nombre.toLowerCase().includes(q) || 
+    return thDeps.filter(d =>
+      d.nombre.toLowerCase().includes(q) ||
       d.codigo.toLowerCase().includes(q)
     );
   }, [thDeps, searchQuery]);
@@ -404,8 +404,8 @@ export const HumandSyncModule: React.FC = () => {
   const filteredCargos = useMemo(() => {
     if (!searchQuery.trim()) return thCargos;
     const q = searchQuery.toLowerCase();
-    return thCargos.filter(c => 
-      c.nombre.toLowerCase().includes(q) || 
+    return thCargos.filter(c =>
+      c.nombre.toLowerCase().includes(q) ||
       c.codigo.toLowerCase().includes(q)
     );
   }, [thCargos, searchQuery]);
@@ -488,21 +488,19 @@ export const HumandSyncModule: React.FC = () => {
         <button
           type="button"
           onClick={() => handleCardClick('departamentos')}
-          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:scale-[1.02] hover:shadow-lg ${
-            activeSubTab === 'departamentos'
+          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:scale-[1.02] hover:shadow-lg ${activeSubTab === 'departamentos'
               ? 'bg-blue-50/80 dark:bg-blue-500/10 border-2 border-blue-500/60 ring-2 ring-blue-500/20'
               : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-blue-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
               Departamentos
             </span>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              activeSubTab === 'departamentos'
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${activeSubTab === 'departamentos'
                 ? 'bg-blue-500/30 text-blue-700 dark:text-blue-200 border border-blue-400/40'
                 : 'bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20'
-            }`}>
+              }`}>
               <Building2 className="w-5 h-5" />
             </div>
           </div>
@@ -526,21 +524,19 @@ export const HumandSyncModule: React.FC = () => {
         <button
           type="button"
           onClick={() => handleCardClick('cargos')}
-          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/50 hover:scale-[1.02] hover:shadow-lg ${
-            activeSubTab === 'cargos'
+          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/50 hover:scale-[1.02] hover:shadow-lg ${activeSubTab === 'cargos'
               ? 'bg-purple-50/80 dark:bg-purple-500/10 border-2 border-purple-500/60 ring-2 ring-purple-500/20'
               : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-purple-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
               Puestos / Cargos
             </span>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              activeSubTab === 'cargos'
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${activeSubTab === 'cargos'
                 ? 'bg-purple-500/30 text-purple-700 dark:text-purple-200 border border-purple-400/40'
                 : 'bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 group-hover:bg-purple-100 dark:group-hover:bg-purple-500/20'
-            }`}>
+              }`}>
               <Briefcase className="w-5 h-5" />
             </div>
           </div>
@@ -564,21 +560,19 @@ export const HumandSyncModule: React.FC = () => {
         <button
           type="button"
           onClick={() => handleCardClick('colaboradores')}
-          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hover:scale-[1.02] hover:shadow-lg ${
-            activeSubTab === 'colaboradores'
+          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hover:scale-[1.02] hover:shadow-lg ${activeSubTab === 'colaboradores'
               ? 'bg-emerald-50/80 dark:bg-emerald-500/10 border-2 border-emerald-500/60 ring-2 ring-emerald-500/20'
               : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-emerald-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
               Membresías Asignadas
             </span>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              activeSubTab === 'colaboradores'
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${activeSubTab === 'colaboradores'
                 ? 'bg-emerald-500/30 text-emerald-700 dark:text-emerald-200 border border-emerald-400/40'
                 : 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20'
-            }`}>
+              }`}>
               <UserCheck className="w-5 h-5" />
             </div>
           </div>
@@ -602,21 +596,19 @@ export const HumandSyncModule: React.FC = () => {
         <button
           type="button"
           onClick={() => handleCardClick('fechas')}
-          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:scale-[1.02] hover:shadow-lg ${
-            activeSubTab === 'fechas'
+          className={`rounded-xl p-5 shadow-sm text-left transition-all duration-200 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:scale-[1.02] hover:shadow-lg ${activeSubTab === 'fechas'
               ? 'bg-indigo-50/80 dark:bg-indigo-500/10 border-2 border-indigo-500/60 ring-2 ring-indigo-500/20'
               : 'bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-indigo-400/50 hover:bg-slate-50 dark:hover:bg-slate-900/90'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
               Fechas de Ingreso
             </span>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              activeSubTab === 'fechas'
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${activeSubTab === 'fechas'
                 ? 'bg-indigo-500/30 text-indigo-700 dark:text-indigo-200 border border-indigo-400/40'
                 : 'bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20'
-            }`}>
+              }`}>
               <Clock className="w-5 h-5" />
             </div>
           </div>
@@ -658,11 +650,10 @@ export const HumandSyncModule: React.FC = () => {
                   setActiveSubTab(tab.id as SyncTab);
                   setSearchQuery('');
                 }}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                  isActive
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${isActive
                     ? 'border-brand-500 text-brand-400 bg-brand-500/5'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
