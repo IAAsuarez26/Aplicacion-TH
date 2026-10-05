@@ -58,7 +58,6 @@ export const UsuariosModule: React.FC = () => {
     password: '',
     rol_codigo: 'ESPEC_RECLUTAMIENTO' as RolCodigo,
     telefono: '',
-    cargo: '',
   });
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [submittingCreate, setSubmittingCreate] = useState(false);
@@ -146,13 +145,14 @@ export const UsuariosModule: React.FC = () => {
 
     setSubmittingCreate(true);
     try {
+      const selectedRoleObj = roles.find((r) => r.codigo === createForm.rol_codigo);
       const res = await usuariosApi.create({
         nombre: createForm.nombre.trim(),
         email: createForm.email.trim().toLowerCase(),
         password: createForm.password,
         rol_codigo: createForm.rol_codigo,
         telefono: createForm.telefono.trim() || undefined,
-        cargo: createForm.cargo.trim() || undefined,
+        cargo: selectedRoleObj?.nombre || undefined,
       });
 
       if (res.success) {
@@ -164,7 +164,6 @@ export const UsuariosModule: React.FC = () => {
           password: '',
           rol_codigo: 'ESPEC_RECLUTAMIENTO',
           telefono: '',
-          cargo: '',
         });
         await loadData();
       } else {
@@ -521,7 +520,7 @@ export const UsuariosModule: React.FC = () => {
                             </div>
                             <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                               <Briefcase className="w-3 h-3 text-slate-500" />
-                              <span>{u.cargo || 'Sin cargo asignado'}</span>
+                              <span>{u.cargo || u.rol_nombre || 'Usuario del Sistema'}</span>
                               {u.telefono && (
                                 <>
                                   <span className="text-slate-600">•</span>
@@ -740,19 +739,23 @@ export const UsuariosModule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Cargo & Teléfono */}
+              {/* Perfil de Seguridad (Rol) & Teléfono */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Cargo Funcional (Opcional)
+                    Perfil de Seguridad <span className="text-rose-400">*</span>
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Ej. Analista de Selección"
-                    value={createForm.cargo}
-                    onChange={(e) => setCreateForm({ ...createForm, cargo: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
-                  />
+                  <select
+                    value={createForm.rol_codigo}
+                    onChange={(e) => setCreateForm({ ...createForm, rol_codigo: e.target.value as RolCodigo })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"
+                  >
+                    {roles.map((r) => (
+                      <option key={r.codigo} value={r.codigo}>
+                        {r.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -768,53 +771,35 @@ export const UsuariosModule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Selector de Rol */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  Rol de la Plataforma <span className="text-rose-400">*</span>
-                </label>
-                <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
-                  {roles.map((r) => {
-                    const isSelected = createForm.rol_codigo === r.codigo;
-                    const canManage = r.codigo === 'ADMIN_PLATAFORMA' || r.codigo === 'GERENTE_TH';
+              {/* Ficha explicativa del perfil de seguridad seleccionado */}
+              {(() => {
+                const selectedRole = roles.find((r) => r.codigo === createForm.rol_codigo);
+                if (!selectedRole) return null;
+                const canManage = selectedRole.codigo === 'ADMIN_PLATAFORMA' || selectedRole.codigo === 'GERENTE_TH';
 
-                    return (
-                      <div
-                        key={r.codigo}
-                        onClick={() => setCreateForm({ ...createForm, rol_codigo: r.codigo as RolCodigo })}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start justify-between ${
-                          isSelected
-                            ? 'bg-brand-950/40 border-brand-500 text-white shadow-sm'
-                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-xs text-white">{r.nombre}</span>
-                            {canManage && (
-                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                Usuarios & Tabulador
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 leading-relaxed">
-                            {r.descripcion}
-                          </p>
-                        </div>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ml-2 mt-0.5 ${
-                            isSelected
-                              ? 'border-brand-500 bg-brand-500 text-white'
-                              : 'border-slate-700'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3 h-3" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                return (
+                  <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-1.5 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-xs text-slate-200 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-brand-400" />
+                        Privilegios de Acceso: {selectedRole.nombre}
+                      </span>
+                      {canManage ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                          Usuarios & Tabulador
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                          Acceso Operativo TH
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {selectedRole.descripcion}
+                    </p>
+                  </div>
+                );
+              })()}
 
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-2.5 text-[11px] text-slate-400">
                 <Info className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
@@ -875,47 +860,51 @@ export const UsuariosModule: React.FC = () => {
 
             <form onSubmit={handleUpdateRole} className="space-y-4">
               <div>
-                <p className="text-xs text-slate-300 mb-2">Selecciona el nuevo rol a asignar:</p>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  {roles.map((r) => {
-                    const isSelected = newRoleCodigo === r.codigo;
-                    const canManage = r.codigo === 'ADMIN_PLATAFORMA' || r.codigo === 'GERENTE_TH';
-
-                    return (
-                      <div
-                        key={r.codigo}
-                        onClick={() => setNewRoleCodigo(r.codigo as RolCodigo)}
-                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start justify-between ${
-                          isSelected
-                            ? 'bg-purple-950/30 border-purple-500 text-white shadow-sm'
-                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-xs text-white">{r.nombre}</span>
-                            {canManage && (
-                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                Usuarios & Tabulador
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400">{r.descripcion}</p>
-                        </div>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ml-2 mt-0.5 ${
-                            isSelected
-                              ? 'border-purple-500 bg-purple-500 text-white'
-                              : 'border-slate-700'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3 h-3" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Perfil de Seguridad <span className="text-purple-400">*</span>
+                </label>
+                <select
+                  value={newRoleCodigo}
+                  onChange={(e) => setNewRoleCodigo(e.target.value as RolCodigo)}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                >
+                  {roles.map((r) => (
+                    <option key={r.codigo} value={r.codigo}>
+                      {r.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* Ficha explicativa del perfil de seguridad */}
+              {(() => {
+                const selectedRole = roles.find((r) => r.codigo === newRoleCodigo);
+                if (!selectedRole) return null;
+                const canManage = selectedRole.codigo === 'ADMIN_PLATAFORMA' || selectedRole.codigo === 'GERENTE_TH';
+
+                return (
+                  <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-1.5 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-xs text-white flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-purple-400" />
+                        Privilegios: {selectedRole.nombre}
+                      </span>
+                      {canManage ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                          Usuarios & Tabulador
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                          Acceso Operativo TH
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {selectedRole.descripcion}
+                    </p>
+                  </div>
+                );
+              })()}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
