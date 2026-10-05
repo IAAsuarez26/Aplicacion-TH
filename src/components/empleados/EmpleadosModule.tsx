@@ -113,6 +113,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [filtroSede, setFiltroSede] = useState<string | 'ALL'>('ALL');
   const [filtroGenero, setFiltroGenero] = useState<string | 'ALL'>('ALL');
   const [filtroEstado, setFiltroEstado] = useState<string>('ALL');
+  const [filtroQuickPC, setFiltroQuickPC] = useState<'ALL' | 'CON_PC' | 'SIN_PC'>('ALL');
+  const [filtroQuickTabulador, setFiltroQuickTabulador] = useState<'ALL' | 'CON_BANDA' | 'SIN_BANDA'>('ALL');
 
   // Modal State (Create / Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -576,6 +578,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       if (filtroSede !== 'ALL' && emp.sede !== filtroSede) return false;
       if (filtroGenero !== 'ALL' && emp.genero !== filtroGenero) return false;
       if (filtroEstado !== 'ALL' && emp.estado_laboral !== filtroEstado) return false;
+      if (filtroQuickPC === 'CON_PC' && !emp.codigo_pc) return false;
+      if (filtroQuickPC === 'SIN_PC' && emp.codigo_pc) return false;
+      if (filtroQuickTabulador === 'CON_BANDA' && !emp.tabulador_id) return false;
+      if (filtroQuickTabulador === 'SIN_BANDA' && emp.tabulador_id) return false;
       return true;
     });
   }, [
@@ -589,6 +595,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     filtroSede,
     filtroGenero,
     filtroEstado,
+    filtroQuickPC,
+    filtroQuickTabulador,
     cargos,
   ]);
 
@@ -602,6 +610,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     filtroSede !== 'ALL',
     filtroGenero !== 'ALL',
     filtroEstado !== 'ALL',
+    filtroQuickPC !== 'ALL',
+    filtroQuickTabulador !== 'ALL',
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFiltersCount > 0;
@@ -616,6 +626,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setFiltroGenero('ALL');
     setFiltroCargo('ALL');
     setFiltroEstado('ALL');
+    setFiltroQuickPC('ALL');
+    setFiltroQuickTabulador('ALL');
   };
 
   const columns: Column<EmpleadoConEmpresa>[] = [
@@ -982,6 +994,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   ];
 
   const totalEmpleadosConPerfil = empleados.filter((e) => Boolean(e.codigo_pc)).length;
+  const totalEmpleadosSinPerfil = empleados.length - totalEmpleadosConPerfil;
+  const totalEmpleadosActivos = empleados.filter((e) => e.estado_laboral === 'ACTIVO').length;
+  const totalEmpleadosConBanda = empleados.filter((e) => Boolean(e.tabulador_id)).length;
+  const totalEmpleadosSinBanda = empleados.length - totalEmpleadosConBanda;
+
+  const isTotalActive = filtroEstado === 'ALL' && filtroQuickPC === 'ALL' && filtroQuickTabulador === 'ALL' && !hasActiveFilters;
+  const isActivosActive = filtroEstado === 'ACTIVO';
 
   return (
     <div className="space-y-6">
@@ -1006,50 +1025,186 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         </button>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Interactivas) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+        {/* 1. Total Plantilla */}
+        <button
+          type="button"
+          onClick={() => {
+            if (hasActiveFilters) {
+              resetAllFilters();
+            } else {
+              setFiltroEstado('ALL');
+              setFiltroQuickPC('ALL');
+              setFiltroQuickTabulador('ALL');
+            }
+          }}
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            isTotalActive
+              ? 'bg-slate-900/80 border-2 border-brand-500/80 ring-2 ring-brand-500/20 shadow-brand-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+          }`}
+          title="Clic para ver la plantilla completa"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Plantilla</span>
-            <Users className="w-4 h-4 text-brand-400" />
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition-colors">
+              Total Plantilla
+            </span>
+            <div className="p-2 rounded-xl bg-brand-500/10 text-brand-400 group-hover:scale-110 transition-transform">
+              <Users className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-white mt-2">{empleados.length}</p>
-          <span className="text-[11px] text-slate-500">Colaboradores registrados</span>
-        </div>
+          <div className="flex items-baseline justify-between mt-2">
+            <p className="text-2xl font-bold text-white">{empleados.length}</p>
+            {hasActiveFilters && (
+              <span className="text-[10px] font-semibold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20">
+                Ver todos
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 block mt-1">Colaboradores registrados</span>
+        </button>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+        {/* 2. Activos */}
+        <button
+          type="button"
+          onClick={() => setFiltroEstado(filtroEstado === 'ACTIVO' ? 'ALL' : 'ACTIVO')}
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            isActivosActive
+              ? 'bg-emerald-950/40 border-2 border-emerald-500/80 ring-2 ring-emerald-500/30 shadow-emerald-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-emerald-950/20'
+          }`}
+          title={isActivosActive ? 'Clic para quitar filtro de activos' : 'Clic para filtrar solo activos'}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Activos</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className={`p-2 rounded-xl transition-all ${
+              isActivosActive ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-500/10 text-emerald-400 group-hover:scale-110'
+            }`}>
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-400 mt-2">
-            {empleados.filter((e) => e.estado_laboral === 'ACTIVO').length}
-          </p>
-          <span className="text-[11px] text-slate-500">En funciones operativas</span>
-        </div>
+          <div className="flex items-baseline justify-between mt-2">
+            <p className="text-2xl font-bold text-emerald-400">{totalEmpleadosActivos}</p>
+            {isActivosActive && (
+              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                Filtrado
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 block mt-1">En funciones operativas</span>
+        </button>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+        {/* 3. Perfiles (PC) */}
+        <div
+          onClick={() => setFiltroQuickPC(filtroQuickPC === 'CON_PC' ? 'ALL' : 'CON_PC')}
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            filtroQuickPC === 'CON_PC'
+              ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
+              : filtroQuickPC === 'SIN_PC'
+              ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
+          }`}
+          title="Clic para filtrar colaboradores con perfil de competencias (PC)"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Perfiles (PC)</span>
-            <Award className="w-4 h-4 text-cyan-400" />
+            <div className={`p-2 rounded-xl transition-all ${
+              filtroQuickPC === 'CON_PC' ? 'bg-cyan-500/30 text-cyan-300' : 'bg-cyan-500/10 text-cyan-400 group-hover:scale-110'
+            }`}>
+              <Award className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-cyan-400 mt-2">
-            {totalEmpleadosConPerfil}
-          </p>
-          <span className="text-[11px] text-slate-500">
-            {empleados.length - totalEmpleadosConPerfil} pendientes de PC
-          </span>
+          <div className="flex items-baseline justify-between mt-2">
+            <p className="text-2xl font-bold text-cyan-400">{totalEmpleadosConPerfil}</p>
+            {filtroQuickPC === 'CON_PC' && (
+              <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-full border border-cyan-500/40">
+                Con PC
+              </span>
+            )}
+            {filtroQuickPC === 'SIN_PC' && (
+              <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">
+                Pendientes
+              </span>
+            )}
+          </div>
+          <div className="mt-1">
+            {totalEmpleadosSinPerfil > 0 ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFiltroQuickPC(filtroQuickPC === 'SIN_PC' ? 'ALL' : 'SIN_PC');
+                }}
+                className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
+                  filtroQuickPC === 'SIN_PC'
+                    ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
+                    : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
+                }`}
+                title="Clic para filtrar únicamente los pendientes de PC"
+              >
+                {totalEmpleadosSinPerfil} pendientes de PC
+              </button>
+            ) : (
+              <span className="text-[11px] text-slate-500">100% con perfil asignado</span>
+            )}
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl">
+        {/* 4. Tabulador Salarial */}
+        <div
+          onClick={() => setFiltroQuickTabulador(filtroQuickTabulador === 'CON_BANDA' ? 'ALL' : 'CON_BANDA')}
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            filtroQuickTabulador === 'CON_BANDA'
+              ? 'bg-indigo-950/40 border-2 border-indigo-500/80 ring-2 ring-indigo-500/30 shadow-indigo-500/10 shadow-lg'
+              : filtroQuickTabulador === 'SIN_BANDA'
+              ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
+          }`}
+          title="Clic para filtrar colaboradores con banda salarial"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Tabulador Salarial</span>
-            <Layers className="w-4 h-4 text-indigo-400" />
+            <div className={`p-2 rounded-xl transition-all ${
+              filtroQuickTabulador === 'CON_BANDA' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110'
+            }`}>
+              <Layers className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-indigo-400 mt-2">
-            {empleados.filter((e) => e.tabulador_id).length}
-          </p>
-          <span className="text-[11px] text-slate-500">Con banda asignada</span>
+          <div className="flex items-baseline justify-between mt-2">
+            <p className="text-2xl font-bold text-indigo-400">{totalEmpleadosConBanda}</p>
+            {filtroQuickTabulador === 'CON_BANDA' && (
+              <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/40">
+                Con Banda
+              </span>
+            )}
+            {filtroQuickTabulador === 'SIN_BANDA' && (
+              <span className="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40">
+                Sin Banda
+              </span>
+            )}
+          </div>
+          <div className="mt-1">
+            {totalEmpleadosSinBanda > 0 ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFiltroQuickTabulador(filtroQuickTabulador === 'SIN_BANDA' ? 'ALL' : 'SIN_BANDA');
+                }}
+                className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
+                  filtroQuickTabulador === 'SIN_BANDA'
+                    ? 'bg-rose-500/25 text-rose-300 font-bold border border-rose-500/40'
+                    : 'text-slate-500 hover:text-rose-300 hover:bg-rose-500/15'
+                }`}
+                title="Clic para filtrar colaboradores sin banda asignada"
+              >
+                {totalEmpleadosSinBanda} sin banda asignada
+              </button>
+            ) : (
+              <span className="text-[11px] text-slate-500">Con banda asignada</span>
+            )}
+          </div>
         </div>
       </div>
 
