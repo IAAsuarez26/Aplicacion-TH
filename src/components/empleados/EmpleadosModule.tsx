@@ -1699,13 +1699,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
 
               {/* 2. Selector de Departamento Asignado */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                  <span>Departamento Asignado *</span>
-                  {formEmpresaId && (
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      ({modalDepartamentos.length} depto{modalDepartamentos.length === 1 ? '' : 's'})
-                    </span>
-                  )}
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Departamento Asignado *
                 </label>
                 <select
                   required
@@ -1903,13 +1898,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
-                <span>Banda Salarial</span>
-                {formEmpresaId && (
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    ({modalTabuladores.length} banda{modalTabuladores.length === 1 ? '' : 's'})
-                  </span>
-                )}
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Banda Salarial
               </label>
               <select
                 value={tabuladorId}
