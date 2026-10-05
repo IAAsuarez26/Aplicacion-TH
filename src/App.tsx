@@ -73,7 +73,7 @@ export const App: React.FC = () => {
       )}
 
       {activeTab === 'empresas' && <EmpresasModule />}
-      {activeTab === 'tabulador' && <TabuladorModule />}
+      {activeTab === 'tabulador' && canAccessTab('tabulador') && <TabuladorModule />}
       {activeTab === 'tipo_costos' && <TipoCostosModule />}
       {activeTab === 'centros_costos' && <CentrosCostosModule />}
       {activeTab === 'direcciones' && <DireccionesModule />}

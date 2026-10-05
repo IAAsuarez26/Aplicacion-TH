@@ -20,8 +20,11 @@ import { Modal } from '../common/Modal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { EstadoBooleanBadge } from '../common/Badge';
 import { useToast } from '../common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 export const EmpresasModule: React.FC = () => {
+  const { canAccessTab } = useAuth();
+  const canAccessTabulador = canAccessTab('tabulador');
   const toast = useToast();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
@@ -66,7 +69,7 @@ export const EmpresasModule: React.FC = () => {
         await Promise.all([
           empresasApi.getAll(),
           direccionesApi.getAll(),
-          tabuladorApi.getAll(),
+          canAccessTabulador ? tabuladorApi.getAll() : Promise.resolve({ data: [] }),
         ]);
 
       if (empErr) toast.error('No se pudieron cargar las empresas');
@@ -328,9 +331,11 @@ export const EmpresasModule: React.FC = () => {
             <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700" title="Direcciones vinculadas">
               {numDirs} Dirs
             </span>
-            <span className="px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800/40" title="Bandas salariales">
-              {numBandas} Bandas
-            </span>
+            {canAccessTabulador && (
+              <span className="px-2 py-0.5 rounded bg-indigo-950/60 text-indigo-300 border border-indigo-800/40" title="Bandas salariales">
+                {numBandas} Bandas
+              </span>
+            )}
           </div>
         );
       },

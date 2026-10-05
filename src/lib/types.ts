@@ -312,7 +312,8 @@ export type RolCodigo =
   | 'GERENTE_TH'
   | 'COORD_COMPENSACION'
   | 'COORD_RECLUTAMIENTO'
-  | 'ESPEC_RECLUTAMIENTO';
+  | 'ESPEC_RECLUTAMIENTO'
+  | 'ESPEC_COMPENSACION';
 
 export interface Rol {
   role_id: number;

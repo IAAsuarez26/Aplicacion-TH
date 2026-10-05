@@ -58,6 +58,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { EstadoLaboralBadge } from '../common/Badge';
 import { useToast } from '../common/Toast';
 import { HumandSyncModal } from '../humand/HumandSyncModal';
+import { useAuth } from '../../context/AuthContext';
 
 
 export interface EmpleadoConEmpresa extends Empleado {
@@ -90,6 +91,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   initialCreateOpen = false,
   onResetInitialOpen,
 }) => {
+  const { canAccessTab } = useAuth();
+  const canAccessTabulador = canAccessTab('tabulador');
   const toast = useToast();
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
@@ -115,6 +118,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [filtroEstado, setFiltroEstado] = useState<string>('ALL');
   const [filtroQuickPC, setFiltroQuickPC] = useState<'ALL' | 'CON_PC' | 'SIN_PC'>('ALL');
   const [filtroQuickTabulador, setFiltroQuickTabulador] = useState<'ALL' | 'CON_BANDA' | 'SIN_BANDA'>('ALL');
+  const [filtroQuickHumand, setFiltroQuickHumand] = useState<'ALL' | 'HABILITADO' | 'EXCLUIDO'>('ALL');
 
   // Modal State (Create / Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -179,7 +183,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         empleadosApi.getAll(),
         cargosApi.getAll(),
         departamentosApi.getAll(),
-        tabuladorApi.getAll(),
+        canAccessTabulador ? tabuladorApi.getAll() : Promise.resolve({ data: [] }),
         tipoCostosApi.getAll(),
         perfilesCompetenciasApi.getAll(),
         denominacionesCargosApi.getAll(),
@@ -321,7 +325,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           ubicacion: ubicacion.trim() || null,
           edo_civil: edoCivil.trim() || null,
           nivel_educativo: nivelEducativo.trim() || null,
-          tabulador_id: tabuladorId ? Number(tabuladorId) : null,
+          tabulador_id: canAccessTabulador ? (tabuladorId ? Number(tabuladorId) : null) : null,
           di_supervisor: diSupervisor.trim() || null,
           di_evaluador: diEvaluador.trim() || null,
           fecha_ingreso: fechaIngreso,
@@ -354,7 +358,9 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           ubicacion: ubicacion.trim() || null,
           edo_civil: edoCivil.trim() || null,
           nivel_educativo: nivelEducativo.trim() || null,
-          tabulador_id: tabuladorId ? Number(tabuladorId) : null,
+          tabulador_id: canAccessTabulador
+            ? (tabuladorId ? Number(tabuladorId) : null)
+            : (selectedEmpleado.tabulador_id ? Number(selectedEmpleado.tabulador_id) : null),
           di_supervisor: diSupervisor.trim() || null,
           di_evaluador: diEvaluador.trim() || null,
           fecha_ingreso: fechaIngreso,
@@ -580,8 +586,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       if (filtroEstado !== 'ALL' && emp.estado_laboral !== filtroEstado) return false;
       if (filtroQuickPC === 'CON_PC' && !emp.codigo_pc) return false;
       if (filtroQuickPC === 'SIN_PC' && emp.codigo_pc) return false;
-      if (filtroQuickTabulador === 'CON_BANDA' && !emp.tabulador_id) return false;
-      if (filtroQuickTabulador === 'SIN_BANDA' && emp.tabulador_id) return false;
+      if (canAccessTabulador) {
+        if (filtroQuickTabulador === 'CON_BANDA' && !emp.tabulador_id) return false;
+        if (filtroQuickTabulador === 'SIN_BANDA' && emp.tabulador_id) return false;
+      } else {
+        if (filtroQuickHumand === 'HABILITADO' && emp.estatus_h !== 1) return false;
+        if (filtroQuickHumand === 'EXCLUIDO' && emp.estatus_h === 1) return false;
+      }
       return true;
     });
   }, [
@@ -597,6 +608,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     filtroEstado,
     filtroQuickPC,
     filtroQuickTabulador,
+    filtroQuickHumand,
+    canAccessTabulador,
     cargos,
   ]);
 
@@ -611,7 +624,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     filtroGenero !== 'ALL',
     filtroEstado !== 'ALL',
     filtroQuickPC !== 'ALL',
-    filtroQuickTabulador !== 'ALL',
+    canAccessTabulador ? filtroQuickTabulador !== 'ALL' : filtroQuickHumand !== 'ALL',
   ].filter(Boolean).length;
 
   const hasActiveFilters = activeFiltersCount > 0;
@@ -628,6 +641,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setFiltroEstado('ALL');
     setFiltroQuickPC('ALL');
     setFiltroQuickTabulador('ALL');
+    setFiltroQuickHumand('ALL');
   };
 
   const columns: Column<EmpleadoConEmpresa>[] = [
@@ -861,25 +875,29 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         </div>
       ),
     },
-    {
-      key: 'tabulador_id',
-      header: 'Banda Salarial',
-      render: (row) => {
-        const tab = getTabuladorInfo(row.tabulador_id);
-        return tab ? (
-          <div>
-            <span
-              className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 inline-block"
-              title={tab.cargos_referencia ? `Cargos ref: ${tab.cargos_referencia}` : undefined}
-            >
-              {tab.codigo_banda}
-            </span>
-          </div>
-        ) : (
-          <span className="text-xs text-slate-500 italic">Sin Banda</span>
-        );
-      },
-    },
+    ...(canAccessTabulador
+      ? [
+          {
+            key: 'tabulador_id',
+            header: 'Banda Salarial',
+            render: (row: EmpleadoConEmpresa) => {
+              const tab = getTabuladorInfo(row.tabulador_id);
+              return tab ? (
+                <div>
+                  <span
+                    className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 inline-block"
+                    title={tab.cargos_referencia ? `Cargos ref: ${tab.cargos_referencia}` : undefined}
+                  >
+                    {tab.codigo_banda}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-xs text-slate-500 italic">Sin Banda</span>
+              );
+            },
+          } as Column<EmpleadoConEmpresa>,
+        ]
+      : []),
     {
       key: 'di_supervisor',
       header: 'Línea de Mando',
@@ -998,8 +1016,14 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const totalEmpleadosActivos = empleados.filter((e) => e.estado_laboral === 'ACTIVO').length;
   const totalEmpleadosConBanda = empleados.filter((e) => Boolean(e.tabulador_id)).length;
   const totalEmpleadosSinBanda = empleados.length - totalEmpleadosConBanda;
+  const totalEmpleadosHumand = empleados.filter((e) => e.estatus_h === 1).length;
+  const totalEmpleadosNoHumand = empleados.length - totalEmpleadosHumand;
 
-  const isTotalActive = filtroEstado === 'ALL' && filtroQuickPC === 'ALL' && filtroQuickTabulador === 'ALL' && !hasActiveFilters;
+  const isTotalActive =
+    filtroEstado === 'ALL' &&
+    filtroQuickPC === 'ALL' &&
+    (canAccessTabulador ? filtroQuickTabulador === 'ALL' : filtroQuickHumand === 'ALL') &&
+    !hasActiveFilters;
   const isActivosActive = filtroEstado === 'ACTIVO';
 
   return (
@@ -1037,6 +1061,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               setFiltroEstado('ALL');
               setFiltroQuickPC('ALL');
               setFiltroQuickTabulador('ALL');
+              setFiltroQuickHumand('ALL');
             }
           }}
           className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
@@ -1151,61 +1176,118 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           </div>
         </div>
 
-        {/* 4. Tabulador Salarial */}
-        <div
-          onClick={() => setFiltroQuickTabulador(filtroQuickTabulador === 'CON_BANDA' ? 'ALL' : 'CON_BANDA')}
-          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
-            filtroQuickTabulador === 'CON_BANDA'
-              ? 'bg-indigo-950/40 border-2 border-indigo-500/80 ring-2 ring-indigo-500/30 shadow-indigo-500/10 shadow-lg'
-              : filtroQuickTabulador === 'SIN_BANDA'
-              ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
-              : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
-          }`}
-          title="Clic para filtrar colaboradores con banda salarial"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Tabulador Salarial</span>
-            <div className={`p-2 rounded-xl transition-all ${
-              filtroQuickTabulador === 'CON_BANDA' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110'
-            }`}>
-              <Layers className="w-4 h-4" />
+        {/* 4. Tabulador Salarial (Solo Admin y Gerente TH) o Integración Humand (Otros roles) */}
+        {canAccessTabulador ? (
+          <div
+            onClick={() => setFiltroQuickTabulador(filtroQuickTabulador === 'CON_BANDA' ? 'ALL' : 'CON_BANDA')}
+            className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+              filtroQuickTabulador === 'CON_BANDA'
+                ? 'bg-indigo-950/40 border-2 border-indigo-500/80 ring-2 ring-indigo-500/30 shadow-indigo-500/10 shadow-lg'
+                : filtroQuickTabulador === 'SIN_BANDA'
+                ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
+                : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
+            }`}
+            title="Clic para filtrar colaboradores con banda salarial"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Tabulador Salarial</span>
+              <div className={`p-2 rounded-xl transition-all ${
+                filtroQuickTabulador === 'CON_BANDA' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110'
+              }`}>
+                <Layers className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between mt-2">
+              <p className="text-2xl font-bold text-indigo-400">{totalEmpleadosConBanda}</p>
+              {filtroQuickTabulador === 'CON_BANDA' && (
+                <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/40">
+                  Con Banda
+                </span>
+              )}
+              {filtroQuickTabulador === 'SIN_BANDA' && (
+                <span className="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40">
+                  Sin Banda
+                </span>
+              )}
+            </div>
+            <div className="mt-1">
+              {totalEmpleadosSinBanda > 0 ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFiltroQuickTabulador(filtroQuickTabulador === 'SIN_BANDA' ? 'ALL' : 'SIN_BANDA');
+                  }}
+                  className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
+                    filtroQuickTabulador === 'SIN_BANDA'
+                      ? 'bg-rose-500/25 text-rose-300 font-bold border border-rose-500/40'
+                      : 'text-slate-500 hover:text-rose-300 hover:bg-rose-500/15'
+                  }`}
+                  title="Clic para filtrar colaboradores sin banda asignada"
+                >
+                  <span className="font-semibold text-rose-400">{totalEmpleadosSinBanda}</span> sin banda asignada
+                </button>
+              ) : (
+                <span className="text-[11px] text-slate-500">100% con banda asignada</span>
+              )}
             </div>
           </div>
-          <div className="flex items-baseline justify-between mt-2">
-            <p className="text-2xl font-bold text-indigo-400">{totalEmpleadosConBanda}</p>
-            {filtroQuickTabulador === 'CON_BANDA' && (
-              <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/40">
-                Con Banda
-              </span>
-            )}
-            {filtroQuickTabulador === 'SIN_BANDA' && (
-              <span className="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40">
-                Sin Banda
-              </span>
-            )}
+        ) : (
+          <div
+            onClick={() => setFiltroQuickHumand(filtroQuickHumand === 'HABILITADO' ? 'ALL' : 'HABILITADO')}
+            className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+              filtroQuickHumand === 'HABILITADO'
+                ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
+                : filtroQuickHumand === 'EXCLUIDO'
+                ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
+                : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
+            }`}
+            title="Clic para filtrar colaboradores sincronizados con Humand"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Integración Humand</span>
+              <div className={`p-2 rounded-xl transition-all ${
+                filtroQuickHumand === 'HABILITADO' ? 'bg-cyan-500/30 text-cyan-300' : 'bg-cyan-500/10 text-cyan-400 group-hover:scale-110'
+              }`}>
+                <Share2 className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between mt-2">
+              <p className="text-2xl font-bold text-cyan-400">{totalEmpleadosHumand}</p>
+              {filtroQuickHumand === 'HABILITADO' && (
+                <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-full border border-cyan-500/40">
+                  Habilitados
+                </span>
+              )}
+              {filtroQuickHumand === 'EXCLUIDO' && (
+                <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">
+                  Excluidos
+                </span>
+              )}
+            </div>
+            <div className="mt-1">
+              {totalEmpleadosNoHumand > 0 ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFiltroQuickHumand(filtroQuickHumand === 'EXCLUIDO' ? 'ALL' : 'EXCLUIDO');
+                  }}
+                  className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
+                    filtroQuickHumand === 'EXCLUIDO'
+                      ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
+                      : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
+                  }`}
+                  title="Clic para filtrar colaboradores no sincronizados a Humand"
+                >
+                  <span className="font-semibold text-amber-400">{totalEmpleadosNoHumand}</span> excluidos de Humand
+                </button>
+              ) : (
+                <span className="text-[11px] text-slate-500">100% habilitados en Humand</span>
+              )}
+            </div>
           </div>
-          <div className="mt-1">
-            {totalEmpleadosSinBanda > 0 ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFiltroQuickTabulador(filtroQuickTabulador === 'SIN_BANDA' ? 'ALL' : 'SIN_BANDA');
-                }}
-                className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
-                  filtroQuickTabulador === 'SIN_BANDA'
-                    ? 'bg-rose-500/25 text-rose-300 font-bold border border-rose-500/40'
-                    : 'text-slate-500 hover:text-rose-300 hover:bg-rose-500/15'
-                }`}
-                title="Clic para filtrar colaboradores sin banda asignada"
-              >
-                {totalEmpleadosSinBanda} sin banda asignada
-              </button>
-            ) : (
-              <span className="text-[11px] text-slate-500">Con banda asignada</span>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Filter Toolbar */}
@@ -1998,7 +2080,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           </div>
 
           {/* Tipo de Costo, Perfil de Competencias y Banda Salarial */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className={canAccessTabulador ? "grid grid-cols-1 sm:grid-cols-3 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-4"}>
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Tipo de Costo
@@ -2035,40 +2117,42 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Banda Salarial
-              </label>
-              <select
-                value={tabuladorId}
-                onChange={(e) => setTabuladorId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-              >
-                <option value="">-- Sin Banda --</option>
-                {formEmpresaId ? (
-                  modalTabuladores.map((t) => (
-                    <option key={t.tabulador_id} value={t.tabulador_id}>
-                      {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </option>
-                  ))
-                ) : (
-                  empresas.map((emp) => {
-                    const tabsEmp = modalTabuladores.filter((t) => t.empresa_id === emp.empresa_id);
-                    if (tabsEmp.length === 0) return null;
-                    const empBadge = emp.nombre_corto || emp.codigo;
-                    return (
-                      <optgroup key={emp.empresa_id} label={`🏢 Bandas ${empBadge}`}>
-                        {tabsEmp.map((t) => (
-                          <option key={t.tabulador_id} value={t.tabulador_id}>
-                            [{empBadge}] {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  })
-                )}
-              </select>
-            </div>
+            {canAccessTabulador && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Banda Salarial
+                </label>
+                <select
+                  value={tabuladorId}
+                  onChange={(e) => setTabuladorId(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+                >
+                  <option value="">-- Sin Banda --</option>
+                  {formEmpresaId ? (
+                    modalTabuladores.map((t) => (
+                      <option key={t.tabulador_id} value={t.tabulador_id}>
+                        {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </option>
+                    ))
+                  ) : (
+                    empresas.map((emp) => {
+                      const tabsEmp = modalTabuladores.filter((t) => t.empresa_id === emp.empresa_id);
+                      if (tabsEmp.length === 0) return null;
+                      const empBadge = emp.nombre_corto || emp.codigo;
+                      return (
+                        <optgroup key={emp.empresa_id} label={`🏢 Bandas ${empBadge}`}>
+                          {tabsEmp.map((t) => (
+                            <option key={t.tabulador_id} value={t.tabulador_id}>
+                              [{empBadge}] {t.codigo_banda} - Mediana: ${Number(t.salario_mediana_100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })
+                  )}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2449,8 +2533,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               </div>
             </div>
 
-            {/* Tabulador Card */}
-            {(() => {
+            {/* Tabulador Card (Solo Admin y Gerente TH) */}
+            {canAccessTabulador && (() => {
               const tab = getTabuladorInfo(detailEmpleado.tabulador_id);
               return tab ? (
                 <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/40 space-y-2.5">

@@ -25,6 +25,7 @@ import {
   Check,
   UserX,
   Trash2,
+  Coins,
 } from 'lucide-react';
 import { usuariosApi, rolesApi } from '../../lib/insforge';
 import type { Usuario, Rol, RolCodigo } from '../../lib/types';
@@ -311,6 +312,13 @@ export const UsuariosModule: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
             <Shield className="w-3.5 h-3.5 text-amber-400" />
             {rolNombre || 'Coordinador de Reclutamiento'}
+          </span>
+        );
+      case 'ESPEC_COMPENSACION':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-500/15 text-teal-300 border border-teal-500/30">
+            <Coins className="w-3.5 h-3.5 text-teal-400" />
+            {rolNombre || 'Especialista de compensación'}
           </span>
         );
       case 'ESPEC_RECLUTAMIENTO':
@@ -785,7 +793,7 @@ export const UsuariosModule: React.FC = () => {
                             <span className="font-semibold text-xs text-white">{r.nombre}</span>
                             {canManage && (
                               <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                Gestión de Usuarios
+                                Usuarios & Tabulador
                               </span>
                             )}
                           </div>
@@ -888,7 +896,7 @@ export const UsuariosModule: React.FC = () => {
                             <span className="font-semibold text-xs text-white">{r.nombre}</span>
                             {canManage && (
                               <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                Permiso Administrador
+                                Usuarios & Tabulador
                               </span>
                             )}
                           </div>

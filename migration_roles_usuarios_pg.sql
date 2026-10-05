@@ -23,27 +23,27 @@ CREATE TRIGGER trg_roles_updated_at
 BEFORE UPDATE ON public.roles
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Insertar los 5 roles solicitados
+-- Insertar los 6 roles oficiales del Sistema TH
 INSERT INTO public.roles (codigo, nombre, descripcion, permite_gestion_usuarios, color)
 VALUES
   (
     'ADMIN_PLATAFORMA',
     'Administrador de la plataforma',
-    'Control total técnico y operativo del sistema, configuración corporativa y gestión completa de usuarios y accesos.',
+    'Control total técnico y operativo del sistema, administración exclusiva del tabulador salarial, configuración corporativa y gestión completa de usuarios.',
     TRUE,
     'purple'
   ),
   (
     'GERENTE_TH',
     'Gerente de TH',
-    'Dirección estratégica de Talento Humano. Autorizado para incorporar nuevos usuarios a la plataforma y asignar o modificar roles.',
+    'Dirección estratégica de Talento Humano. Administración y consulta exclusiva del tabulador salarial corporativo, incorporación de usuarios y gestión de roles.',
     TRUE,
     'blue'
   ),
   (
     'COORD_COMPENSACION',
     'Coordinador de Compensación',
-    'Gestión integral de tabuladores salariales, bandas salariales (80%-120%), evaluación de equidad interna y análisis de costos.',
+    'Supervisión y análisis de estructuras de costos (MOD/MOI), centros de costos, filiales corporativas, equidad interna e integración Humand.',
     FALSE,
     'emerald'
   ),
@@ -60,6 +60,13 @@ VALUES
     'Operación táctica de selección: Ficha de empleados (altas e ingresos), perfiles de competencias y consulta de dependencias en organigrama.',
     FALSE,
     'indigo'
+  ),
+  (
+    'ESPEC_COMPENSACION',
+    'Especialista de compensación',
+    'Análisis de equidad interna, apoyo operativo en estructuras organizacionales y soporte al área de compensación.',
+    FALSE,
+    'teal'
   )
 ON CONFLICT (codigo) DO UPDATE SET
   nombre = EXCLUDED.nombre,

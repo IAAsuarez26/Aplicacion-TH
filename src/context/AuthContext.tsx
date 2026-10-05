@@ -53,6 +53,16 @@ export const DEMO_PROFILES: Record<RolCodigo, UserProfile> = {
     cargo: 'Especialista de Atracción de Talento',
     emailVerified: true,
   },
+  ESPEC_COMPENSACION: {
+    id: 'usr_demo_espec_comp',
+    email: 'espec.compensacion@empresa.com',
+    name: 'Lic. Valentina Morales',
+    role: 'Especialista de compensación',
+    rol_codigo: 'ESPEC_COMPENSACION',
+    permite_gestion_usuarios: false,
+    cargo: 'Especialista de Compensación y Beneficios',
+    emailVerified: true,
+  },
 };
 
 /**
@@ -61,26 +71,27 @@ export const DEMO_PROFILES: Record<RolCodigo, UserProfile> = {
 export const checkTabPermission = (tab: string, rolCodigo?: string | null): boolean => {
   if (!rolCodigo) return false;
 
-  // 1. Administrador de la plataforma y Gerente de TH tienen acceso a TODO (incluyendo usuarios)
+  // 1. Administrador de la plataforma y Gerente de TH tienen acceso a TODO (incluyendo usuarios y tabulador)
   if (rolCodigo === 'ADMIN_PLATAFORMA' || rolCodigo === 'GERENTE_TH') {
     return true;
   }
 
-  // 2. Tab de usuarios restringido EXCLUSIVAMENTE para Admin y Gerente TH
-  if (tab === 'usuarios') {
+  // 2. Módulos de máxima confidencialidad restringidos EXCLUSIVAMENTE para Admin Plataforma y Gerente de TH:
+  //    - 'usuarios': Gestión de accesos, credenciales y seguridad
+  //    - 'tabulador': Tabulador salarial, curvas de compensación y bandas salariales confidenciales (80%-120%)
+  if (tab === 'usuarios' || tab === 'tabulador') {
     return false;
   }
 
-  // 3. Pestañas universales para personal autorizado de TH
+  // 3. Pestañas comunes para roles operativos autorizados de TH
   if (['dashboard', 'cargos', 'denominaciones_cargos', 'empleados', 'organigrama'].includes(tab)) {
     return true;
   }
 
-  // 4. Coordinador de Compensación: Finanzas, tabuladores, costos y estructura
+  // 4. Coordinador de Compensación: Finanzas, costos, estructura corporativa e integración Humand (SIN tabulador salarial)
   if (rolCodigo === 'COORD_COMPENSACION') {
     return [
       'empresas',
-      'tabulador',
       'tipo_costos',
       'centros_costos',
       'direcciones',
@@ -91,7 +102,19 @@ export const checkTabPermission = (tab: string, rolCodigo?: string | null): bool
     ].includes(tab);
   }
 
-  // 5. Coordinador de Reclutamiento: Reclutamiento, perfiles PC, estructura organizativa y traslados
+  // 5. Especialista de Compensación: Análisis de costos y estructura organizativa de apoyo (SIN tabulador salarial)
+  if (rolCodigo === 'ESPEC_COMPENSACION') {
+    return [
+      'tipo_costos',
+      'centros_costos',
+      'direcciones',
+      'gerencias',
+      'departamentos',
+      'responsables',
+    ].includes(tab);
+  }
+
+  // 6. Coordinador de Reclutamiento: Reclutamiento, perfiles PC, estructura organizativa y traslados
   if (rolCodigo === 'COORD_RECLUTAMIENTO') {
     return [
       'perfiles_competencias',
@@ -103,7 +126,7 @@ export const checkTabPermission = (tab: string, rolCodigo?: string | null): bool
     ].includes(tab);
   }
 
-  // 6. Especialista de reclutamiento: Ficha y perfiles de competencias
+  // 7. Especialista de reclutamiento: Ficha y perfiles de competencias
   if (rolCodigo === 'ESPEC_RECLUTAMIENTO') {
     return ['perfiles_competencias'].includes(tab);
   }

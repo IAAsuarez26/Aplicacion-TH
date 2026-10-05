@@ -18,7 +18,9 @@ import {
   Filter,
   ChevronDown,
   RotateCcw,
+  ShieldAlert,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { tabuladorApi, empresasApi, empleadosApi } from '../../lib/insforge';
 import type { TabuladorEmpresa, Empresa, Empleado, PosicionSalarialEval } from '../../lib/types';
 import { DataTable, Column } from '../common/DataTable';
@@ -28,6 +30,8 @@ import { EstadoBooleanBadge } from '../common/Badge';
 import { useToast } from '../common/Toast';
 
 export const TabuladorModule: React.FC = () => {
+  const { canAccessTab } = useAuth();
+  const hasAccess = canAccessTab('tabulador');
   const toast = useToast();
   const [tabuladores, setTabuladores] = useState<TabuladorEmpresa[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -94,8 +98,10 @@ export const TabuladorModule: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (hasAccess) {
+      loadData();
+    }
+  }, [hasAccess]);
 
   // When changing empresaId in form, update codigoEmpresa
   const handleEmpresaChange = (id: number) => {
@@ -480,6 +486,20 @@ export const TabuladorModule: React.FC = () => {
       className: 'w-28 text-right',
     },
   ];
+
+  if (!hasAccess) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto my-12 text-center bg-slate-900/90 border border-slate-800 rounded-3xl shadow-xl space-y-4 animate-fade-in">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 mx-auto flex items-center justify-center">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h3 className="text-xl font-bold text-white tracking-tight">Módulo de Acceso Restringido</h3>
+        <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
+          El <strong className="text-slate-200">Tabulador Salarial</strong> y las escalas de compensación corporativa (80%-120%) están reservados estrictamente para el <strong className="text-brand-300">Administrador de la Plataforma</strong> y la <strong className="text-brand-300">Gerente de TH</strong>.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

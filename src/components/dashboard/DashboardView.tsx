@@ -20,6 +20,7 @@ import { dashboardApi, empleadosApi, organigramaApi } from '../../lib/insforge';
 import type { DashboardMetrics, OrganigramaRow, ResumenResponsable } from '../../lib/types';
 import { EstadoLaboralBadge } from '../common/Badge';
 import { NavigationTab } from '../layout/Sidebar';
+import { useAuth } from '../../context/AuthContext';
 
 interface DashboardViewProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -30,6 +31,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
   onOpenNewEmployee,
 }) => {
+  const { canAccessTab } = useAuth();
+  const canAccessTabulador = canAccessTab('tabulador');
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [organigrama, setOrganigrama] = useState<OrganigramaRow[]>([]);
   const [responsables, setResponsables] = useState<ResumenResponsable[]>([]);
@@ -65,15 +68,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       badge: 'Corporativo',
       tab: 'empresas' as NavigationTab,
     },
-    {
-      label: 'Bandas de Tabulador',
-      value: metrics?.totalBandasTabulador ?? 0,
-      subvalue: 'Escala 80% - 120%',
-      icon: Layers,
-      color: 'from-indigo-600 to-violet-600',
-      badge: '40% Amp.',
-      tab: 'tabulador' as NavigationTab,
-    },
+    canAccessTabulador
+      ? {
+          label: 'Bandas de Tabulador',
+          value: metrics?.totalBandasTabulador ?? 0,
+          subvalue: 'Escala 80% - 120%',
+          icon: Layers,
+          color: 'from-indigo-600 to-violet-600',
+          badge: '40% Amp.',
+          tab: 'tabulador' as NavigationTab,
+        }
+      : {
+          label: 'Catálogo de Cargos',
+          value: metrics?.totalCargos ?? 0,
+          subvalue: 'Posiciones Registradas',
+          icon: Briefcase,
+          color: 'from-indigo-600 to-violet-600',
+          badge: 'Cargos',
+          tab: 'cargos' as NavigationTab,
+        },
     {
       label: 'Colaboradores Totales',
       value: metrics?.totalEmpleados ?? 0,
@@ -103,18 +116,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Estructura Corporativa & Talento Humano
             </h2>
             <p className="text-slate-600 dark:text-slate-300 text-sm mt-2 leading-relaxed">
-              Monitoreo integral de filiales, tabuladores salariales por empresa (80%-120%), unidades jerárquicas y línea de mando.
+              {canAccessTabulador
+                ? 'Monitoreo integral de filiales, tabuladores salariales por empresa (80%-120%), unidades jerárquicas y línea de mando.'
+                : 'Monitoreo integral de filiales corporativas, catálogo de cargos, unidades jerárquicas y colaboradores.'}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => onNavigate('tabulador')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium shadow-sm transition-colors"
-            >
-              <DollarSign className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-              <span>Tabulador Salarial</span>
-            </button>
+            {canAccessTabulador && (
+              <button
+                onClick={() => onNavigate('tabulador')}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium shadow-sm transition-colors"
+              >
+                <DollarSign className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                <span>Tabulador Salarial</span>
+              </button>
+            )}
             <button
               onClick={onOpenNewEmployee}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-md dark:shadow-glow transition-all"

@@ -99,6 +99,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
         return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
       case 'COORD_RECLUTAMIENTO':
         return 'text-amber-300 bg-amber-500/10 border-amber-500/30';
+      case 'ESPEC_COMPENSACION':
+        return 'text-teal-300 bg-teal-500/10 border-teal-500/30';
       case 'ESPEC_RECLUTAMIENTO':
       default:
         return 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30';
