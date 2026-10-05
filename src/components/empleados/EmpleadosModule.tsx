@@ -524,27 +524,50 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     });
   }, [empleados, departamentos, gerencias, direcciones, empresas, tabuladores]);
 
+  // Helper para asegurar unicidad estricta de nombres de departamento dentro de la misma empresa
+  const deduplicateDeptosPorEmpresa = (deptosList: Departamento[]) => {
+    const seen = new Map<string, Departamento>();
+    for (const d of deptosList) {
+      const h = getDepartamentoHierarchy(d.codigo);
+      const empId = h.empresa?.empresa_id || 'SIN_EMPRESA';
+      const key = `${empId}__${d.nombre.trim().toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.set(key, d);
+      } else {
+        // Si el ya registrado no tiene colaboradores pero este sí, priorizar el que tiene colaboradores
+        const currentHasEmps = empleados.some((e) => e.codigo_departamento === seen.get(key)!.codigo);
+        const newHasEmps = empleados.some((e) => e.codigo_departamento === d.codigo);
+        if (!currentHasEmps && newHasEmps) {
+          seen.set(key, d);
+        }
+      }
+    }
+    return Array.from(seen.values());
+  };
+
   // Departamentos filtrados por la empresa actualmente seleccionada en el toolbar
   const departamentosFiltrados = useMemo(() => {
-    if (filtroEmpresa === 'ALL' || filtroEmpresa === 'SIN_EMPRESA') {
-      return departamentos;
+    let list = departamentos;
+    if (filtroEmpresa !== 'ALL' && filtroEmpresa !== 'SIN_EMPRESA') {
+      list = departamentos.filter((dep) => {
+        const h = getDepartamentoHierarchy(dep.codigo);
+        return h.empresa ? String(h.empresa.empresa_id) === filtroEmpresa : false;
+      });
     }
-    return departamentos.filter((dep) => {
-      const h = getDepartamentoHierarchy(dep.codigo);
-      return h.empresa ? String(h.empresa.empresa_id) === filtroEmpresa : false;
-    });
-  }, [departamentos, gerencias, direcciones, empresas, filtroEmpresa]);
+    return deduplicateDeptosPorEmpresa(list);
+  }, [departamentos, gerencias, direcciones, empresas, filtroEmpresa, empleados]);
 
   // Departamentos filtrados para el modal de Crear/Editar según la empresa seleccionada
   const modalDepartamentos = useMemo(() => {
-    if (!formEmpresaId) {
-      return departamentos;
+    let list = departamentos;
+    if (formEmpresaId) {
+      list = departamentos.filter((d) => {
+        const h = getDepartamentoHierarchy(d.codigo);
+        return h.empresa ? String(h.empresa.empresa_id) === String(formEmpresaId) : false;
+      });
     }
-    return departamentos.filter((d) => {
-      const h = getDepartamentoHierarchy(d.codigo);
-      return h.empresa ? String(h.empresa.empresa_id) === String(formEmpresaId) : false;
-    });
-  }, [departamentos, gerencias, direcciones, empresas, formEmpresaId]);
+    return deduplicateDeptosPorEmpresa(list);
+  }, [departamentos, gerencias, direcciones, empresas, formEmpresaId, empleados]);
 
   // Bandas salariales filtradas para el modal según la empresa seleccionada
   const modalTabuladores = useMemo(() => {
@@ -1396,7 +1419,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               {filtroEmpresa === 'ALL' ? (
                 <>
                   {empresas.map((emp) => {
-                    const deptosEmp = departamentos
+                    const deptosEmp = departamentosFiltrados
                       .filter((d) => getDepartamentoHierarchy(d.codigo).empresa?.empresa_id === emp.empresa_id)
                       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
 
