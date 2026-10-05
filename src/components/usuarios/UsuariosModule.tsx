@@ -49,6 +49,7 @@ export const UsuariosModule: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+  const [isRolesCatalogModalOpen, setIsRolesCatalogModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
 
   // Formulario Crear Usuario
@@ -118,8 +119,12 @@ export const UsuariosModule: React.FC = () => {
         u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.cargo && u.cargo.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      const matchesRol =
-        selectedRolFilter === 'ALL' || u.rol_codigo === selectedRolFilter;
+      let matchesRol = true;
+      if (selectedRolFilter === 'ADMINS') {
+        matchesRol = u.rol_codigo === 'ADMIN_PLATAFORMA' || u.rol_codigo === 'GERENTE_TH';
+      } else if (selectedRolFilter !== 'ALL') {
+        matchesRol = u.rol_codigo === selectedRolFilter;
+      }
 
       const matchesEstado =
         selectedEstadoFilter === 'ALL' ||
@@ -129,6 +134,13 @@ export const UsuariosModule: React.FC = () => {
       return matchesSearch && matchesRol && matchesEstado;
     });
   }, [usuarios, searchTerm, selectedRolFilter, selectedEstadoFilter]);
+
+  // Estados de interactividad de tarjetas
+  const isTotalActive = selectedRolFilter === 'ALL' && selectedEstadoFilter === 'ALL' && !searchTerm;
+  const isActivosActive = selectedEstadoFilter === 'ACTIVOS';
+  const isAdminsActive = selectedRolFilter === 'ADMINS';
+  const isSpecificRoleActive = selectedRolFilter !== 'ALL' && selectedRolFilter !== 'ADMINS';
+  const hasActiveFilters = selectedRolFilter !== 'ALL' || selectedEstadoFilter !== 'ALL' || !!searchTerm;
 
   // Handle Crear Usuario
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -361,43 +373,153 @@ export const UsuariosModule: React.FC = () => {
         </button>
       </div>
 
-      {/* Tarjetas de Métricas */}
+      {/* Tarjetas de Métricas Interactivas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
+        {/* 1. Total Usuarios */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRolFilter('ALL');
+            setSelectedEstadoFilter('ALL');
+            setSearchTerm('');
+          }}
+          className={`p-4 rounded-2xl text-left backdrop-blur-md transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            isTotalActive
+              ? 'bg-slate-900/90 border-2 border-brand-500/80 ring-2 ring-brand-500/20 shadow-brand-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/80'
+          }`}
+          title="Clic para ver la lista completa de usuarios (restablecer filtros)"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Total Usuarios</span>
-            <Users className="w-4 h-4 text-brand-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider group-hover:text-slate-200 transition-colors">
+              Total Usuarios
+            </span>
+            <div className={`p-2 rounded-xl transition-all ${
+              isTotalActive ? 'bg-brand-500/30 text-brand-300' : 'bg-brand-500/10 text-brand-400 group-hover:scale-110'
+            }`}>
+              <Users className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.total}</div>
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl font-bold text-white">{metrics.total}</div>
+            {hasActiveFilters ? (
+              <span className="text-[10px] font-semibold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-500/20 animate-pulse">
+                Restablecer
+              </span>
+            ) : (
+              <span className="text-[10px] font-medium text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded-full border border-slate-700/50">
+                Todos
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-slate-400 mt-1">Cuentas vinculadas a InsForge</p>
-        </div>
+        </button>
 
-        <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
+        {/* 2. Usuarios Activos */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedEstadoFilter(selectedEstadoFilter === 'ACTIVOS' ? 'ALL' : 'ACTIVOS');
+          }}
+          className={`p-4 rounded-2xl text-left backdrop-blur-md transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            isActivosActive
+              ? 'bg-emerald-950/40 border-2 border-emerald-500/80 ring-2 ring-emerald-500/30 shadow-emerald-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-emerald-950/20'
+          }`}
+          title={isActivosActive ? 'Clic para quitar filtro de activos' : 'Clic para filtrar solo usuarios activos'}
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Usuarios Activos</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              Usuarios Activos
+            </span>
+            <div className={`p-2 rounded-xl transition-all ${
+              isActivosActive ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-500/10 text-emerald-400 group-hover:scale-110'
+            }`}>
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-emerald-400">{metrics.activos}</div>
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl font-bold text-emerald-400">{metrics.activos}</div>
+            {isActivosActive && (
+              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                Filtrado
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-slate-400 mt-1">Con acceso habilitado al portal</p>
-        </div>
+        </button>
 
-        <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
+        {/* 3. Admin & Gerencia TH */}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedRolFilter(selectedRolFilter === 'ADMINS' ? 'ALL' : 'ADMINS');
+          }}
+          className={`p-4 rounded-2xl text-left backdrop-blur-md transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            isAdminsActive
+              ? 'bg-purple-950/40 border-2 border-purple-500/80 ring-2 ring-purple-500/30 shadow-purple-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-purple-500/50 hover:bg-purple-950/20'
+          }`}
+          title={isAdminsActive ? 'Clic para quitar filtro de administradores' : 'Clic para filtrar Administradores y Gerente TH'}
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Admin & Gerencia TH</span>
-            <ShieldCheck className="w-4 h-4 text-purple-400" />
+            <span className="text-xs font-semibold text-purple-300 uppercase tracking-wider">
+              Admin & Gerencia TH
+            </span>
+            <div className={`p-2 rounded-xl transition-all ${
+              isAdminsActive ? 'bg-purple-500/30 text-purple-300' : 'bg-purple-500/10 text-purple-400 group-hover:scale-110'
+            }`}>
+              <ShieldCheck className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-purple-300">{metrics.administradores}</div>
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl font-bold text-purple-300">{metrics.administradores}</div>
+            {isAdminsActive && (
+              <span className="text-[10px] font-bold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/40">
+                Filtrado
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-slate-400 mt-1">Facultados para gestionar accesos</p>
-        </div>
+        </button>
 
-        <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md">
+        {/* 4. Roles Disponibles */}
+        <button
+          type="button"
+          onClick={() => setIsRolesCatalogModalOpen(true)}
+          className={`p-4 rounded-2xl text-left backdrop-blur-md transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
+            isSpecificRoleActive
+              ? 'bg-blue-950/40 border-2 border-blue-500/80 ring-2 ring-blue-500/30 shadow-blue-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-blue-500/50 hover:bg-blue-950/20'
+          }`}
+          title="Clic para explorar el catálogo de perfiles y facultades"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Roles Disponibles</span>
-            <Shield className="w-4 h-4 text-blue-400" />
+            <span className="text-xs font-semibold text-blue-300 uppercase tracking-wider">
+              Roles Disponibles
+            </span>
+            <div className={`p-2 rounded-xl transition-all ${
+              isSpecificRoleActive ? 'bg-blue-500/30 text-blue-300' : 'bg-blue-500/10 text-blue-400 group-hover:scale-110'
+            }`}>
+              <Shield className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-bold text-blue-400">5 Perfiles</div>
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="text-2xl font-bold text-blue-400">
+              {roles.length > 0 ? `${roles.length} Perfiles` : '6 Perfiles'}
+            </div>
+            {isSpecificRoleActive ? (
+              <span className="text-[10px] font-bold text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full border border-blue-500/40 truncate max-w-[120px]">
+                {roles.find((r) => r.codigo === selectedRolFilter)?.nombre || 'Filtrado'}
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold text-blue-300/80 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
+                Ver catálogo
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-slate-400 mt-1">Estructura de permisos segmentada</p>
-        </div>
+        </button>
       </div>
 
       {/* Toolbar y Filtros */}
@@ -424,6 +546,7 @@ export const UsuariosModule: React.FC = () => {
               className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-brand-500"
             >
               <option value="ALL">Todos los Roles</option>
+              <option value="ADMINS">🛡️ Solo Admin & Gerencia TH</option>
               {roles.map((r) => (
                 <option key={r.codigo} value={r.codigo}>
                   {r.nombre}
@@ -452,6 +575,59 @@ export const UsuariosModule: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Barra de Filtros Activos */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 px-1 text-xs">
+          <span className="text-slate-400 font-medium text-[11px]">Filtros aplicados:</span>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition-colors text-[11px]"
+            >
+              <span>Búsqueda: "{searchTerm}"</span>
+              <XCircle className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
+            </button>
+          )}
+          {selectedRolFilter === 'ADMINS' && (
+            <button
+              onClick={() => setSelectedRolFilter('ALL')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-950/60 text-purple-300 border border-purple-500/40 hover:bg-purple-900/60 transition-colors text-[11px]"
+            >
+              <span>Admin & Gerencia TH</span>
+              <XCircle className="w-3.5 h-3.5 text-purple-400 hover:text-white" />
+            </button>
+          )}
+          {isSpecificRoleActive && (
+            <button
+              onClick={() => setSelectedRolFilter('ALL')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-950/60 text-blue-300 border border-blue-500/40 hover:bg-blue-900/60 transition-colors text-[11px]"
+            >
+              <span>Rol: {roles.find((r) => r.codigo === selectedRolFilter)?.nombre || selectedRolFilter}</span>
+              <XCircle className="w-3.5 h-3.5 text-blue-400 hover:text-white" />
+            </button>
+          )}
+          {selectedEstadoFilter !== 'ALL' && (
+            <button
+              onClick={() => setSelectedEstadoFilter('ALL')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-900/60 transition-colors text-[11px]"
+            >
+              <span>Estado: {selectedEstadoFilter === 'ACTIVOS' ? 'Activos' : 'Inactivos'}</span>
+              <XCircle className="w-3.5 h-3.5 text-emerald-400 hover:text-white" />
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setSelectedRolFilter('ALL');
+              setSelectedEstadoFilter('ALL');
+              setSearchTerm('');
+            }}
+            className="text-[11px] text-brand-400 hover:text-brand-300 underline underline-offset-2 ml-1"
+          >
+            Limpiar todos
+          </button>
+        </div>
+      )}
 
       {/* Tabla de Usuarios */}
       <div className="rounded-2xl bg-slate-900/80 border border-slate-800/80 overflow-hidden shadow-xl">
@@ -1010,6 +1186,128 @@ export const UsuariosModule: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* MODAL 4: CATÁLOGO DE PERFILES Y FACULTADES DE SEGURIDAD */}
+      {/* ========================================================================= */}
+      {isRolesCatalogModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 my-8">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Catálogo de Perfiles y Facultades</h3>
+                  <p className="text-xs text-slate-400">
+                    Estructura de roles y niveles de acceso a la plataforma de Talento Humano
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRolesCatalogModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Banner explicativo de segregación */}
+            <div className="p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/30 flex items-start gap-3 text-xs text-purple-200">
+              <ShieldAlert className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold text-purple-100">
+                  Segregación de Funciones y Control de Accesos
+                </p>
+                <p className="text-[11px] text-purple-300/80 leading-relaxed">
+                  Solo los roles con <span className="font-bold text-purple-200">Privilegio de Dirección</span> (Administrador de Plataforma y Gerente de TH) pueden crear usuarios, reasignar roles y visualizar o modificar el Tabulador Salarial institucional. Los demás perfiles cuentan con acceso operativo específico a sus áreas.
+                </p>
+              </div>
+            </div>
+
+            {/* Lista de Perfiles */}
+            <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+              {roles.map((r) => {
+                const canManage = r.codigo === 'ADMIN_PLATAFORMA' || r.codigo === 'GERENTE_TH';
+                const userCount = usuarios.filter((u) => u.rol_codigo === r.codigo).length;
+                const isCurrentFilter = selectedRolFilter === r.codigo;
+
+                return (
+                  <div
+                    key={r.codigo}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      isCurrentFilter
+                        ? 'bg-blue-950/40 border-blue-500 ring-1 ring-blue-500/50 shadow-md'
+                        : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-white">{r.nombre}</span>
+                        {canManage ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                            Usuarios & Tabulador
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                            Acceso Operativo TH
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                          {userCount} {userCount === 1 ? 'usuario' : 'usuarios'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedRolFilter(isCurrentFilter ? 'ALL' : r.codigo);
+                            setIsRolesCatalogModalOpen(false);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            isCurrentFilter
+                              ? 'bg-blue-600 text-white shadow-glow'
+                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          {isCurrentFilter ? '✓ Filtro Activo' : 'Filtrar Usuarios'}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {r.descripcion}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedRolFilter('ALL');
+                    setSelectedEstadoFilter('ALL');
+                    setSearchTerm('');
+                    setIsRolesCatalogModalOpen(false);
+                  }}
+                  className="text-xs text-brand-400 hover:text-brand-300 underline"
+                >
+                  Restablecer todos los filtros
+                </button>
+              ) : <div />}
+              <button
+                type="button"
+                onClick={() => setIsRolesCatalogModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
