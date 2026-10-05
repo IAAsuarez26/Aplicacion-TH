@@ -1788,24 +1788,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                     ))}
                 </select>
 
-                {/* Instant preview of cargo's denomination */}
-                {(() => {
-                  const dcInfo = getCargoDenominacionInfo(codigoCargo);
-                  if (dcInfo) {
-                    return (
-                      <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/40 border border-indigo-800/40 flex items-center justify-between text-xs">
-                        <span className="text-indigo-400 text-[11px] flex items-center gap-1">
-                          <Tag className="w-3 h-3" />
-                          Denominación DC:
-                        </span>
-                        <span className="font-semibold text-indigo-200 text-[11px]">
-                          {dcInfo.denominacion} ({dcInfo.codigo_dc})
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+
               </div>
             </div>
 
