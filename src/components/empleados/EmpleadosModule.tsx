@@ -153,6 +153,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
   const [diSupervisor, setDiSupervisor] = useState<string>('');
   const [diEvaluador, setDiEvaluador] = useState<string>('');
   const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().slice(0, 10));
+  const [fechaNacimiento, setFechaNacimiento] = useState<string>('');
   const [estadoLaboral, setEstadoLaboral] = useState<EstadoLaboral>('ACTIVO');
   const [ubicacion, setUbicacion] = useState<string>('');
   const [edoCivil, setEdoCivil] = useState<string>('');
@@ -254,6 +255,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setDiSupervisor('');
     setDiEvaluador('');
     setFechaIngreso(new Date().toISOString().slice(0, 10));
+    setFechaNacimiento('');
     setEstadoLaboral('ACTIVO');
     setUbicacion('Caracas');
     setEdoCivil('');
@@ -289,6 +291,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setDiSupervisor(emp.di_supervisor || '');
     setDiEvaluador(emp.di_evaluador || '');
     setFechaIngreso(emp.fecha_ingreso ? emp.fecha_ingreso.slice(0, 10) : '');
+    setFechaNacimiento(emp.fecha_nacimiento ? emp.fecha_nacimiento.slice(0, 10) : '');
     setEstadoLaboral(emp.estado_laboral);
     setIsModalOpen(true);
   };
@@ -328,6 +331,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           tabulador_id: canAccessTabulador ? (tabuladorId ? Number(tabuladorId) : null) : null,
           di_supervisor: diSupervisor.trim() || null,
           di_evaluador: diEvaluador.trim() || null,
+          fecha_nacimiento: fechaNacimiento.trim() || null,
           fecha_ingreso: fechaIngreso,
           estado_laboral: estadoLaboral,
           estatus_h: estatusH,
@@ -363,6 +367,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             : (selectedEmpleado.tabulador_id ? Number(selectedEmpleado.tabulador_id) : null),
           di_supervisor: diSupervisor.trim() || null,
           di_evaluador: diEvaluador.trim() || null,
+          fecha_nacimiento: fechaNacimiento.trim() || null,
           fecha_ingreso: fechaIngreso,
           estado_laboral: estadoLaboral,
           estatus_h: estatusH,
@@ -686,11 +691,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       exportValue: (row) => row.nacionalidad || '',
       render: (row) => (
         row.nacionalidad ? (
-          <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded border inline-block ${
-            row.nacionalidad === 'V'
+          <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded border inline-block ${row.nacionalidad === 'V'
               ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/60'
               : 'bg-amber-950/70 text-amber-300 border-amber-800/60'
-          }`}>
+            }`}>
             {row.nacionalidad}
           </span>
         ) : (
@@ -752,6 +756,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'codigo_cargo',
       header: 'Cargo & Denominación (DC)',
       sortable: true,
+      exportValue: (row) => getCargoName(row.codigo_cargo),
       render: (row) => {
         const dcInfo = getCargoDenominacionInfo(row.codigo_cargo);
         return (
@@ -786,18 +791,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'codigo_pc',
       header: 'Perfil Competencias (PC)',
       sortable: true,
+      exportValue: (row) => getPerfilCompetenciaInfo(row.codigo_pc)?.perfil || row.codigo_pc || '',
       render: (row) => {
         const pc = getPerfilCompetenciaInfo(row.codigo_pc);
         return pc ? (
           <div className="flex items-center gap-1.5">
             <span
-              className={`font-mono text-xs font-semibold px-2.5 py-1 rounded-md border shadow-sm ${
-                pc.perfil.toLowerCase().includes('líder') || pc.perfil.toLowerCase().includes('lider')
+              className={`font-mono text-xs font-semibold px-2.5 py-1 rounded-md border shadow-sm ${pc.perfil.toLowerCase().includes('líder') || pc.perfil.toLowerCase().includes('lider')
                   ? 'bg-emerald-950/70 border-emerald-800/60 text-emerald-300'
                   : pc.perfil.toLowerCase().includes('admin')
-                  ? 'bg-cyan-950/70 border-cyan-800/60 text-cyan-300'
-                  : 'bg-amber-950/70 border-amber-800/60 text-amber-300'
-              }`}
+                    ? 'bg-cyan-950/70 border-cyan-800/60 text-cyan-300'
+                    : 'bg-amber-950/70 border-amber-800/60 text-amber-300'
+                }`}
             >
               {pc.perfil}
             </span>
@@ -814,18 +819,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'codigo_tc',
       header: 'Tipo de Costo',
       sortable: true,
+      exportValue: (row) => getTipoCostoInfo(row.codigo_tc)?.nombre || row.codigo_tc || '',
       render: (row) => {
         const tc = getTipoCostoInfo(row.codigo_tc);
         return tc ? (
           <div className="flex items-center gap-1.5">
             <span
-              className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md border ${
-                tc.nombre === 'MOD'
+              className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md border ${tc.nombre === 'MOD'
                   ? 'bg-amber-950/60 border-amber-800/60 text-amber-300'
                   : tc.nombre === 'MOI'
-                  ? 'bg-blue-950/60 border-blue-800/60 text-blue-300'
-                  : 'bg-purple-950/60 border-purple-800/60 text-purple-300'
-              }`}
+                    ? 'bg-blue-950/60 border-blue-800/60 text-blue-300'
+                    : 'bg-purple-950/60 border-purple-800/60 text-purple-300'
+                }`}
             >
               {tc.nombre}
             </span>
@@ -842,6 +847,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       key: 'sede',
       header: 'Sede & Género',
       sortable: true,
+      exportValue: (row) => `${row.sede || ''}${row.genero ? ` (${row.genero})` : ''}`.trim(),
       render: (row) => (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-slate-200">
@@ -849,11 +855,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <span className="font-medium">{row.sede || <span className="text-slate-500 italic text-[11px]">Sin sede</span>}</span>
           </div>
           {row.genero && (
-            <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
-              row.genero === 'Mujer'
+            <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md border ${row.genero === 'Mujer'
                 ? 'bg-pink-950/60 text-pink-300 border-pink-800/50'
                 : 'bg-sky-950/60 text-sky-300 border-sky-800/50'
-            }`}>
+              }`}>
               {row.genero}
             </span>
           )}
@@ -878,52 +883,88 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       className: 'w-28',
     },
     {
-      key: 'edo_civil',
-      header: 'Edo. Civil / Nivel Ed.',
+      key: 'fecha_nacimiento',
+      header: 'Fecha Nacimiento',
       sortable: true,
-      exportValue: (row) => `${row.edo_civil || ''} / ${row.nivel_educativo || ''}`.trim(),
+      exportValue: (row) => (row.fecha_nacimiento ? row.fecha_nacimiento.slice(0, 10) : ''),
       render: (row) => (
-        <div className="space-y-0.5 text-xs">
-          {row.edo_civil ? (
-            <div className="text-slate-200 font-medium">{row.edo_civil}</div>
-          ) : (
-            <div className="text-slate-500 italic text-[11px]">Sin Edo. Civil</div>
-          )}
-          {row.nivel_educativo ? (
-            <div className="text-[11px] text-brand-300/90 flex items-center gap-1">
-              <GraduationCap className="w-3 h-3 text-brand-400 shrink-0" />
-              <span>{row.nivel_educativo}</span>
-            </div>
-          ) : null}
-        </div>
+        <span className="font-mono text-xs text-slate-300">
+          {row.fecha_nacimiento ? row.fecha_nacimiento.slice(0, 10) : <span className="text-slate-500 italic text-[11px]">-</span>}
+        </span>
       ),
+      className: 'w-32 text-center',
+    },
+    {
+      key: 'fecha_ingreso',
+      header: 'Fecha Ingreso',
+      sortable: true,
+      exportValue: (row) => (row.fecha_ingreso ? row.fecha_ingreso.slice(0, 10) : ''),
+      render: (row) => (
+        <span className="font-mono text-xs text-slate-300 font-medium">
+          {row.fecha_ingreso ? row.fecha_ingreso.slice(0, 10) : <span className="text-slate-500 italic text-[11px]">-</span>}
+        </span>
+      ),
+      className: 'w-32 text-center',
+    },
+    {
+      key: 'edo_civil',
+      header: 'Estado Civil',
+      sortable: true,
+      exportValue: (row) => row.edo_civil || '',
+      render: (row) => (
+        row.edo_civil ? (
+          <span className="text-xs text-slate-200 font-medium">{row.edo_civil}</span>
+        ) : (
+          <span className="text-slate-500 italic text-[11px]">Sin asignar</span>
+        )
+      ),
+      className: 'w-28',
+    },
+    {
+      key: 'nivel_educativo',
+      header: 'Nivel Educativo',
+      sortable: true,
+      exportValue: (row) => row.nivel_educativo || '',
+      render: (row) => (
+        row.nivel_educativo ? (
+          <div className="text-xs text-brand-300/90 flex items-center gap-1 font-medium">
+            <GraduationCap className="w-3 h-3 text-brand-400 shrink-0" />
+            <span>{row.nivel_educativo}</span>
+          </div>
+        ) : (
+          <span className="text-slate-500 italic text-[11px]">Sin asignar</span>
+        )
+      ),
+      className: 'w-36',
     },
     ...(canAccessTabulador
       ? [
-          {
-            key: 'tabulador_id',
-            header: 'Banda Salarial',
-            render: (row: EmpleadoConEmpresa) => {
-              const tab = getTabuladorInfo(row.tabulador_id);
-              return tab ? (
-                <div>
-                  <span
-                    className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 inline-block"
-                    title={tab.cargos_referencia ? `Cargos ref: ${tab.cargos_referencia}` : undefined}
-                  >
-                    {tab.codigo_banda}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-xs text-slate-500 italic">Sin Banda</span>
-              );
-            },
-          } as Column<EmpleadoConEmpresa>,
-        ]
+        {
+          key: 'tabulador_id',
+          header: 'Banda Salarial',
+          exportValue: (row: EmpleadoConEmpresa) => getTabuladorInfo(row.tabulador_id)?.codigo_banda || '',
+          render: (row: EmpleadoConEmpresa) => {
+            const tab = getTabuladorInfo(row.tabulador_id);
+            return tab ? (
+              <div>
+                <span
+                  className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 inline-block"
+                  title={tab.cargos_referencia ? `Cargos ref: ${tab.cargos_referencia}` : undefined}
+                >
+                  {tab.codigo_banda}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs text-slate-500 italic">Sin Banda</span>
+            );
+          },
+        } as Column<EmpleadoConEmpresa>,
+      ]
       : []),
     {
       key: 'di_supervisor',
       header: 'Línea de Mando',
+      exportValue: (row) => getEmpleadoFullName(row.di_supervisor) || row.di_supervisor || '',
       render: (row) => {
         const supName = getEmpleadoFullName(row.di_supervisor);
         const evalName = getEmpleadoFullName(row.di_evaluador);
@@ -995,11 +1036,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               setSyncTargetEmpleado(row);
               setIsSyncModalOpen(true);
             }}
-            className={`p-1.5 rounded-lg border transition-colors ${
-              row.estatus_h === 1
+            className={`p-1.5 rounded-lg border transition-colors ${row.estatus_h === 1
                 ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                 : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700 hover:text-slate-200'
-            }`}
+              }`}
             title={
               row.estatus_h === 1
                 ? 'Sincronizar a Humand (Resolución en Cascada)'
@@ -1087,11 +1127,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               setFiltroQuickHumand('ALL');
             }
           }}
-          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
-            isTotalActive
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${isTotalActive
               ? 'bg-slate-900/80 border-2 border-brand-500/80 ring-2 ring-brand-500/20 shadow-brand-500/10 shadow-lg'
               : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
-          }`}
+            }`}
           title="Clic para ver la plantilla completa"
         >
           <div className="flex items-center justify-between">
@@ -1117,18 +1156,16 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         <button
           type="button"
           onClick={() => setFiltroEstado(filtroEstado === 'ACTIVO' ? 'ALL' : 'ACTIVO')}
-          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
-            isActivosActive
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${isActivosActive
               ? 'bg-emerald-950/40 border-2 border-emerald-500/80 ring-2 ring-emerald-500/30 shadow-emerald-500/10 shadow-lg'
               : 'bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-emerald-950/20'
-          }`}
+            }`}
           title={isActivosActive ? 'Clic para quitar filtro de activos' : 'Clic para filtrar solo activos'}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Activos</span>
-            <div className={`p-2 rounded-xl transition-all ${
-              isActivosActive ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-500/10 text-emerald-400 group-hover:scale-110'
-            }`}>
+            <div className={`p-2 rounded-xl transition-all ${isActivosActive ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-500/10 text-emerald-400 group-hover:scale-110'
+              }`}>
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
@@ -1146,20 +1183,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         {/* 3. Perfiles (PC) */}
         <div
           onClick={() => setFiltroQuickPC(filtroQuickPC === 'CON_PC' ? 'ALL' : 'CON_PC')}
-          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
-            filtroQuickPC === 'CON_PC'
+          className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${filtroQuickPC === 'CON_PC'
               ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
               : filtroQuickPC === 'SIN_PC'
-              ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
-              : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
-          }`}
+                ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
+                : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
+            }`}
           title="Clic para filtrar colaboradores con perfil de competencias (PC)"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Perfiles (PC)</span>
-            <div className={`p-2 rounded-xl transition-all ${
-              filtroQuickPC === 'CON_PC' ? 'bg-cyan-500/30 text-cyan-300' : 'bg-cyan-500/10 text-cyan-400 group-hover:scale-110'
-            }`}>
+            <div className={`p-2 rounded-xl transition-all ${filtroQuickPC === 'CON_PC' ? 'bg-cyan-500/30 text-cyan-300' : 'bg-cyan-500/10 text-cyan-400 group-hover:scale-110'
+              }`}>
               <Award className="w-4 h-4" />
             </div>
           </div>
@@ -1184,11 +1219,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   e.stopPropagation();
                   setFiltroQuickPC(filtroQuickPC === 'SIN_PC' ? 'ALL' : 'SIN_PC');
                 }}
-                className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
-                  filtroQuickPC === 'SIN_PC'
+                className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${filtroQuickPC === 'SIN_PC'
                     ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
                     : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
-                }`}
+                  }`}
                 title="Clic para filtrar únicamente los pendientes de PC"
               >
                 {totalEmpleadosSinPerfil} pendientes de PC
@@ -1203,20 +1237,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         {canAccessTabulador ? (
           <div
             onClick={() => setFiltroQuickTabulador(filtroQuickTabulador === 'CON_BANDA' ? 'ALL' : 'CON_BANDA')}
-            className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
-              filtroQuickTabulador === 'CON_BANDA'
+            className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${filtroQuickTabulador === 'CON_BANDA'
                 ? 'bg-indigo-950/40 border-2 border-indigo-500/80 ring-2 ring-indigo-500/30 shadow-indigo-500/10 shadow-lg'
                 : filtroQuickTabulador === 'SIN_BANDA'
-                ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
-                : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
-            }`}
+                  ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
+                  : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
+              }`}
             title="Clic para filtrar colaboradores con banda salarial"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Tabulador Salarial</span>
-              <div className={`p-2 rounded-xl transition-all ${
-                filtroQuickTabulador === 'CON_BANDA' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110'
-              }`}>
+              <div className={`p-2 rounded-xl transition-all ${filtroQuickTabulador === 'CON_BANDA' ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-500/10 text-indigo-400 group-hover:scale-110'
+                }`}>
                 <Layers className="w-4 h-4" />
               </div>
             </div>
@@ -1241,11 +1273,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                     e.stopPropagation();
                     setFiltroQuickTabulador(filtroQuickTabulador === 'SIN_BANDA' ? 'ALL' : 'SIN_BANDA');
                   }}
-                  className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
-                    filtroQuickTabulador === 'SIN_BANDA'
+                  className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${filtroQuickTabulador === 'SIN_BANDA'
                       ? 'bg-rose-500/25 text-rose-300 font-bold border border-rose-500/40'
                       : 'text-slate-500 hover:text-rose-300 hover:bg-rose-500/15'
-                  }`}
+                    }`}
                   title="Clic para filtrar colaboradores sin banda asignada"
                 >
                   <span className="font-semibold text-rose-400">{totalEmpleadosSinBanda}</span> sin banda asignada
@@ -1258,20 +1289,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         ) : (
           <div
             onClick={() => setFiltroQuickHumand(filtroQuickHumand === 'HABILITADO' ? 'ALL' : 'HABILITADO')}
-            className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${
-              filtroQuickHumand === 'HABILITADO'
+            className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${filtroQuickHumand === 'HABILITADO'
                 ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
                 : filtroQuickHumand === 'EXCLUIDO'
-                ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
-                : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
-            }`}
+                  ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
+                  : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
+              }`}
             title="Clic para filtrar colaboradores sincronizados con Humand"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Integración Humand</span>
-              <div className={`p-2 rounded-xl transition-all ${
-                filtroQuickHumand === 'HABILITADO' ? 'bg-cyan-500/30 text-cyan-300' : 'bg-cyan-500/10 text-cyan-400 group-hover:scale-110'
-              }`}>
+              <div className={`p-2 rounded-xl transition-all ${filtroQuickHumand === 'HABILITADO' ? 'bg-cyan-500/30 text-cyan-300' : 'bg-cyan-500/10 text-cyan-400 group-hover:scale-110'
+                }`}>
                 <Share2 className="w-4 h-4" />
               </div>
             </div>
@@ -1296,11 +1325,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                     e.stopPropagation();
                     setFiltroQuickHumand(filtroQuickHumand === 'EXCLUIDO' ? 'ALL' : 'EXCLUIDO');
                   }}
-                  className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${
-                    filtroQuickHumand === 'EXCLUIDO'
+                  className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${filtroQuickHumand === 'EXCLUIDO'
                       ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
                       : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
-                  }`}
+                    }`}
                   title="Clic para filtrar colaboradores no sincronizados a Humand"
                 >
                   <span className="font-semibold text-amber-400">{totalEmpleadosNoHumand}</span> excluidos de Humand
@@ -1370,11 +1398,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   }
                 }
               }}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroEmpresa !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroEmpresa !== 'ALL'
                   ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Empresa"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Empresas</option>
@@ -1398,9 +1425,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 return null;
               })()}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroEmpresa !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroEmpresa !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 2. Departamento Filter */}
@@ -1408,11 +1434,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroDepartamento}
               onChange={(e) => setFiltroDepartamento(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroDepartamento !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroDepartamento !== 'ALL'
                   ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Departamento"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Departamentos</option>
@@ -1469,9 +1494,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   })
               )}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroDepartamento !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroDepartamento !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 3. Cargo Filter */}
@@ -1479,11 +1503,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroCargo}
               onChange={(e) => setFiltroCargo(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroCargo !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroCargo !== 'ALL'
                   ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Cargo"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Cargos</option>
@@ -1495,9 +1518,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   </option>
                 ))}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroCargo !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroCargo !== 'ALL' ? 'text-brand-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 4. Perfil Filter */}
@@ -1505,11 +1527,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroPerfil}
               onChange={(e) => setFiltroPerfil(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroPerfil !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroPerfil !== 'ALL'
                   ? 'border-cyan-500/80 bg-cyan-500/10 text-cyan-300 font-semibold ring-1 ring-cyan-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Perfil de Competencias"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Perfiles</option>
@@ -1520,9 +1541,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 </option>
               ))}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroPerfil !== 'ALL' ? 'text-cyan-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroPerfil !== 'ALL' ? 'text-cyan-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 5. Denominación Filter */}
@@ -1530,11 +1550,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroDenominacion}
               onChange={(e) => setFiltroDenominacion(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroDenominacion !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroDenominacion !== 'ALL'
                   ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Denominación del Cargo"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Denominaciones</option>
@@ -1547,9 +1566,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   </option>
                 ))}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroDenominacion !== 'ALL' ? 'text-indigo-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroDenominacion !== 'ALL' ? 'text-indigo-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 6. Tipo de Costo Filter */}
@@ -1557,11 +1575,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroTipoCosto}
               onChange={(e) => setFiltroTipoCosto(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroTipoCosto !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroTipoCosto !== 'ALL'
                   ? 'border-amber-500/80 bg-amber-500/10 text-amber-300 font-semibold ring-1 ring-amber-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Tipo de Costo"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Tipos de Costo</option>
@@ -1571,9 +1588,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 </option>
               ))}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroTipoCosto !== 'ALL' ? 'text-amber-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroTipoCosto !== 'ALL' ? 'text-amber-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 7. Sede Filter */}
@@ -1581,11 +1597,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroSede}
               onChange={(e) => setFiltroSede(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroSede !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroSede !== 'ALL'
                   ? 'border-rose-500/80 bg-rose-500/10 text-rose-300 font-semibold ring-1 ring-rose-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Sede"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Sedes</option>
@@ -1595,9 +1610,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 </option>
               ))}
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroSede !== 'ALL' ? 'text-rose-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroSede !== 'ALL' ? 'text-rose-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 8. Estado Filter */}
@@ -1605,11 +1619,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroEstado !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroEstado !== 'ALL'
                   ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Estado Laboral"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Estados</option>
@@ -1618,9 +1631,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <option value="VACACIONES" className="bg-slate-900 text-slate-200">VACACIONES</option>
               <option value="LICENCIA" className="bg-slate-900 text-slate-200">LICENCIA</option>
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroEstado !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroEstado !== 'ALL' ? 'text-emerald-400' : 'text-slate-500'
+              }`} />
           </div>
 
           {/* 9. Género Filter */}
@@ -1628,20 +1640,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={filtroGenero}
               onChange={(e) => setFiltroGenero(e.target.value)}
-              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${
-                filtroGenero !== 'ALL'
+              className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroGenero !== 'ALL'
                   ? 'border-pink-500/80 bg-pink-500/10 text-pink-300 font-semibold ring-1 ring-pink-500/30'
                   : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
-              }`}
+                }`}
               title="Filtrar por Género"
             >
               <option value="ALL" className="bg-slate-900 text-slate-200">Géneros</option>
               <option value="Mujer" className="bg-slate-900 text-slate-200">Mujer</option>
               <option value="Hombre" className="bg-slate-900 text-slate-200">Hombre</option>
             </select>
-            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
-              filtroGenero !== 'ALL' ? 'text-pink-400' : 'text-slate-500'
-            }`} />
+            <ChevronDown className={`w-3.5 h-3.5 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${filtroGenero !== 'ALL' ? 'text-pink-400' : 'text-slate-500'
+              }`} />
           </div>
         </div>
       </div>
@@ -1663,6 +1673,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           'codigo_departamento',
           'sede',
           'ubicacion',
+          'fecha_nacimiento',
+          'fecha_ingreso',
           'edo_civil',
           'nivel_educativo',
           'codigo_pc',
@@ -1870,7 +1882,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Teléfono de Contacto
@@ -1880,6 +1892,18 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="+58 414 1234567"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Fecha de Nacimiento
+              </label>
+              <input
+                type="date"
+                value={fechaNacimiento}
+                onChange={(e) => setFechaNacimiento(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
               />
             </div>
@@ -2255,11 +2279,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             <select
               value={estatusH}
               onChange={(e) => setEstatusH(Number(e.target.value))}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border focus:outline-none transition-colors ${
-                estatusH === 1
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border focus:outline-none transition-colors ${estatusH === 1
                   ? 'bg-cyan-950 text-cyan-300 border-cyan-700'
                   : 'bg-slate-900 text-slate-400 border-slate-700'
-              }`}
+                }`}
             >
               <option value={1}>1 - Habilitado para Humand</option>
               <option value={0}>0 - No sincronizar (Solo TH)</option>
@@ -2413,6 +2436,13 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                 <span className="text-slate-400 block mb-1">Teléfono</span>
                 <span className="text-slate-200 font-medium">{detailEmpleado.telefono || 'No registrado'}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-400 block mb-1">Fecha de Nacimiento</span>
+                <span className="text-slate-200 font-medium">
+                  {detailEmpleado.fecha_nacimiento ? detailEmpleado.fecha_nacimiento.slice(0, 10) : <span className="text-slate-500 italic">No registrada</span>}
+                </span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -2600,8 +2630,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   {detailEmpleado.di_evaluador
                     ? `${getEmpleadoFullName(detailEmpleado.di_evaluador)} (${detailEmpleado.di_evaluador})`
                     : detailEmpleado.di_supervisor
-                    ? `${getEmpleadoFullName(detailEmpleado.di_supervisor)} (${detailEmpleado.di_supervisor})`
-                    : 'Supervisor Directo'}
+                      ? `${getEmpleadoFullName(detailEmpleado.di_supervisor)} (${detailEmpleado.di_supervisor})`
+                      : 'Supervisor Directo'}
                 </span>
               </div>
             </div>

@@ -60,13 +60,103 @@ interface HumandMemberRow {
   status_humand: string;
 }
 
+export interface SyncAuditLog {
+  id: string;
+  date: string;
+  time: string;
+  title: string;
+  desc: string;
+  badge: string;
+  color: string;
+}
+
+const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
+  {
+    id: 'log-1',
+    date: '28/09/2026',
+    time: '19:50 UTC',
+    title: 'Depuración de Cuentas Ajenas',
+    desc: 'Se ejecutó DELETE /users/{id} sobre las 9 cuentas no pertenecientes a la nómina de TH. Todas eliminadas exitosamente con HTTP 204. Las cuentas técnicas quedaron protegidas.',
+    badge: 'HTTP 204',
+    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+  },
+  {
+    id: 'log-2',
+    date: '28/09/2026',
+    time: '18:00 UTC',
+    title: 'Asignación Masiva de Departamentos y Puestos',
+    desc: 'Se ejecutó asignación organizacional sobre los 163 colaboradores de nómina vía PUT /departments/members y PUT /job-positions/members. 163 de 163 asignados exitosamente (100%). Cero errores.',
+    badge: '163 Exitosos',
+    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+  },
+  {
+    id: 'log-3',
+    date: '28/09/2026',
+    time: '17:30 UTC',
+    title: 'Aprovisionamiento de Catálogos Maestros',
+    desc: 'Se cargaron 43 Departamentos nuevos (POST /departments/bulk) y 97 Puestos de Trabajo (POST /job-positions/bulk). Todos creados con HTTP 201 Created.',
+    badge: 'HTTP 201',
+    color: 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+  },
+  {
+    id: 'log-4',
+    date: '28/09/2026',
+    time: '17:18 UTC',
+    title: 'Certificación de Conectividad y Handshake',
+    desc: 'Autenticación validada con Authorization: Basic contra el usuario integracionespb. Inspección de cuotas confirmada: 100 peticiones por minuto.',
+    badge: 'HTTP 200',
+    color: 'text-purple-400 bg-purple-500/10 border-purple-500/30'
+  },
+];
+
 export const HumandSyncModule: React.FC = () => {
   const toast = useToast();
   const detailsSectionRef = useRef<HTMLDivElement>(null);
   const [activeSubTab, setActiveSubTab] = useState<SyncTab>('resumen');
   const [loading, setLoading] = useState<boolean>(true);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [lastSyncDate, setLastSyncDate] = useState<string>('Hoy a las 18:00 UTC');
+  const [lastSyncDate, setLastSyncDate] = useState<string>('28/09/2026 - 18:00 UTC');
+  const [auditLogs, setAuditLogs] = useState<SyncAuditLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('humand_sync_audit_logs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return DEFAULT_AUDIT_LOGS;
+  });
+
+  const handleSyncComplete = (info?: { title?: string; desc?: string; badge?: string; color?: string }) => {
+    fetchData();
+    const now = new Date();
+    const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    const timeFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} UTC`;
+
+    setLastSyncDate(`${dateFormatted} - ${timeFormatted}`);
+
+    const newLog: SyncAuditLog = {
+      id: `log-${Date.now()}`,
+      date: dateFormatted,
+      time: timeFormatted,
+      title: info?.title || (selectedEmpForSync ? `Sincronización Individual: ${selectedEmpForSync.nombres} ${selectedEmpForSync.apellidos}` : 'Sincronización en Cascada Ejecutada'),
+      desc: info?.desc || (selectedEmpForSync ? `Actualización de estructura y expediente de ${selectedEmpForSync.nombres} ${selectedEmpForSync.apellidos} sincronizado a Humand.` : 'Sincronización ejecutada exitosamente desde la consola de control.'),
+      badge: info?.badge || 'Completado',
+      color: info?.color || 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    };
+
+    setAuditLogs(prev => {
+      const updated = [newLog, ...prev];
+      try {
+        localStorage.setItem('humand_sync_audit_logs', JSON.stringify(updated));
+      } catch {
+        // no-op
+      }
+      return updated;
+    });
+  };
 
   const handleCardClick = (tab: SyncTab) => {
     setActiveSubTab(tab);
@@ -910,52 +1000,39 @@ export const HumandSyncModule: React.FC = () => {
       {/* PESTAÑA 6: BITÁCORA DE TRANSACCIONES */}
       {activeSubTab === 'bitacora' && (
         <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-6 space-y-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <History className="w-5 h-5 text-brand-400" />
-            Historial de Ejecución y Auditoría de Sincronización
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <History className="w-5 h-5 text-brand-400" />
+                Historial de Ejecución y Auditoría de Sincronización
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Registro cronológico con fecha y hora de eventos, catálogos aprovisionados y cambios ejecutados.
+              </p>
+            </div>
+            <span className="text-xs font-mono text-slate-400 self-start sm:self-auto bg-slate-800/60 px-2.5 py-1 rounded-md border border-slate-700/60">
+              {auditLogs.length} eventos registrados
+            </span>
+          </div>
 
           <div className="relative border-l-2 border-slate-800 ml-4 space-y-6 pt-2">
-            {[
-              {
-                time: 'Hoy 19:50 UTC',
-                title: 'Depuración de Cuentas Ajenas',
-                desc: 'Se ejecutó DELETE /users/{id} sobre las 9 cuentas no pertenecientes a la nómina de TH. Todas eliminadas exitosamente con HTTP 204. Las cuentas técnicas quedaron protegidas.',
-                badge: 'HTTP 204',
-                color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-              },
-              {
-                time: 'Hoy 18:00 UTC',
-                title: 'Asignación Masiva de Departamentos y Puestos',
-                desc: 'Se ejecutó asignación organizacional sobre los 163 colaboradores de nómina vía PUT /departments/members y PUT /job-positions/members. 163 de 163 asignados exitosamente (100%). Cero errores.',
-                badge: '163 Exitosos',
-                color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-              },
-              {
-                time: 'Hoy 17:30 UTC',
-                title: 'Aprovisionamiento de Catálogos Maestros',
-                desc: 'Se cargaron 43 Departamentos nuevos (POST /departments/bulk) y 97 Puestos de Trabajo (POST /job-positions/bulk). Todos creados con HTTP 201 Created.',
-                badge: 'HTTP 201',
-                color: 'text-blue-400 bg-blue-500/10 border-blue-500/30'
-              },
-              {
-                time: 'Hoy 17:18 UTC',
-                title: 'Certificación de Conectividad y Handshake',
-                desc: 'Autenticación validada con Authorization: Basic contra el usuario integracionespb. Inspección de cuotas confirmada: 100 peticiones por minuto.',
-                badge: 'HTTP 200',
-                color: 'text-purple-400 bg-purple-500/10 border-purple-500/30'
-              },
-            ].map((log, idx) => (
-              <div key={idx} className="relative pl-6">
-                <div className="absolute -left-1.5 top-1 w-3 h-3 rounded-full bg-brand-500 border-2 border-slate-900" />
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500 font-mono">{log.time}</span>
+            {auditLogs.map((log, idx) => (
+              <div key={log.id || idx} className="relative pl-6">
+                <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-brand-500 border-2 border-slate-900" />
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-medium bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                    <Calendar className="w-3.5 h-3.5 text-brand-400" />
+                    <span>{log.date}</span>
+                    <span className="text-slate-600 font-sans">•</span>
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-slate-400">{log.time}</span>
+                  </span>
                   <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${log.color}`}>
                     {log.badge}
                   </span>
                 </div>
-                <h4 className="text-sm font-semibold text-slate-200 mt-1">{log.title}</h4>
-                <p className="text-xs text-slate-400 mt-0.5 max-w-2xl">{log.desc}</p>
+                <h4 className="text-sm font-semibold text-slate-200 mt-1.5">{log.title}</h4>
+                <p className="text-xs text-slate-400 mt-0.5 max-w-2xl leading-relaxed">{log.desc}</p>
               </div>
             ))}
           </div>
@@ -970,10 +1047,7 @@ export const HumandSyncModule: React.FC = () => {
         allEmpleados={thEmps}
         departamentos={thDeps}
         cargos={thCargos}
-        onSyncComplete={() => {
-          fetchData();
-          setLastSyncDate('Ahora mismo');
-        }}
+        onSyncComplete={handleSyncComplete}
       />
     </div>
   );

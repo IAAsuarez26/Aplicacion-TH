@@ -180,6 +180,7 @@ export interface Empleado {
   genero?: Genero | string | null;
   sede?: string | null;
   ubicacion?: string | null;
+  fecha_nacimiento?: string | null;
   edo_civil?: EstadoCivil | string | null;
   nivel_educativo?: NivelEducativo | string | null;
   tabulador_id?: number | null;

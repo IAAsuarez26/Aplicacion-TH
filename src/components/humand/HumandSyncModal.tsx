@@ -33,7 +33,7 @@ interface HumandSyncModalProps {
   allEmpleados: Empleado[];
   departamentos: Departamento[];
   cargos: Cargo[];
-  onSyncComplete?: () => void;
+  onSyncComplete?: (info?: { title?: string; desc?: string; badge?: string; color?: string }) => void;
 }
 
 export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
@@ -120,7 +120,14 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
           }
 
           toast.success(`¡${empleado.nombres} sincronizado exitosamente con Humand!`);
-          if (onSyncComplete) onSyncComplete();
+          if (onSyncComplete) {
+            onSyncComplete({
+              title: `Sincronización Individual: ${empleado.nombres} ${empleado.apellidos}`,
+              desc: `Colaborador sincronizado en cascada a Humand (Departamento: ${empleado.codigo_departamento || '-'}, Cargo: ${empleado.codigo_cargo || '-'}). Expediente validado.`,
+              badge: 'Individual OK',
+              color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+            });
+          }
         } else {
           toast.error(rep.error || 'Ocurrió un error al sincronizar con Humand');
         }
@@ -163,7 +170,18 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
           toast.info(`Sincronización finalizada: ${result.exitosos} exitosos, ${result.fallidos} con observaciones.`);
         }
 
-        if (onSyncComplete) onSyncComplete();
+        if (onSyncComplete) {
+          onSyncComplete({
+            title: dryRun ? 'Simulación Global (Dry-Run)' : 'Sincronización Masiva en Lote',
+            desc: dryRun
+              ? `Simulación ejecutada sobre ${result.total} colaboradores. ${result.exitosos} listos, ${result.fallidos} advertencias.`
+              : `Proceso masivo completado. ${result.exitosos} colaboradores sincronizados formalmente en Humand. ${result.fallidos} observaciones registradas.`,
+            badge: dryRun ? 'Simulación' : `${result.exitosos} Exitosos`,
+            color: result.fallidos === 0
+              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+              : 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+          });
+        }
       }
     } catch (err: any) {
       toast.error(err?.message || 'Error en la sincronización con Humand');

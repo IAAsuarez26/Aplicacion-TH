@@ -1239,6 +1239,7 @@ export const empleadosApi = {
         tabulador_id: empleado.tabulador_id ? Number(empleado.tabulador_id) : null,
         di_supervisor: empleado.di_supervisor ? empleado.di_supervisor.trim() : null,
         di_evaluador: empleado.di_evaluador ? empleado.di_evaluador.trim() : null,
+        fecha_nacimiento: empleado.fecha_nacimiento ? empleado.fecha_nacimiento.trim() : null,
         fecha_ingreso: empleado.fecha_ingreso,
         estado_laboral: empleado.estado_laboral || 'ACTIVO',
         estatus_h: empleado.estatus_h !== undefined ? Number(empleado.estatus_h) : 1,
@@ -1306,6 +1307,9 @@ export const empleadosApi = {
       }
       if (payload.nivel_educativo !== undefined) {
         payload.nivel_educativo = payload.nivel_educativo ? payload.nivel_educativo.trim() : null;
+      }
+      if (payload.fecha_nacimiento !== undefined) {
+        payload.fecha_nacimiento = payload.fecha_nacimiento ? payload.fecha_nacimiento.trim() : null;
       }
       if (payload.estatus_h !== undefined) {
         payload.estatus_h = Number(payload.estatus_h);
