@@ -9,6 +9,85 @@ const HUMAND_API_KEY =
 export const UUID_ESTADO_CIVIL = '52005932-0bdb-438d-834c-82d8e3330e26';
 export const UUID_NIVEL_EDUCATIVO = 'a0b1e6b5-4bc7-444b-a27c-2844dd5a9532';
 
+export type SelectiveSyncField =
+  | 'birthdate'
+  | 'phoneNumber'
+  | 'hiringDate'
+  | 'email'
+  | 'supervisor'
+  | 'estadoCivil'
+  | 'nivelEducativo'
+  | 'segmentaciones';
+
+export interface SelectiveFieldConfig {
+  id: SelectiveSyncField;
+  label: string;
+  category: 'personal' | 'laboral' | 'extendido';
+  description: string;
+  humandEndpoint: string;
+  badge?: string;
+}
+
+export const SELECTIVE_FIELDS: SelectiveFieldConfig[] = [
+  {
+    id: 'birthdate',
+    label: 'Fecha de Nacimiento',
+    category: 'personal',
+    description: 'Actualiza el atributo birthdate en Humand en formato AAAA-MM-DD.',
+    humandEndpoint: 'PATCH /users/{id}',
+    badge: 'Nuevo en TH',
+  },
+  {
+    id: 'phoneNumber',
+    label: 'Teléfono de Contacto',
+    category: 'personal',
+    description: 'Actualiza el número telefónico principal del colaborador.',
+    humandEndpoint: 'PATCH /users/{id}',
+  },
+  {
+    id: 'hiringDate',
+    label: 'Fecha de Ingreso / Antigüedad',
+    category: 'laboral',
+    description: 'Actualiza hiringDate en Humand para cálculo de beneficios y antigüedad.',
+    humandEndpoint: 'PATCH /users/{id}',
+  },
+  {
+    id: 'email',
+    label: 'Correo Electrónico Corporativo',
+    category: 'laboral',
+    description: 'Actualiza el correo corporativo/personal para inicio de sesión.',
+    humandEndpoint: 'PATCH /users/{id}',
+  },
+  {
+    id: 'supervisor',
+    label: 'Supervisor Directo (Organigrama BOSS)',
+    category: 'laboral',
+    description: 'Establece la relación de jerarquía y línea de reporte en Humand.',
+    humandEndpoint: 'PATCH /users/{id}',
+  },
+  {
+    id: 'estadoCivil',
+    label: 'Estado Civil',
+    category: 'extendido',
+    description: 'Actualiza el campo dinámico de perfil extendido en Humand.',
+    humandEndpoint: 'PATCH /users/{id}/profile-fields',
+  },
+  {
+    id: 'nivelEducativo',
+    label: 'Nivel Educativo',
+    category: 'extendido',
+    description: 'Actualiza el nivel de instrucción en el expediente de Humand.',
+    humandEndpoint: 'PATCH /users/{id}/profile-fields',
+  },
+  {
+    id: 'segmentaciones',
+    label: 'Segmentaciones (Ubicación / Género)',
+    category: 'extendido',
+    description: 'Asigna grupos organizacionales de segmentación corporativa.',
+    humandEndpoint: 'POST /segmentations/users',
+  },
+];
+
 export interface HumandApiResponse<T = any> {
   ok: boolean;
   status: number;
@@ -262,6 +341,14 @@ export const humandApi = {
     });
   },
 
+  // Actualizar parcialmente un usuario (PATCH /users/{employeeInternalId})
+  async patchUser(employeeInternalId: string, payload: any): Promise<HumandApiResponse> {
+    return humandFetch(`/users/${employeeInternalId}`, {
+      method: 'PATCH',
+      body: payload,
+    });
+  },
+
   // Actualizar campos extendidos de perfil (Estado Civil, Nivel Educativo)
   async updateProfileFields(
     employeeInternalId: string,
@@ -419,6 +506,7 @@ export const humandSyncEngine = {
         email: (emp.email_corporativo || emp.email || '').trim().toLowerCase(),
         phoneNumber: emp.telefono?.trim() || null,
         hiringDate: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : null,
+        birthdate: emp.fecha_nacimiento ? emp.fecha_nacimiento.split('T')[0] : null,
         password: 'PasswordTemp2026!',
         relationships: supCedula ? [{ name: 'BOSS', employeeInternalId: supCedula }] : [],
         // NOTA: segmentation omitida intencionalmente del aprovisionamiento inicial.
@@ -621,6 +709,213 @@ export const humandSyncEngine = {
       }
 
       // Pequeño retardo para respetar rate limit
+      await new Promise((res) => setTimeout(res, 200));
+    }
+
+    return {
+      total: habilitados.length,
+      exitosos,
+      fallidos,
+      reports,
+    };
+  },
+
+  /**
+   * Sincronización Selectiva por Campos de un solo Colaborador (Delta PATCH)
+   */
+  async syncEmpleadoSelective(
+    emp: Empleado,
+    selectedFields: SelectiveSyncField[],
+    allEmps: Empleado[] = []
+  ): Promise<SyncReport> {
+    const cedula = cleanCedula(emp.documento_identidad);
+    const nombreCompleto = `${emp.nombres} ${emp.apellidos}`.trim();
+    const now = () => new Date().toLocaleTimeString();
+
+    const report: SyncReport = {
+      success: false,
+      colaborador: nombreCompleto,
+      cedula,
+      departamento: { nombre: emp.codigo_departamento, creado: false },
+      cargo: { nombre: emp.codigo_cargo, creado: false },
+      usuarioAprovisionado: false,
+      departamentoAsignado: false,
+      cargoAsignado: false,
+      camposExtendidosAsignados: false,
+      logs: [],
+    };
+
+    const addLog = (step: string, message: string, status: SyncStepLog['status']) => {
+      report.logs.push({ timestamp: now(), step, message, status });
+    };
+
+    if (!cedula) {
+      report.error = 'El colaborador no posee un documento de identidad válido.';
+      addLog('Validación Inicial', report.error, 'error');
+      return report;
+    }
+
+    if (!selectedFields || selectedFields.length === 0) {
+      report.error = 'No se seleccionó ningún campo para sincronizar.';
+      addLog('Validación', report.error, 'warning');
+      return report;
+    }
+
+    addLog(
+      'Inicio',
+      `Iniciando sincronización selectiva para ${nombreCompleto} (C.I. ${cedula})...`,
+      'info'
+    );
+
+    try {
+      // 1. Campos nativos de usuario (PATCH /users/{employeeInternalId})
+      const userPatch: Record<string, any> = {};
+
+      if (selectedFields.includes('birthdate')) {
+        const bd = emp.fecha_nacimiento ? emp.fecha_nacimiento.split('T')[0] : null;
+        userPatch.birthdate = bd;
+      }
+      if (selectedFields.includes('hiringDate')) {
+        const hd = emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : null;
+        userPatch.hiringDate = hd;
+      }
+      if (selectedFields.includes('email')) {
+        const em = (emp.email_corporativo || emp.email || '').trim().toLowerCase();
+        userPatch.email = em || null;
+      }
+      if (selectedFields.includes('phoneNumber')) {
+        userPatch.phoneNumber = emp.telefono?.trim() || null;
+      }
+      if (selectedFields.includes('supervisor')) {
+        const supCedula = cleanCedula(emp.di_supervisor);
+        userPatch.relationships = supCedula ? [{ name: 'BOSS', employeeInternalId: supCedula }] : [];
+      }
+
+      const hasUserFields = Object.keys(userPatch).length > 0;
+      if (hasUserFields) {
+        addLog(
+          'Actualización Parcial',
+          `Aplicando PATCH /users/${cedula} con atributos: ${Object.keys(userPatch).join(', ')}...`,
+          'info'
+        );
+        const resPatch = await humandApi.patchUser(cedula, userPatch);
+        if (!resPatch.ok) {
+          throw new Error(`Error en PATCH /users/${cedula}: ${resPatch.error}`);
+        }
+        report.usuarioAprovisionado = true;
+        addLog('Actualización Parcial', `Atributos base [${Object.keys(userPatch).join(', ')}] actualizados exitosamente en Humand.`, 'success');
+      }
+
+      // 2. Campos de Perfil Extendido (PATCH /users/{id}/profile-fields)
+      const pfList: { id: string; value: string }[] = [];
+      if (selectedFields.includes('estadoCivil') && emp.edo_civil) {
+        pfList.push({ id: UUID_ESTADO_CIVIL, value: emp.edo_civil });
+      }
+      if (selectedFields.includes('nivelEducativo') && emp.nivel_educativo) {
+        pfList.push({ id: UUID_NIVEL_EDUCATIVO, value: emp.nivel_educativo });
+      }
+
+      if (pfList.length > 0) {
+        addLog('Campos de Perfil', `Actualizando campos dinámicos de perfil (${pfList.length})...`, 'info');
+        const resPf = await humandApi.updateProfileFields(cedula, pfList);
+        if (resPf.ok) {
+          report.camposExtendidosAsignados = true;
+          addLog('Campos de Perfil', 'Campos de perfil actualizados formalmente en Humand.', 'success');
+        } else {
+          addLog('Campos de Perfil', `Aviso en campos de perfil: ${resPf.error}`, 'warning');
+        }
+      }
+
+      // 3. Segmentaciones (POST /segmentations/users)
+      if (selectedFields.includes('segmentaciones')) {
+        const segList: { group: string; item: string }[] = [];
+        if (emp.ubicacion) segList.push({ group: 'Ubicación', item: emp.ubicacion });
+        if (emp.genero) segList.push({ group: 'Género', item: emp.genero });
+
+        if (segList.length > 0) {
+          addLog('Segmentaciones', `Asignando segmentaciones: ${segList.map((s) => `${s.group}=${s.item}`).join(', ')}...`, 'info');
+          const resSeg = await humandApi.updateSegmentations(cedula, segList);
+          if (resSeg.ok) {
+            addLog('Segmentaciones', 'Segmentaciones asignadas correctamente.', 'success');
+          } else {
+            addLog('Segmentaciones', `Aviso en segmentaciones: ${resSeg.error}`, 'warning');
+          }
+        }
+      }
+
+      report.success = true;
+      addLog('Finalizado', `Sincronización selectiva completada con éxito para ${nombreCompleto}.`, 'success');
+      return report;
+    } catch (err: any) {
+      report.error = err?.message || 'Error en sincronización selectiva';
+      addLog('Error', report.error || 'Fallo general', 'error');
+      return report;
+    }
+  },
+
+  /**
+   * Sincronización Selectiva Global de todos los Colaboradores Habilitados
+   */
+  async syncSelectiveAll(
+    emps: Empleado[],
+    selectedFields: SelectiveSyncField[],
+    options: {
+      onProgress?: (progress: { current: number; total: number; empName: string; step: string }) => void;
+      dryRun?: boolean;
+    } = {}
+  ): Promise<{ total: number; exitosos: number; fallidos: number; reports: SyncReport[] }> {
+    const habilitados = emps.filter((e) => e.estatus_h === 1 && e.estado_laboral === 'ACTIVO');
+    const reports: SyncReport[] = [];
+    let exitosos = 0;
+    let fallidos = 0;
+
+    for (let i = 0; i < habilitados.length; i++) {
+      const emp = habilitados[i];
+      const empName = `${emp.nombres} ${emp.apellidos}`.trim();
+      const cedula = cleanCedula(emp.documento_identidad);
+
+      if (options.onProgress) {
+        options.onProgress({
+          current: i + 1,
+          total: habilitados.length,
+          empName,
+          step: `[${i + 1}/${habilitados.length}] ${empName} (C.I. ${cedula})`,
+        });
+      }
+
+      if (options.dryRun) {
+        // En simulación dry-run generamos la vista previa de qué se enviaría
+        reports.push({
+          success: true,
+          colaborador: empName,
+          cedula,
+          departamento: { nombre: emp.codigo_departamento, creado: false },
+          cargo: { nombre: emp.codigo_cargo, creado: false },
+          usuarioAprovisionado: true,
+          departamentoAsignado: false,
+          cargoAsignado: false,
+          camposExtendidosAsignados: true,
+          logs: [
+            {
+              timestamp: new Date().toLocaleTimeString(),
+              step: 'Simulación Selectiva (Dry-Run)',
+              message: `Simulado: Se enviarían [${selectedFields.join(', ')}] para ${empName} (C.I. ${cedula}).`,
+              status: 'info',
+            },
+          ],
+        });
+        exitosos++;
+      } else {
+        const report = await this.syncEmpleadoSelective(emp, selectedFields, emps);
+        reports.push(report);
+        if (report.success) {
+          exitosos++;
+        } else {
+          fallidos++;
+        }
+      }
+
+      // Pequeño retardo para no saturar Rate Limits de Humand (200ms)
       await new Promise((res) => setTimeout(res, 200));
     }
 

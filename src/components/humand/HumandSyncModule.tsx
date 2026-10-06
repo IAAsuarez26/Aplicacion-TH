@@ -24,7 +24,8 @@ import {
   Filter,
   History,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  SlidersHorizontal
 } from 'lucide-react';
 import { departamentosApi, cargosApi, empleadosApi } from '../../lib/insforge';
 import type { Departamento, Cargo, Empleado } from '../../lib/types';
@@ -228,25 +229,36 @@ export const HumandSyncModule: React.FC = () => {
     });
   }, [thEmps]);
 
-  // Estado del Modal de Sincronización Real en Cascada
+  // Estado del Modal de Sincronización Real
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
+  const [syncModalMode, setSyncModalMode] = useState<'selective' | 'cascade'>('selective');
   const [selectedEmpForSync, setSelectedEmpForSync] = useState<Empleado | null>(null);
 
-  // Apertura de Sincronización Global
-  const handleTriggerSync = () => {
+  // Apertura de Sincronización Selectiva por Campos (Recomendado)
+  const handleTriggerSelectiveSync = () => {
     setSelectedEmpForSync(null);
+    setSyncModalMode('selective');
+    setIsSyncModalOpen(true);
+  };
+
+  // Apertura de Sincronización Global en Cascada (Estructural)
+  const handleTriggerCascadeSync = () => {
+    setSelectedEmpForSync(null);
+    setSyncModalMode('cascade');
     setIsSyncModalOpen(true);
   };
 
   // Apertura de Simulación Dry-Run
   const handleRunSimulation = () => {
     setSelectedEmpForSync(null);
+    setSyncModalMode('selective');
     setIsSyncModalOpen(true);
   };
 
   // Apertura de Sincronización para un Colaborador Específico
-  const handleSyncSingleEmp = (emp: Empleado) => {
+  const handleSyncSingleEmp = (emp: Empleado, mode: 'selective' | 'cascade' = 'selective') => {
     setSelectedEmpForSync(emp);
+    setSyncModalMode(mode);
     setIsSyncModalOpen(true);
   };
 
@@ -324,16 +336,18 @@ export const HumandSyncModule: React.FC = () => {
     {
       key: 'acciones',
       header: 'Acción',
-      className: 'text-right w-28',
+      className: 'text-right w-36',
       render: (row) => (
-        <button
-          onClick={() => handleSyncSingleEmp(row)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 transition shadow-sm"
-          title="Sincronizar a Humand (Resolución en Cascada)"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          Sincronizar
-        </button>
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => handleSyncSingleEmp(row, 'selective')}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 transition shadow-sm"
+            title="Sincronizar campos específicos vía PATCH (Nacimiento, Correo, etc.)"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Selectivo
+          </button>
+        </div>
       ),
     },
   ];
@@ -534,22 +548,32 @@ export const HumandSyncModule: React.FC = () => {
           </div>
 
           {/* Botones de Acción de Sincronización */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               onClick={handleRunSimulation}
               disabled={isSimulating}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition shadow-sm disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isSimulating ? 'animate-spin' : ''}`} />
               Simulación (Dry-Run)
             </button>
             <button
-              onClick={handleTriggerSync}
+              onClick={handleTriggerCascadeSync}
               disabled={isSimulating}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-md dark:shadow-glow transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 transition shadow-sm disabled:opacity-50"
+              title="Sincronización completa estructural (Departamentos, Cargos y Usuario)"
             >
-              <Sparkles className="w-4 h-4" />
-              Sincronizar Ahora
+              <Layers className="w-4 h-4 text-emerald-400" />
+              Cascada Completa
+            </button>
+            <button
+              onClick={handleTriggerSelectiveSync}
+              disabled={isSimulating}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-md dark:shadow-glow transition disabled:opacity-50"
+              title="Selecciona qué campos específicos deseas actualizar (Fecha de Nacimiento, Teléfono, etc.)"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Sincronización Selectiva
             </button>
           </div>
         </div>
@@ -1039,7 +1063,7 @@ export const HumandSyncModule: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de Sincronización Real en Cascada */}
+      {/* Modal de Sincronización Directa */}
       <HumandSyncModal
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
@@ -1047,6 +1071,7 @@ export const HumandSyncModule: React.FC = () => {
         allEmpleados={thEmps}
         departamentos={thDeps}
         cargos={thCargos}
+        initialMode={syncModalMode}
         onSyncComplete={handleSyncComplete}
       />
     </div>
