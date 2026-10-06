@@ -692,8 +692,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
       render: (row) => (
         row.nacionalidad ? (
           <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded border inline-block ${row.nacionalidad === 'V'
-              ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/60'
-              : 'bg-amber-950/70 text-amber-300 border-amber-800/60'
+            ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/60'
+            : 'bg-amber-950/70 text-amber-300 border-amber-800/60'
             }`}>
             {row.nacionalidad}
           </span>
@@ -798,10 +798,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="flex items-center gap-1.5">
             <span
               className={`font-mono text-xs font-semibold px-2.5 py-1 rounded-md border shadow-sm ${pc.perfil.toLowerCase().includes('líder') || pc.perfil.toLowerCase().includes('lider')
-                  ? 'bg-emerald-950/70 border-emerald-800/60 text-emerald-300'
-                  : pc.perfil.toLowerCase().includes('admin')
-                    ? 'bg-cyan-950/70 border-cyan-800/60 text-cyan-300'
-                    : 'bg-amber-950/70 border-amber-800/60 text-amber-300'
+                ? 'bg-emerald-950/70 border-emerald-800/60 text-emerald-300'
+                : pc.perfil.toLowerCase().includes('admin')
+                  ? 'bg-cyan-950/70 border-cyan-800/60 text-cyan-300'
+                  : 'bg-amber-950/70 border-amber-800/60 text-amber-300'
                 }`}
             >
               {pc.perfil}
@@ -826,10 +826,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div className="flex items-center gap-1.5">
             <span
               className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md border ${tc.nombre === 'MOD'
-                  ? 'bg-amber-950/60 border-amber-800/60 text-amber-300'
-                  : tc.nombre === 'MOI'
-                    ? 'bg-blue-950/60 border-blue-800/60 text-blue-300'
-                    : 'bg-purple-950/60 border-purple-800/60 text-purple-300'
+                ? 'bg-amber-950/60 border-amber-800/60 text-amber-300'
+                : tc.nombre === 'MOI'
+                  ? 'bg-blue-950/60 border-blue-800/60 text-blue-300'
+                  : 'bg-purple-950/60 border-purple-800/60 text-purple-300'
                 }`}
             >
               {tc.nombre}
@@ -856,8 +856,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           </div>
           {row.genero && (
             <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md border ${row.genero === 'Mujer'
-                ? 'bg-pink-950/60 text-pink-300 border-pink-800/50'
-                : 'bg-sky-950/60 text-sky-300 border-sky-800/50'
+              ? 'bg-pink-950/60 text-pink-300 border-pink-800/50'
+              : 'bg-sky-950/60 text-sky-300 border-sky-800/50'
               }`}>
               {row.genero}
             </span>
@@ -1037,8 +1037,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               setIsSyncModalOpen(true);
             }}
             className={`p-1.5 rounded-lg border transition-colors ${row.estatus_h === 1
-                ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700 hover:text-slate-200'
+              ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700 hover:text-slate-200'
               }`}
             title={
               row.estatus_h === 1
@@ -1128,8 +1128,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             }
           }}
           className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${isTotalActive
-              ? 'bg-slate-900/80 border-2 border-brand-500/80 ring-2 ring-brand-500/20 shadow-brand-500/10 shadow-lg'
-              : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
+            ? 'bg-slate-900/80 border-2 border-brand-500/80 ring-2 ring-brand-500/20 shadow-brand-500/10 shadow-lg'
+            : 'bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
             }`}
           title="Clic para ver la plantilla completa"
         >
@@ -1157,8 +1157,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           type="button"
           onClick={() => setFiltroEstado(filtroEstado === 'ACTIVO' ? 'ALL' : 'ACTIVO')}
           className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${isActivosActive
-              ? 'bg-emerald-950/40 border-2 border-emerald-500/80 ring-2 ring-emerald-500/30 shadow-emerald-500/10 shadow-lg'
-              : 'bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-emerald-950/20'
+            ? 'bg-emerald-950/40 border-2 border-emerald-500/80 ring-2 ring-emerald-500/30 shadow-emerald-500/10 shadow-lg'
+            : 'bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-emerald-950/20'
             }`}
           title={isActivosActive ? 'Clic para quitar filtro de activos' : 'Clic para filtrar solo activos'}
         >
@@ -1184,10 +1184,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
         <div
           onClick={() => setFiltroQuickPC(filtroQuickPC === 'CON_PC' ? 'ALL' : 'CON_PC')}
           className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${filtroQuickPC === 'CON_PC'
-              ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
-              : filtroQuickPC === 'SIN_PC'
-                ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
-                : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
+            ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
+            : filtroQuickPC === 'SIN_PC'
+              ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
+              : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
             }`}
           title="Clic para filtrar colaboradores con perfil de competencias (PC)"
         >
@@ -1220,8 +1220,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                   setFiltroQuickPC(filtroQuickPC === 'SIN_PC' ? 'ALL' : 'SIN_PC');
                 }}
                 className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${filtroQuickPC === 'SIN_PC'
-                    ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
-                    : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
+                  ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
+                  : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
                   }`}
                 title="Clic para filtrar únicamente los pendientes de PC"
               >
@@ -1238,10 +1238,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div
             onClick={() => setFiltroQuickTabulador(filtroQuickTabulador === 'CON_BANDA' ? 'ALL' : 'CON_BANDA')}
             className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${filtroQuickTabulador === 'CON_BANDA'
-                ? 'bg-indigo-950/40 border-2 border-indigo-500/80 ring-2 ring-indigo-500/30 shadow-indigo-500/10 shadow-lg'
-                : filtroQuickTabulador === 'SIN_BANDA'
-                  ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
-                  : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
+              ? 'bg-indigo-950/40 border-2 border-indigo-500/80 ring-2 ring-indigo-500/30 shadow-indigo-500/10 shadow-lg'
+              : filtroQuickTabulador === 'SIN_BANDA'
+                ? 'bg-rose-950/40 border-2 border-rose-500/80 ring-2 ring-rose-500/30 shadow-rose-500/10 shadow-lg'
+                : 'bg-slate-900/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-indigo-950/20'
               }`}
             title="Clic para filtrar colaboradores con banda salarial"
           >
@@ -1274,8 +1274,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                     setFiltroQuickTabulador(filtroQuickTabulador === 'SIN_BANDA' ? 'ALL' : 'SIN_BANDA');
                   }}
                   className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${filtroQuickTabulador === 'SIN_BANDA'
-                      ? 'bg-rose-500/25 text-rose-300 font-bold border border-rose-500/40'
-                      : 'text-slate-500 hover:text-rose-300 hover:bg-rose-500/15'
+                    ? 'bg-rose-500/25 text-rose-300 font-bold border border-rose-500/40'
+                    : 'text-slate-500 hover:text-rose-300 hover:bg-rose-500/15'
                     }`}
                   title="Clic para filtrar colaboradores sin banda asignada"
                 >
@@ -1290,10 +1290,10 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           <div
             onClick={() => setFiltroQuickHumand(filtroQuickHumand === 'HABILITADO' ? 'ALL' : 'HABILITADO')}
             className={`p-4 rounded-2xl text-left backdrop-blur-xl transition-all duration-200 group cursor-pointer focus:outline-none hover:-translate-y-0.5 hover:shadow-xl ${filtroQuickHumand === 'HABILITADO'
-                ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
-                : filtroQuickHumand === 'EXCLUIDO'
-                  ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
-                  : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
+              ? 'bg-cyan-950/40 border-2 border-cyan-500/80 ring-2 ring-cyan-500/30 shadow-cyan-500/10 shadow-lg'
+              : filtroQuickHumand === 'EXCLUIDO'
+                ? 'bg-amber-950/40 border-2 border-amber-500/80 ring-2 ring-amber-500/30 shadow-amber-500/10 shadow-lg'
+                : 'bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-cyan-950/20'
               }`}
             title="Clic para filtrar colaboradores sincronizados con Humand"
           >
@@ -1326,8 +1326,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                     setFiltroQuickHumand(filtroQuickHumand === 'EXCLUIDO' ? 'ALL' : 'EXCLUIDO');
                   }}
                   className={`text-[11px] transition-all rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer ${filtroQuickHumand === 'EXCLUIDO'
-                      ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
-                      : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
+                    ? 'bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40'
+                    : 'text-slate-500 hover:text-amber-300 hover:bg-amber-500/15'
                     }`}
                   title="Clic para filtrar colaboradores no sincronizados a Humand"
                 >
@@ -1399,8 +1399,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 }
               }}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroEmpresa !== 'ALL'
-                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Empresa"
             >
@@ -1435,8 +1435,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroDepartamento}
               onChange={(e) => setFiltroDepartamento(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroDepartamento !== 'ALL'
-                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Departamento"
             >
@@ -1504,8 +1504,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroCargo}
               onChange={(e) => setFiltroCargo(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroCargo !== 'ALL'
-                  ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-brand-500/80 bg-brand-500/10 text-brand-300 font-semibold ring-1 ring-brand-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Cargo"
             >
@@ -1528,8 +1528,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroPerfil}
               onChange={(e) => setFiltroPerfil(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroPerfil !== 'ALL'
-                  ? 'border-cyan-500/80 bg-cyan-500/10 text-cyan-300 font-semibold ring-1 ring-cyan-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-cyan-500/80 bg-cyan-500/10 text-cyan-300 font-semibold ring-1 ring-cyan-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Perfil de Competencias"
             >
@@ -1551,8 +1551,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroDenominacion}
               onChange={(e) => setFiltroDenominacion(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroDenominacion !== 'ALL'
-                  ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-indigo-500/80 bg-indigo-500/10 text-indigo-300 font-semibold ring-1 ring-indigo-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Denominación del Cargo"
             >
@@ -1576,8 +1576,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroTipoCosto}
               onChange={(e) => setFiltroTipoCosto(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroTipoCosto !== 'ALL'
-                  ? 'border-amber-500/80 bg-amber-500/10 text-amber-300 font-semibold ring-1 ring-amber-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-amber-500/80 bg-amber-500/10 text-amber-300 font-semibold ring-1 ring-amber-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Tipo de Costo"
             >
@@ -1598,8 +1598,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroSede}
               onChange={(e) => setFiltroSede(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroSede !== 'ALL'
-                  ? 'border-rose-500/80 bg-rose-500/10 text-rose-300 font-semibold ring-1 ring-rose-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-rose-500/80 bg-rose-500/10 text-rose-300 font-semibold ring-1 ring-rose-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Sede"
             >
@@ -1620,8 +1620,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroEstado !== 'ALL'
-                  ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-emerald-500/80 bg-emerald-500/10 text-emerald-300 font-semibold ring-1 ring-emerald-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Estado Laboral"
             >
@@ -1641,8 +1641,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={filtroGenero}
               onChange={(e) => setFiltroGenero(e.target.value)}
               className={`w-full pl-2.5 pr-7 py-2 bg-slate-950/80 border rounded-xl text-xs transition-all appearance-none cursor-pointer focus:outline-none truncate ${filtroGenero !== 'ALL'
-                  ? 'border-pink-500/80 bg-pink-500/10 text-pink-300 font-semibold ring-1 ring-pink-500/30'
-                  : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
+                ? 'border-pink-500/80 bg-pink-500/10 text-pink-300 font-semibold ring-1 ring-pink-500/30'
+                : 'border-slate-800/90 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60 font-medium'
                 }`}
               title="Filtrar por Género"
             >
@@ -2280,8 +2280,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
               value={estatusH}
               onChange={(e) => setEstatusH(Number(e.target.value))}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold border focus:outline-none transition-colors ${estatusH === 1
-                  ? 'bg-cyan-950 text-cyan-300 border-cyan-700'
-                  : 'bg-slate-900 text-slate-400 border-slate-700'
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-700'
+                : 'bg-slate-900 text-slate-400 border-slate-700'
                 }`}
             >
               <option value={1}>1 - Habilitado para Humand</option>

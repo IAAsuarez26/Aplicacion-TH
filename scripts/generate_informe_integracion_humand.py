@@ -2,6 +2,7 @@
 """
 Generador del Informe Gerencial: Proceso de Integración y Sincronización TH <-> Humand
 Formato: Microsoft Word (.docx) con tipografía ejecutiva, tablas formateadas, callouts y métricas.
+Versión: 2.5 (Actualizada con Sincronización Selectiva por Campos y Fechas de Nacimiento)
 """
 
 import os
@@ -240,7 +241,7 @@ def generate_document():
     add_title(
         doc,
         "Informe Gerencial de Arquitectura e Integración TH ↔ Humand",
-        "Funcionamiento del Modelo de Sincronización, Alcance Total vs. Parcial, Premisas Técnicas y Gobierno de Datos"
+        "Modelo de Sincronización Selectiva por Campos, Carga de Fechas de Nacimiento, Premisas Técnicas y Gobierno de Datos"
     )
 
     # Tabla Ficha Técnica
@@ -251,7 +252,7 @@ def generate_document():
     meta_data = [
         ("Proyecto / Iniciativa:", "Plataforma Integral de Talento Humano — Ecosistema Digital Ponce & Benzo"),
         ("Destinatarios:", "Dirección General, Dirección de Sistemas & Tecnología, Gerencia de Talento Humano"),
-        ("Fecha de Emisión:", "Octubre 2026 | Versión Oficial 2.0"),
+        ("Fecha de Emisión:", "Octubre 2026 | Versión Oficial 2.5 (Actualizada)"),
         ("Clasificación de Seguridad:", "Confidencial — Uso Interno Corporativo"),
     ]
     for idx, (label, val) in enumerate(meta_data):
@@ -293,51 +294,61 @@ def generate_document():
     )
     add_body_paragraph(
         doc,
-        "Como respuesta directa a la interrogante gerencial sobre la naturaleza de la sincronización, se clarifica que el sistema NO está obligado a realizar "
-        "siempre sincronizaciones totales masivas. Por el contrario, la arquitectura está diseñada con capacidades duales: soporta cargas globales o masivas (Batch Upsert) "
-        "para inicialización o auditoría general, pero su fortaleza operativa reside en la Sincronización Parcial, Quirúrgica y Granular (Delta Sync). "
-        "Esto permite transmitir únicamente campos específicos (tales como Ubicación, Estado Civil o Nivel Educativo), colaboradores seleccionados de forma individual, "
-        "o catálogos organizacionales específicos, sin necesidad de reescribir ni sobrecargar la nómina completa."
+        "En esta versión actualizada 2.5, se documentan formalmente dos hitos trascendentales en la madurez del ecosistema: "
+        "(1) La integración del Módulo de Sincronización Selectiva por Campos (Delta PATCH), que permite a la Gerencia seleccionar libremente "
+        "mediante checkboxes interactivos qué atributos específicos desea actualizar en Humand (por ejemplo: únicamente la fecha de nacimiento, el correo o el teléfono), "
+        "sin alterar departamentos, puestos, credenciales ni el resto del perfil; y (2) La digitalización, conciliación y carga del 100% de las Fechas de Nacimiento "
+        "en la base de datos de TH para los 187 colaboradores activos, homologándolas con el atributo nativo 'birthdate' en Humand."
     )
     add_body_paragraph(
         doc,
-        "Adicionalmente, se documenta la incorporación del mecanismo de exclusión y gobierno estatus_h, el cual otorga autonomía absoluta a la Aplicación TH "
-        "para decidir tras bastidores qué registros suben a Humand y cuáles permanecen confinados al entorno interno de nómina, sin exponer configuraciones en la nube."
+        "Como principio rector, se ratifica que el sistema NO está obligado a realizar sincronizaciones totales masivas. La arquitectura ofrece "
+        "capacidades duales de máxima flexibilidad: permite cargas globales o estructurales en cascada cuando se crean departamentos o cargos masivos, "
+        "pero prioriza la Sincronización Delta Quirúrgica para la operación habitual, protegiendo las cuotas de Rate Limit de la API y garantizando "
+        "la total inocuidad sobre los expedientes existentes en la nube."
     )
 
     # ---------------------------------------------------------
-    # SECCIÓN 1: SINCRONIZACIÓN TOTAL VS. PARCIAL
+    # SECCIÓN 1: SINCRONIZACIÓN TOTAL VS. PARCIAL SELECTIVA
     # ---------------------------------------------------------
-    add_heading_styled(doc, "1. Modelo de Sincronización: ¿Total o Parcial?", level=1)
+    add_heading_styled(doc, "1. Modelo de Sincronización: Cascada Completa vs. Sincronización Selectiva", level=1)
     add_body_paragraph(
         doc,
-        "Una de las premisas arquitectónicas más críticas en la integración de sistemas de recursos humanos es la eficiencia y el control de tráfico en las APIs. "
-        "En la integración TH ↔ Humand, el usuario y los administradores cuentan con la libertad de ejecutar tanto sincronizaciones completas como actualizaciones parciales "
-        "de acuerdo con la necesidad operativa:"
+        "Una de las premisas arquitectónicas más críticas en la integración de sistemas de recursos humanos es la eficiencia, la precisión y el control de tráfico en las APIs. "
+        "En la integración TH ↔ Humand, los administradores cuentan con la libertad de elegir entre modalidades operativas diferenciadas según la necesidad:"
     )
 
-    add_heading_styled(doc, "1.1 Sincronización Parcial y Quirúrgica (Uso Diario Recomendado)", level=2)
+    add_heading_styled(doc, "1.1 Sincronización Selectiva por Campos (Nueva Funcionalidad Delta PATCH)", level=2)
     add_body_paragraph(
         doc,
-        "La sincronización parcial permite enviar a Humand únicamente las novedades, atributos específicos o colaboradores que han sufrido alteraciones. "
-        "Se desglosa en tres niveles de granularidad:"
+        "La Sincronización Selectiva por Campos permite al usuario escoger exactamente cuáles atributos de datos desea transmitir hacia Humand. "
+        "Esta modalidad opera bajo el verbo HTTP PATCH, lo que significa que la API de Humand únicamente actualiza los campos enviados en el payload y "
+        "deja intacto el 100% de los datos preexistentes (cargos, departamentos, contraseñas, antigüedad, organigrama, etc.)."
     )
-    add_bullet(doc, "Permite actualizar en Humand a un colaborador específico (por ejemplo, tras su contratación, cambio de sede o corrección de datos) mediante su cédula o código de empleado, sin tocar a los otros 160+ colaboradores de la empresa.", bold_prefix="Por Colaborador (Piloto o Individual): ")
-    add_bullet(doc, "Gracias a los endpoints REST especializados (como PATCH /users/{id} y PATCH /users/{id}/profile-fields), es posible sincronizar exclusivamente campos aislados (por ejemplo: actualizar solo la Ubicación geográfica o el Nivel Educativo recién culminado), dejando inalterados el cargo, el correo, el supervisor o el resto de los datos ya registrados.", bold_prefix="Por Atributo o Campo Específico: ")
-    add_bullet(doc, "Se puede disparar la sincronización independiente de Estructura Organizacional (Departamentos y Cargos) sin necesidad de tocar los perfiles de los empleados, o viceversa.", bold_prefix="Por Módulo o Catálogo: ")
+    add_bullet(doc, "Disponibles en el nuevo diálogo interactivo de la interfaz: (a) Solo Fecha de Nacimiento; (b) Datos Personales y Biográficos (Nacimiento, Teléfono); (c) Datos Laborales (Fecha de Ingreso, Correo, Supervisor BOSS); (d) Todos los Campos; o (e) Selección Personalizada libre.", bold_prefix="Presets Operativos de Selección Rápida: ")
+    add_bullet(doc, "Si el usuario selecciona solo 'Fecha de Nacimiento', el sistema envía únicamente { 'birthdate': 'AAAA-MM-DD' }. No se tocan correos, teléfonos, roles ni membresías organizacionales.", bold_prefix="Inocuidad y Protección de Datos: ")
+    add_bullet(doc, "Ahorra drásticamente el consumo de peticiones por minuto (Rate Limit) al evitar llamadas innecesarias a endpoints de departamentos y cargos.", bold_prefix="Alta Eficiencia en API: ")
 
-    add_heading_styled(doc, "1.2 Sincronización Total (Carga Inicial y Auditoría)", level=2)
+    add_heading_styled(doc, "1.2 Sincronización Parcial por Colaborador Individual", level=2)
     add_body_paragraph(
         doc,
-        "La sincronización total se reserva para dos momentos clave: (a) la carga inicial masiva de puesta en marcha, donde se aprovisionan todos los colaboradores a la vez; "
-        "y (b) procesos periódicos de conciliación o auditoría general (ej. cortes mensuales), donde se barre la totalidad de la nómina activa para garantizar consistencia referencial absoluta."
+        "Tanto en la tabla principal de colaboradores como en el modal de sincronización, es posible disparar la actualización individual para un solo empleado "
+        "(utilizando su cédula de identidad como identificador unívoco employeeInternalId). Esto resulta ideal para nuevos ingresos o correcciones puntuales, "
+        "evitando procesar a toda la nómina para un solo caso."
+    )
+
+    add_heading_styled(doc, "1.3 Sincronización en Cascada Completa (Estructural)", level=2)
+    add_body_paragraph(
+        doc,
+        "La Sincronización en Cascada (PUT /users + asignación de membresías) se reserva para momentos en los que se han creado nuevos departamentos o puestos en TH "
+        "que deben aprovisionarse primero en Humand, o durante auditorías generales mensuales de consistencia referencial."
     )
 
     # Tabla Comparativa Total vs Parcial
-    add_heading_styled(doc, "1.3 Matriz Comparativa de Métodos de Sincronización", level=2)
-    comp_table = doc.add_table(rows=5, cols=4)
+    add_heading_styled(doc, "1.4 Matriz Comparativa de Métodos de Sincronización", level=2)
+    comp_table = doc.add_table(rows=6, cols=4)
     comp_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    widths = [Inches(1.5), Inches(1.3), Inches(1.9), Inches(1.8)]
+    widths = [Inches(1.6), Inches(1.3), Inches(1.8), Inches(1.8)]
     
     headers = ["Modalidad", "Endpoint / Verbo", "Alcance de Datos", "Consumo de API / Cuota"]
     for i, h in enumerate(headers):
@@ -345,10 +356,11 @@ def generate_document():
     style_table_header(comp_table.rows[0], widths)
 
     rows_data = [
-        ("Sincronización Total (Upsert Masivo)", "PUT /users", "Sobreescribe el registro completo del usuario en Humand.", "Alto tráfico; ideal para carga masiva inicial o rectificación."),
-        ("Actualización Parcial Básica", "PATCH /users/{id}", "Modifica solo los campos incluidos en el payload (teléfono, relaciones, etc.).", "Óptimo; no afecta campos no enviados ni genera sobreescritura."),
+        ("Sincronización Selectiva por Campos (NUEVO)", "PATCH /users/{id}", "Modifica exclusivamente los campos elegidos por el usuario (ej. solo fecha de nacimiento).", "Mínimo; 1 sola llamada ligera por usuario sin tocar otros datos."),
         ("Actualización de Campos de Perfil", "PATCH /users/{id}/profile-fields", "Afecta únicamente los campos dinámicos (Estado Civil, Nivel Educativo).", "Ultra ligero; preserva exactamente el resto del perfil intacto."),
-        ("Asignación de Estructura", "PUT /departments/user\nPUT /job-positions/user", "Enlaza al empleado con su departamento o puesto correspondiente.", "Mínimo; asegura que los organigramas reflejen la verdad de TH.")
+        ("Asignación de Segmentaciones", "POST /segmentations/users", "Asigna grupos de Ubicación, Género o Sede geográfica.", "Específico; requiere que el grupo exista previamente en Humand."),
+        ("Asignación de Estructura Organizacional", "PUT /departments/members\nPUT /job-positions/members", "Enlaza al empleado con su departamento o puesto de trabajo correspondiente.", "Moderado; asegura que los organigramas reflejen la verdad de TH."),
+        ("Sincronización en Cascada Completa", "PUT /users + Membresías", "Reemplazo estructural del usuario y reasignación de dependencias.", "Alto tráfico; reservado para aprovisionamiento inicial o reestructuraciones.")
     ]
 
     for idx, r_data in enumerate(rows_data):
@@ -360,13 +372,14 @@ def generate_document():
     add_callout(
         doc,
         "Conclusión Operativa:",
-        "NO es obligatorio hacer sincronizaciones totales. El sistema está 100% habilitado para sincronizaciones parciales, delta y por atributo. "
-        "Esto evita el agotamiento de la tasa de peticiones (Rate Limit de 50 req/min) y minimiza cualquier riesgo de sobreescritura no deseada en Humand.",
+        "La Gerencia de Talento Humano NO está obligada a realizar sincronizaciones globales ni pesadas. "
+        "La nueva funcionalidad de Sincronización Selectiva por Campos permite enviar puntualmente la Fecha de Nacimiento (o cualquier combinación de campos) "
+        "con total tranquilidad, garantizando 100% de inocuidad sobre la estructura organizativa existente.",
         border_color_hex=COLOR_GREEN_HEX
     )
 
     # ---------------------------------------------------------
-    # SECCIÓN 2: CARACTERÍSTICAS DE LA INTEGRACIÓN
+    # SECCIÓN 2: CARACTERÍSTICAS Y PILARES DE LA INTEGRACIÓN
     # ---------------------------------------------------------
     add_heading_styled(doc, "2. Características de la Integración", level=1)
     add_body_paragraph(
@@ -374,10 +387,10 @@ def generate_document():
         "La integración entre Aplicación TH y Humand Public API v1 se fundamenta en los siguientes pilares de arquitectura de software y gestión empresarial:"
     )
 
-    add_bullet(doc, "La Aplicación TH (base PostgreSQL en InsForge) actúa como la única fuente autoritativa de datos. Humand es un sistema satélite de experiencia, comunicación y autoservicio. Ningún dato manual creado en Humand sobrescribe la base central de TH.", bold_prefix="1. Unidireccionalidad de Autoridad (SSOT): ")
+    add_bullet(doc, "La Aplicación TH (PostgreSQL en InsForge) actúa como la única fuente autoritativa de datos. Humand es un sistema satélite de experiencia, comunicación y autoservicio. Ningún dato manual creado en Humand sobrescribe la base central de TH.", bold_prefix="1. Unidireccionalidad de Autoridad (SSOT): ")
     add_bullet(doc, "La comunicación se realiza mediante HTTPS REST API contra https://api-prod.humand.co/public/api/v1 utilizando autenticación estricta en cabecera 'Authorization: Basic {HUMAND_API_KEY}'.", bold_prefix="2. Protocolo Seguro y Autenticación: ")
-    add_bullet(doc, "La cédula de identidad del colaborador (sanitizada sin prefijos V/E ni guiones, ej. '20802831') actúa como el employeeInternalId en Humand. Esta es la llave unívoca e inmutable que indexa todas las operaciones.", bold_prefix="3. Identificador Único Universal: ")
-    add_bullet(doc, "Humand organiza los perfiles mediante tres capas complementarias: (a) Atributos nativos del core (nombre, correo, teléfono, fecha de contratación); (b) Segmentaciones grupales jerárquicas (Ubicación, Contrato, Dirección, etc.); y (c) Profile Fields dinámicos asignados por UUIDs globales.", bold_prefix="4. Soporte Multidimensional de Datos: ")
+    add_bullet(doc, "La cédula de identidad del colaborador (sanitizada numéricamente sin letras V/E, puntos ni guiones, ej. '14714667') actúa como el employeeInternalId en Humand. Esta es la llave unívoca e inmutable que indexa todas las operaciones.", bold_prefix="3. Identificador Único Universal: ")
+    add_bullet(doc, "Humand organiza los perfiles mediante tres capas complementarias: (a) Atributos nativos del core (nombre, correo, teléfono, fecha de contratación, fecha de nacimiento); (b) Segmentaciones grupales jerárquicas (Ubicación, Género, Sede); y (c) Profile Fields dinámicos asignados por UUIDs globales.", bold_prefix="4. Soporte Multidimensional de Datos: ")
     add_bullet(doc, "Al sincronizar la línea de mando (di_supervisor y di_evaluador), Humand construye el organigrama empresarial de manera automática mediante la asignación de relaciones BOSS y REVIEWER, generando la subordinación bidireccional correspondiente.", bold_prefix="5. Organigrama Dinámico Automatizado: ")
 
     # ---------------------------------------------------------
@@ -402,9 +415,11 @@ def generate_document():
     add_callout(
         doc,
         "Auditoría Actual de la Nómina (Octubre 2026):",
-        "Total Empleados en TH: 176 colaboradores.\n"
-        "• Colaboradores habilitados para Humand (estatus_h = 1): 161 personas (100% coincidentes con Humand).\n"
-        "• Colaboradores exclusivos de TH (estatus_h = 0): 15 personas (completamente blindados, excluidos de Humand).",
+        "Total Colaboradores en Aplicación TH: 187 colaboradores activos.\n"
+        "• Cobertura de Fechas de Nacimiento en BD: 187 de 187 colaboradores (100.0% de cobertura confirmada).\n"
+        "• Colaboradores asignados y vinculados en Humand: 163 personas principales (100% coincidentes con Humand).\n"
+        "• Colaboradores en fase de homologación de correo corporativo: 13 colaboradores pendientes.\n"
+        "• Colaboradores exclusivos o confidenciales de TH: Protegidos bajo estatus_h = 0.",
         border_color_hex=COLOR_NAVY_HEX
     )
 
@@ -413,8 +428,8 @@ def generate_document():
         doc,
         "La creación de usuarios en Humand mediante el endpoint POST /users dispara automáticamente un correo electrónico de invitación al empleado si posee dirección de correo. "
         "Para evitar saturar a los colaboradores o enviar correos en fases de prueba, la integración utiliza PUT /users o PATCH /users/{id}. "
-        "Bajo estos métodos, los usuarios se aprovisionan en estado 'UNCLAIMED' (no reclamado) o 'ACTIVE' de forma silenciosa, permitiendo que la Gerencia de Talento Humano "
-        "decida el momento exacto para lanzar formalmente la invitación corporativa."
+        "Bajo estos métodos, los usuarios se aprovisionan o actualizan de forma completamente silenciosa, permitiendo que la Gerencia de Talento Humano "
+        "decida el momento exacto para lanzar formalmente la invitación corporativa o capacitaciones."
     )
 
     add_heading_styled(doc, "3.3 Protección Incondicional de Cuentas Técnicas", level=2)
@@ -432,30 +447,31 @@ def generate_document():
         doc,
         "Humand impone un límite de seguridad de 50 peticiones por minuto (RateLimit-Policy: 50;w=60). Si este límite se sobrepasa, la API responde con HTTP 429 Too Many Requests. "
         "El motor de sincronización de la Aplicación TH incorpora automáticamente lógica de reintentos con Backoff Exponencial y lectura de la cabecera 'Retry-After', "
-        "garantizando que ninguna transacción se pierda y que el proceso se reanude sin fallos humanos."
+        "además de una pausa programada de 200 ms entre colaboradores, garantizando que ninguna transacción se pierda y que el proceso se ejecute con total fluidez."
     )
 
     # ---------------------------------------------------------
-    # SECCIÓN 4: MAPEO DE CAMPOS EXTENDIDOS
+    # SECCIÓN 4: MAPEO DE CAMPOS NATIVOS Y EXTENDIDOS
     # ---------------------------------------------------------
-    add_heading_styled(doc, "4. Catálogo y Mapeo de Nuevos Campos Extendidos", level=1)
+    add_heading_styled(doc, "4. Catálogo y Mapeo de Campos Nativos y Extendidos", level=1)
     add_body_paragraph(
         doc,
-        "Para dar cumplimiento integral a los requerimientos de la Gerencia, se implementaron en la base de datos de TH y se sincronizaron con Humand "
-        "los campos Ubicación, Estado Civil y Nivel Educativo, mapeados según los estándares exactos de la API:"
+        "Para dar cumplimiento integral a los requerimientos de la Gerencia, se implementaron en la base de datos de TH y se sincronizan con Humand "
+        "los siguientes atributos corporativos, mapeados según los estándares exactos de la API:"
     )
 
-    fields_table = doc.add_table(rows=4, cols=4)
+    fields_table = doc.add_table(rows=5, cols=4)
     fields_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    f_widths = [Inches(1.4), Inches(1.5), Inches(1.8), Inches(1.8)]
+    f_widths = [Inches(1.5), Inches(1.5), Inches(1.8), Inches(1.7)]
     
-    f_headers = ["Campo en TH", "Destino en Humand", "Identificador Técnico Humand", "Valores Homologados"]
+    f_headers = ["Campo en TH", "Destino en Humand", "Identificador Técnico Humand", "Valores / Formato Homologado"]
     for i, h in enumerate(f_headers):
         fields_table.rows[0].cells[i].paragraphs[0].text = h
     style_table_header(fields_table.rows[0], f_widths)
 
     fields_data = [
-        ("Ubicación\n(ubicacion)", "Segmentación Grupal\n('Ubicación')", "Group ID: 451900\n(Segmentations)", "Caracas, Yagua, Barquisimeto, Maracaibo, Valencia, Puerto Ordaz, San Cristóbal"),
+        ("Fecha de Nacimiento\n(fecha_nacimiento)\n[NUEVO]", "Atributo Nativo Core\n('birthdate')", "Parámetro direct: birthdate\n(PATCH /users/{id})", "Formato ISO 'AAAA-MM-DD'\n(ej. '1995-04-19'). 100% poblado en BD."),
+        ("Ubicación\n(ubicacion)", "Segmentación Grupal\n('Ubicación')", "Group ID: 451900\n(POST /segmentations/users)", "Caracas, Yagua, Barquisimeto, Maracaibo, Valencia, Puerto Ordaz, San Cristóbal"),
         ("Estado Civil\n(edo_civil)", "Profile Field\n(Confidencial)", "UUID:\n52005932-0bdb-438d-834c-82d8e3330e26", "Soltero, Casado, Divorciado, Viudo, Concubinato"),
         ("Nivel Educativo\n(nivel_educativo)", "Profile Field\n(Visible/Público)", "UUID:\na0b1e6b5-4bc7-444b-a27c-2844dd5a9532", "Bachiller, Técnico Medio, Técnico Superior, Universitario, Posgrado")
     ]
@@ -468,9 +484,10 @@ def generate_document():
 
     add_body_paragraph(
         doc,
-        "Nota Técnica de Homologación: En la Aplicación TH, los selectores de la interfaz gráfica y los esquemas de validación de base de datos "
-        "fueron restringidos para que coincidan al 100% con los valores esperados por Humand. De este modo, se elimina por diseño cualquier posibilidad "
-        "de error por inconsistencia tipográfica o valores inválidos."
+        "Nota Técnica de Homologación y Exportación: En la Aplicación TH, los selectores de la interfaz gráfica y los esquemas de base de datos "
+        "fueron restringidos para coincidir al 100% con los estándares de Humand. Adicionalmente, el maestro de empleados ahora incluye la "
+        "Fecha de Nacimiento y la Fecha de Ingreso en columnas dedicadas independientes, y segrega el Estado Civil y Nivel Educativo en campos separados "
+        "en la exportación CSV para facilitar reportes gerenciales y de nómina."
     )
 
     # ---------------------------------------------------------
@@ -482,8 +499,8 @@ def generate_document():
         "La integración acompaña todas las etapas de la relación laboral del colaborador, actuando según el evento que ocurra en la Aplicación TH:"
     )
 
-    add_bullet(doc, "Al registrar un nuevo empleado en TH con estatus_h = 1, el motor lo inserta en Humand vía PUT /users sin disparar correos automáticos. Inmediatamente se le asocia su Ubicación geográfica, su Estado Civil, Nivel Educativo, su Departamento y Puesto de Trabajo.", bold_prefix="A. Alta o Contratación: ")
-    add_bullet(doc, "Cuando se edita un campo (ej. ascenso de cargo, cambio de gerencia o nueva sede), el sistema ejecuta una llamada PATCH puntual. Solo viaja el dato modificado, manteniendo intacto el expediente histórico.", bold_prefix="B. Modificación o Movimiento Interno: ")
+    add_bullet(doc, "Al registrar un nuevo empleado en TH con estatus_h = 1, el motor lo inserta en Humand vía PUT /users sin disparar correos automáticos. Inmediatamente se le asocia su Ubicación geográfica, su Estado Civil, Nivel Educativo, Fecha de Nacimiento, Departamento y Puesto de Trabajo.", bold_prefix="A. Alta o Contratación: ")
+    add_bullet(doc, "Cuando se edita un campo puntual (por ejemplo: carga de fecha de nacimiento, nuevo teléfono o cambio de correo), el sistema ejecuta una llamada PATCH selectiva. Solo viaja el dato modificado, manteniendo intacto el expediente histórico.", bold_prefix="B. Modificación o Movimiento Interno: ")
     add_bullet(doc, "Si un colaborador finaliza su relación laboral y se marca INACTIVO en TH, la integración ejecuta el endpoint POST /users/{id}/deactivate especificando el motivo (Renuncia, Fin de Contrato, Jubilación). Fundamentalmente, permite transferir la jefatura de los subordinados a un nuevo líder mediante el parámetro newBossId, evitando que los equipos queden sin supervisor en el organigrama.", bold_prefix="C. Baja o Desvinculación Formal (Offboarding): ")
 
     # ---------------------------------------------------------
@@ -492,13 +509,13 @@ def generate_document():
     add_heading_styled(doc, "6. Conclusiones y Próximos Pasos Estratégicos", level=1)
     add_body_paragraph(
         doc,
-        "1. Flexibilidad Operativa Garantizada: La Dirección de Talento Humano no está atada a procesos lentos ni pesados de actualización masiva. "
-        "Puede operar en tiempo real mediante sincronizaciones parciales o programar sincronizaciones totales automatizadas según lo estime conveniente."
+        "1. Flexibilidad y Autonomía Absoluta: La Dirección de Talento Humano cuenta ahora con una herramienta de Sincronización Selectiva por Campos "
+        "que le permite actualizar en Humand exactamente lo que necesita, cuando lo necesita, sin depender de procesos masivos pesados ni alterar la estructura organizativa."
     )
     add_body_paragraph(
         doc,
-        "2. Autonomía y Seguridad en estatus_h: Se ha cerrado con total éxito el blindaje de la nómina. La empresa tiene el control absoluto para decidir "
-        "quién sube a Humand y quién permanece confidencialmente en la Aplicación TH, sin interferencias de usuarios externos."
+        "2. Cobertura Total de Fechas de Nacimiento: Se ha cerrado la brecha de información biográfica en la nómina. Con el 100% de las fechas cargadas en TH "
+        "y el endpoint PATCH configurado, el ecosistema está listo para celebrar cumpleaños corporativos y activar dinámicas de fidelización en Humand."
     )
     add_body_paragraph(
         doc,
