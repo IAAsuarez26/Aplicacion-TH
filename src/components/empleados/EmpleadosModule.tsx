@@ -59,6 +59,7 @@ import { EstadoLaboralBadge } from '../common/Badge';
 import { useToast } from '../common/Toast';
 import { HumandSyncModal } from '../humand/HumandSyncModal';
 import { useAuth } from '../../context/AuthContext';
+import { SupervisorSearchSelect } from './SupervisorSearchSelect';
 
 
 export interface EmpleadoConEmpresa extends Empleado {
@@ -235,15 +236,15 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     }
     const nextNum = (maxEmpNum > 0 ? maxEmpNum + 1 : empleados.length + 1).toString().padStart(4, '0');
     setCodigoEmpleado(`EMP-${nextNum}`);
-    setDocumentoIdentidad(`V${Math.floor(10000000 + Math.random() * 90000000)}`);
+    setDocumentoIdentidad('');
     setNombres('');
     setApellidos('');
     setGenero('');
     setSede('');
     setEmail('');
     setEmailCorporativo('');
-    setTelefono('+58414' + Math.floor(1000000 + Math.random() * 9000000));
-    setCodigoCargo(cargos[0]?.codigo || '');
+    setTelefono('');
+    setCodigoCargo('');
     const initialEmpId = (filtroEmpresa !== 'ALL' && filtroEmpresa !== 'SIN_EMPRESA')
       ? filtroEmpresa
       : (empresas[0]?.empresa_id ? String(empresas[0].empresa_id) : '');
@@ -257,7 +258,7 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
     setFechaIngreso(new Date().toISOString().slice(0, 10));
     setFechaNacimiento('');
     setEstadoLaboral('ACTIVO');
-    setUbicacion('Caracas');
+    setUbicacion('');
     setEdoCivil('');
     setNivelEducativo('');
     setEstatusH(1);
@@ -1719,8 +1720,8 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
                 type="text"
                 value={documentoIdentidad}
                 onChange={(e) => setDocumentoIdentidad(e.target.value)}
-                placeholder="V12345678"
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+                placeholder="Ej. V-12345678"
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -1772,19 +1773,26 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-rose-400" />
                 Sede / Localidad
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={sede}
-                  onChange={(e) => setSede(e.target.value)}
-                  placeholder="Ej. Planta Los Teques, Torre Este..."
-                  className="w-full px-3.5 py-2 pl-9 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-                />
-                <MapPin className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
-              </div>
+              <select
+                value={sede}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSede(val);
+                  if (val) setUbicacion(val);
+                }}
+                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
+              >
+                <option value="">-- Seleccionar Sede --</option>
+                <option value="Caracas">Caracas</option>
+                <option value="Yagua">Yagua</option>
+                {sede && sede !== 'Caracas' && sede !== 'Yagua' && (
+                  <option value={sede}>{sede}</option>
+                )}
+              </select>
             </div>
           </div>
 
@@ -2203,47 +2211,35 @@ export const EmpleadosModule: React.FC<EmpleadosModuleProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Supervisor Directo (Cédula / DI)
-              </label>
-              <select
-                value={diSupervisor}
-                onChange={(e) => setDiSupervisor(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-              >
-                <option value="">-- Sin Supervisor (Máxima Autoridad) --</option>
-                {[...empleados]
-                  .filter((e) => (modalMode === 'edit' ? e.documento_identidad !== selectedEmpleado?.documento_identidad : true))
-                  .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
-                  .map((e) => (
-                    <option key={e.empleado_id} value={e.documento_identidad || ''}>
-                      {e.documento_identidad} - {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
-                    </option>
-                  ))}
-              </select>
-            </div>
+            <SupervisorSearchSelect
+              label="Supervisor Directo (Cédula / DI)"
+              value={diSupervisor}
+              onChange={setDiSupervisor}
+              empleados={empleadosConEmpresa}
+              cargos={cargos}
+              departamentos={departamentos}
+              empresas={empresas}
+              formEmpresaId={formEmpresaId}
+              codigoDepartamento={codigoDepartamento}
+              codigoCargo={codigoCargo}
+              excludeDocumento={modalMode === 'edit' ? selectedEmpleado?.documento_identidad : null}
+              emptyLabel="-- Sin Supervisor (Máxima Autoridad) --"
+            />
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Evaluador de Desempeño (Cédula / DI)
-              </label>
-              <select
-                value={diEvaluador}
-                onChange={(e) => setDiEvaluador(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-brand-500"
-              >
-                <option value="">-- Por defecto (Mismo Supervisor) --</option>
-                {[...empleados]
-                  .filter((e) => (modalMode === 'edit' ? e.documento_identidad !== selectedEmpleado?.documento_identidad : true))
-                  .sort((a, b) => `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, 'es', { sensitivity: 'base' }))
-                  .map((e) => (
-                    <option key={e.empleado_id} value={e.documento_identidad || ''}>
-                      {e.documento_identidad} - {e.nombres} {e.apellidos} ({getCargoName(e.codigo_cargo)})
-                    </option>
-                  ))}
-              </select>
-            </div>
+            <SupervisorSearchSelect
+              label="Evaluador de Desempeño (Cédula / DI)"
+              value={diEvaluador}
+              onChange={setDiEvaluador}
+              empleados={empleadosConEmpresa}
+              cargos={cargos}
+              departamentos={departamentos}
+              empresas={empresas}
+              formEmpresaId={formEmpresaId}
+              codigoDepartamento={codigoDepartamento}
+              codigoCargo={codigoCargo}
+              excludeDocumento={modalMode === 'edit' ? selectedEmpleado?.documento_identidad : null}
+              emptyLabel="-- Por defecto (Mismo Supervisor) --"
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4">

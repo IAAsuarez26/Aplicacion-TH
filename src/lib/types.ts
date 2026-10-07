@@ -206,6 +206,15 @@ export interface Empleado {
   nombre_completo?: string;
 }
 
+export interface EmpleadoConEmpresa extends Empleado {
+  empresa_id?: number;
+  empresa_nombre?: string;
+  empresa_corto?: string;
+  empresa_codigo?: string;
+  nacionalidad?: string;
+  dni_numero?: string;
+}
+
 export interface HistorialCargoDepartamento {
   historial_id: number;
   empleado_id: number;
