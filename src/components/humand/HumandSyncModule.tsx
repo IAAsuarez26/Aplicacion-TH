@@ -25,11 +25,13 @@ import {
   History,
   Calendar,
   ChevronRight,
-  SlidersHorizontal
+  SlidersHorizontal,
+  User
 } from 'lucide-react';
 import { departamentosApi, cargosApi, empleadosApi } from '../../lib/insforge';
 import type { Departamento, Cargo, Empleado } from '../../lib/types';
 import { useToast } from '../common/Toast';
+import { useAuth } from '../../context/AuthContext';
 import { DataTable, Column } from '../common/DataTable';
 import { HumandSyncModal } from './HumandSyncModal';
 
@@ -69,9 +71,20 @@ export interface SyncAuditLog {
   desc: string;
   badge: string;
   color: string;
+  user?: string;
 }
 
 const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
+  {
+    id: 'log-0',
+    date: '06/10/2026',
+    time: '12:03 UTC',
+    title: 'Sincronización Selectiva Masiva',
+    desc: 'Actualizados formalmente en Humand 167 colaboradores con los campos: Fecha de Nacimiento.',
+    badge: '167 Exitosos',
+    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    user: 'Ing. Alejandro Suárez'
+  },
   {
     id: 'log-1',
     date: '28/09/2026',
@@ -79,7 +92,8 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     title: 'Depuración de Cuentas Ajenas',
     desc: 'Se ejecutó DELETE /users/{id} sobre las 9 cuentas no pertenecientes a la nómina de TH. Todas eliminadas exitosamente con HTTP 204. Las cuentas técnicas quedaron protegidas.',
     badge: 'HTTP 204',
-    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    user: 'Ing. Alejandro Suárez'
   },
   {
     id: 'log-2',
@@ -88,7 +102,8 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     title: 'Asignación Masiva de Departamentos y Puestos',
     desc: 'Se ejecutó asignación organizacional sobre los 163 colaboradores de nómina vía PUT /departments/members y PUT /job-positions/members. 163 de 163 asignados exitosamente (100%). Cero errores.',
     badge: '163 Exitosos',
-    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    user: 'Ing. Alejandro Suárez'
   },
   {
     id: 'log-3',
@@ -97,7 +112,8 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     title: 'Aprovisionamiento de Catálogos Maestros',
     desc: 'Se cargaron 43 Departamentos nuevos (POST /departments/bulk) y 97 Puestos de Trabajo (POST /job-positions/bulk). Todos creados con HTTP 201 Created.',
     badge: 'HTTP 201',
-    color: 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+    color: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+    user: 'Ing. Alejandro Suárez'
   },
   {
     id: 'log-4',
@@ -106,12 +122,14 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     title: 'Certificación de Conectividad y Handshake',
     desc: 'Autenticación validada con Authorization: Basic contra el usuario integracionespb. Inspección de cuotas confirmada: 100 peticiones por minuto.',
     badge: 'HTTP 200',
-    color: 'text-purple-400 bg-purple-500/10 border-purple-500/30'
+    color: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+    user: 'Ing. Alejandro Suárez'
   },
 ];
 
 export const HumandSyncModule: React.FC = () => {
   const toast = useToast();
+  const { user: currentUser } = useAuth();
   const detailsSectionRef = useRef<HTMLDivElement>(null);
   const [activeSubTab, setActiveSubTab] = useState<SyncTab>('resumen');
   const [loading, setLoading] = useState<boolean>(true);
@@ -122,7 +140,12 @@ export const HumandSyncModule: React.FC = () => {
       const saved = localStorage.getItem('humand_sync_audit_logs');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((item: any) => ({
+            ...item,
+            user: item.user || 'Ing. Alejandro Suárez',
+          }));
+        }
       }
     } catch {
       // fallback
@@ -130,7 +153,13 @@ export const HumandSyncModule: React.FC = () => {
     return DEFAULT_AUDIT_LOGS;
   });
 
-  const handleSyncComplete = (info?: { title?: string; desc?: string; badge?: string; color?: string }) => {
+  const handleSyncComplete = (info?: {
+    title?: string;
+    desc?: string;
+    badge?: string;
+    color?: string;
+    user?: string;
+  }) => {
     fetchData();
     const now = new Date();
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
@@ -145,7 +174,8 @@ export const HumandSyncModule: React.FC = () => {
       title: info?.title || (selectedEmpForSync ? `Sincronización Individual: ${selectedEmpForSync.nombres} ${selectedEmpForSync.apellidos}` : 'Sincronización en Cascada Ejecutada'),
       desc: info?.desc || (selectedEmpForSync ? `Actualización de estructura y expediente de ${selectedEmpForSync.nombres} ${selectedEmpForSync.apellidos} sincronizado a Humand.` : 'Sincronización ejecutada exitosamente desde la consola de control.'),
       badge: info?.badge || 'Completado',
-      color: info?.color || 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+      color: info?.color || 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      user: info?.user || currentUser?.name || currentUser?.email || 'Ing. Alejandro Suárez'
     };
 
     setAuditLogs(prev => {
@@ -1050,6 +1080,11 @@ export const HumandSyncModule: React.FC = () => {
                     <span className="text-slate-600 font-sans">•</span>
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span className="text-slate-400">{log.time}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                    <User className="w-3.5 h-3.5 text-indigo-400" />
+                    <span className="text-indigo-400/80 font-normal">Por:</span>
+                    <span className="font-semibold text-indigo-200">{log.user || 'Ing. Alejandro Suárez'}</span>
                   </span>
                   <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${log.color}`}>
                     {log.badge}

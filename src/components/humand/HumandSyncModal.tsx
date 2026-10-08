@@ -37,6 +37,7 @@ import {
   SELECTIVE_FIELDS
 } from '../../lib/humandSyncService';
 import { useToast } from '../common/Toast';
+import { useAuth } from '../../context/AuthContext';
 
 export interface HumandSyncModalProps {
   isOpen: boolean;
@@ -46,7 +47,13 @@ export interface HumandSyncModalProps {
   departamentos: Departamento[];
   cargos: Cargo[];
   initialMode?: 'selective' | 'cascade';
-  onSyncComplete?: (info?: { title?: string; desc?: string; badge?: string; color?: string }) => void;
+  onSyncComplete?: (info?: {
+    title?: string;
+    desc?: string;
+    badge?: string;
+    color?: string;
+    user?: string;
+  }) => void;
 }
 
 export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
@@ -60,6 +67,8 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
   onSyncComplete,
 }) => {
   const toast = useToast();
+  const { user: currentUser } = useAuth();
+  const currentUserName = currentUser?.name || currentUser?.email || 'Ing. Alejandro Suárez';
   const [syncMode, setSyncMode] = useState<'selective' | 'cascade'>(initialMode);
   const [selectedFields, setSelectedFields] = useState<SelectiveSyncField[]>(['birthdate']);
   const [isRunning, setIsRunning] = useState(false);
@@ -184,6 +193,7 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
                   desc: `Actualizados vía PATCH en Humand los campos: ${fieldLabels.join(', ')}.`,
                   badge: `${selectedFields.length} Campos OK`,
                   color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                  user: currentUserName,
                 });
               }
             } else {
@@ -245,6 +255,7 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
                 result.fallidos === 0
                   ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                   : 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+              user: currentUserName,
             });
           }
         }
@@ -306,6 +317,7 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
                 desc: `Colaborador sincronizado en Humand vía ${methodTag} (Departamento: ${empleado.codigo_departamento || '-'}, Cargo: ${empleado.codigo_cargo || '-'}).`,
                 badge: `${methodTag} OK`,
                 color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                user: currentUserName,
               });
             }
           } else {
@@ -369,6 +381,7 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
                 result.fallidos === 0
                   ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                   : 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+              user: currentUserName,
             });
           }
         }
