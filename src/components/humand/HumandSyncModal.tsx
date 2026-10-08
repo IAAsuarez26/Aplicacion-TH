@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Share2,
   RefreshCw,
@@ -28,6 +28,7 @@ import {
 import type { Empleado, Departamento, Cargo } from '../../lib/types';
 import { departamentosApi, cargosApi, empleadosApi } from '../../lib/insforge';
 import {
+  humandApi,
   humandSyncEngine,
   SyncReport,
   SyncStepLog,
@@ -72,6 +73,24 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
     fallidos: number;
   } | null>(null);
   const [liveLogs, setLiveLogs] = useState<SyncStepLog[]>([]);
+  const [humandStatus, setHumandStatus] = useState<'checking' | 'exists' | 'new' | null>(null);
+
+  useEffect(() => {
+    if (isOpen && empleado) {
+      const ci = cleanCedula(empleado.documento_identidad);
+      if (ci) {
+        setHumandStatus('checking');
+        humandApi
+          .checkUserExists(ci)
+          .then((exists) => setHumandStatus(exists ? 'exists' : 'new'))
+          .catch(() => setHumandStatus(null));
+      } else {
+        setHumandStatus(null);
+      }
+    } else {
+      setHumandStatus(null);
+    }
+  }, [isOpen, empleado]);
 
   if (!isOpen) return null;
 
@@ -279,12 +298,13 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
               }
             }
 
-            toast.success(`¡${empleado.nombres} sincronizado en cascada con Humand!`);
+            const methodTag = rep.metodoUsuario || 'OK';
+            toast.success(`¡${empleado.nombres} sincronizado en Humand (${methodTag})!`);
             if (onSyncComplete) {
               onSyncComplete({
-                title: `Sincronización Individual: ${empleado.nombres} ${empleado.apellidos}`,
-                desc: `Colaborador sincronizado en cascada a Humand (Departamento: ${empleado.codigo_departamento || '-'}, Cargo: ${empleado.codigo_cargo || '-'}).`,
-                badge: 'Individual OK',
+                title: `Sincronización Smart: ${empleado.nombres} ${empleado.apellidos}`,
+                desc: `Colaborador sincronizado en Humand vía ${methodTag} (Departamento: ${empleado.codigo_departamento || '-'}, Cargo: ${empleado.codigo_cargo || '-'}).`,
+                badge: `${methodTag} OK`,
                 color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
               });
             }
@@ -447,7 +467,7 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              Sincronización Selectiva por Campos
+              Sincronización Selectiva (PATCH)
             </button>
             <button
               type="button"
@@ -460,7 +480,7 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              Sincronización en Cascada (Completa)
+              Sincronización Estructural Smart (POST / PATCH)
             </button>
           </div>
         </div>
@@ -480,9 +500,27 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
                     {empleado.codigo_empleado}
                   </div>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                  {empleado.email_corporativo || empleado.email || 'Sin correo'}
-                </span>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {humandStatus === 'checking' && (
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 animate-pulse flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Verificando en Humand...
+                    </span>
+                  )}
+                  {humandStatus === 'exists' && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1" title="El usuario ya existe en Humand. Se usará PATCH para proteger todos sus datos preexistentes.">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Registrado en Humand (PATCH Seguro)
+                    </span>
+                  )}
+                  {humandStatus === 'new' && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 flex items-center gap-1" title="El usuario no existe aún en Humand. Se creará limpiamente mediante POST.">
+                      <Sparkles className="w-3 h-3 text-blue-400" /> Nuevo en Humand (Alta vía POST)
+                    </span>
+                  )}
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    {empleado.email_corporativo || empleado.email || 'Sin correo'}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -637,15 +675,13 @@ export const HumandSyncModal: React.FC<HumandSyncModalProps> = ({
             </div>
           )}
 
-          {/* MODO CASCADA: EXPLICACIÓN TRADICIONAL */}
+          {/* MODO CASCADA: EXPLICACIÓN SMART SYNC */}
           {syncMode === 'cascade' && (
-            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-start gap-2.5">
-              <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
+            <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300 flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-indigo-400" />
               <div>
-                <strong className="block text-blue-200">Resolución Estructural en Cascada</strong>
-                El motor valida y crea departamentos y puestos ausentes en Humand antes de realizar el
-                reemplazo estructural del usuario (`PUT /users`) y la asignación de membresías
-                organizacionales.
+                <strong className="block text-indigo-200">Sincronización Estructural Smart (Alineada con Humand)</strong>
+                El motor asegura departamentos y cargos en Humand y realiza una comprobación previa: si el colaborador ya existe en Humand, aplica automáticamente <strong>PATCH</strong> para proteger sus datos y no sobreescribir información; si es un nuevo ingreso, aplica <strong>POST</strong> para darlo de alta formalmente.
               </div>
             </div>
           )}

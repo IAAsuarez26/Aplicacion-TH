@@ -117,6 +117,7 @@ export interface SyncReport {
     creado: boolean;
   };
   usuarioAprovisionado: boolean;
+  metodoUsuario?: 'POST' | 'PATCH' | 'PUT';
   departamentoAsignado: boolean;
   cargoAsignado: boolean;
   camposExtendidosAsignados: boolean;
@@ -301,12 +302,35 @@ export const humandApi = {
     return humandFetch(`/users/${employeeInternalId}`);
   },
 
-  // Aprovisionar o actualizar usuario silenciosamente (PUT /users)
-  async upsertUser(payload: any): Promise<HumandApiResponse> {
+  // Comprobar si el usuario ya existe en Humand (retorna true si responde 200 y posee datos)
+  async checkUserExists(employeeInternalId: string): Promise<boolean> {
+    try {
+      const res = await humandFetch(`/users/${employeeInternalId}`);
+      return res.ok && res.status === 200 && Boolean(res.data);
+    } catch {
+      return false;
+    }
+  },
+
+  // Crear usuario nuevo en Humand (POST /users) — Método estándar oficial para altas
+  async createUser(payload: any): Promise<HumandApiResponse> {
+    return humandFetch('/users', {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  // Reemplazo total de usuario (PUT /users) — DESTRUCTIVO: Sobrescribe entidad completa
+  async replaceUser(payload: any): Promise<HumandApiResponse> {
     return humandFetch('/users', {
       method: 'PUT',
       body: payload,
     });
+  },
+
+  // Aprovisionar o actualizar usuario (alias de replaceUser para retrocompatibilidad)
+  async upsertUser(payload: any): Promise<HumandApiResponse> {
+    return this.replaceUser(payload);
   },
 
   // Asignar departamento a un colaborador
@@ -378,7 +402,8 @@ export const humandSyncEngine = {
     emp: Empleado,
     allDeps: Departamento[],
     allCargos: Cargo[],
-    allEmps: Empleado[] = []
+    allEmps: Empleado[] = [],
+    options: { forceFullReplace?: boolean } = {}
   ): Promise<SyncReport> {
     const cedula = cleanCedula(emp.documento_identidad);
     const nombreCompleto = `${emp.nombres} ${emp.apellidos}`.trim();
@@ -493,40 +518,100 @@ export const humandSyncEngine = {
       }
 
       // ----------------------------------------------------------------------
-      // PASO 3: Aprovisionar Usuario en Humand (PUT /users)
+      // PASO 3: Detección Pre-Vuelo y Sincronización Segura (POST vs PATCH)
+      // Conforme a la directriz oficial del equipo técnico de Humand:
+      // - POST para crear nuevo usuario si no existe
+      // - PATCH para actualizar usuario existente (preservando fotos, contraseñas y datos previos)
+      // - PUT únicamente si se solicita forzadamente reemplazo completo
       // ----------------------------------------------------------------------
       const supCedula = cleanCedula(emp.di_supervisor);
       const supTH = allEmps.find((e) => cleanCedula(e.documento_identidad) === supCedula);
       const supervisorName = supTH ? `${supTH.nombres} ${supTH.apellidos}` : supCedula;
 
-      const userPayload: any = {
-        employeeInternalId: cedula,
-        firstName: emp.nombres.trim(),
-        lastName: emp.apellidos.trim(),
-        email: (emp.email_corporativo || emp.email || '').trim().toLowerCase(),
-        phoneNumber: emp.telefono?.trim() || null,
-        hiringDate: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : null,
-        birthdate: emp.fecha_nacimiento ? emp.fecha_nacimiento.split('T')[0] : null,
-        password: 'PasswordTemp2026!',
-        relationships: supCedula ? [{ name: 'BOSS', employeeInternalId: supCedula }] : [],
-        // NOTA: segmentation omitida intencionalmente del aprovisionamiento inicial.
-        // Los grupos de segmentación (Ubicación, Sede, Género) deben existir en Humand
-        // antes de poder asignarlos. Si se incluyen sin existir, la API retorna 400.
-      };
+      if (options.forceFullReplace) {
+        // Opción excepcional de Sobrescritura Total con PUT /users
+        report.metodoUsuario = 'PUT';
+        addLog(
+          'Aprovisionamiento Forzado',
+          `[ATENCIÓN] Reemplazo estructural forzado (PUT /users) solicitado para ${cedula}...`,
+          'warning'
+        );
+        const userPayload: any = {
+          employeeInternalId: cedula,
+          firstName: emp.nombres.trim(),
+          lastName: emp.apellidos.trim(),
+          email: (emp.email_corporativo || emp.email || '').trim().toLowerCase(),
+          phoneNumber: emp.telefono?.trim() || null,
+          hiringDate: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : null,
+          birthdate: emp.fecha_nacimiento ? emp.fecha_nacimiento.split('T')[0] : null,
+          password: 'PasswordTemp2026!',
+          relationships: supCedula ? [{ name: 'BOSS', employeeInternalId: supCedula }] : [],
+        };
+        const resUpsert = await humandApi.replaceUser(userPayload);
+        if (!resUpsert.ok) {
+          throw new Error(`Error en reemplazo forzado (PUT): ${resUpsert.error}`);
+        }
+        report.usuarioAprovisionado = true;
+        addLog('Aprovisionamiento Forzado', `Usuario ${cedula} reemplazado en Humand vía PUT.`, 'success');
+      } else {
+        // Smart Sync Canónico: Pre-flight check
+        addLog('Verificación Pre-Vuelo', `Consultando si el colaborador ${cedula} ya existe en Humand...`, 'info');
+        const userExists = await humandApi.checkUserExists(cedula);
 
-      addLog(
-        'Aprovisionamiento',
-        `Aprovisionando usuario en Humand con supervisor ${supCedula ? `${supervisorName} (${supCedula})` : 'ninguno'}...`,
-        'info'
-      );
+        if (!userExists) {
+          // POST /users para usuario nuevo
+          report.metodoUsuario = 'POST';
+          addLog(
+            'Creación Nuevo Colaborador',
+            `Colaborador ${cedula} no existe en Humand. Creando registro mediante POST /users...`,
+            'info'
+          );
+          const createPayload: any = {
+            employeeInternalId: cedula,
+            firstName: emp.nombres.trim(),
+            lastName: emp.apellidos.trim(),
+            email: (emp.email_corporativo || emp.email || '').trim().toLowerCase(),
+            phoneNumber: emp.telefono?.trim() || null,
+            hiringDate: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : null,
+            birthdate: emp.fecha_nacimiento ? emp.fecha_nacimiento.split('T')[0] : null,
+            password: 'PasswordTemp2026!',
+            relationships: supCedula ? [{ name: 'BOSS', employeeInternalId: supCedula }] : [],
+          };
+          const resCreate = await humandApi.createUser(createPayload);
+          if (!resCreate.ok) {
+            throw new Error(`Error al crear usuario en Humand vía POST: ${resCreate.error}`);
+          }
+          report.usuarioAprovisionado = true;
+          addLog('Creación Nuevo Colaborador', `Colaborador creado exitosamente en Humand vía POST /users.`, 'success');
+        } else {
+          // PATCH /users/{cedula} para usuario existente (INOCUO: no borra fotos, teléfonos ni otros datos)
+          report.metodoUsuario = 'PATCH';
+          addLog(
+            'Actualización Segura',
+            `Colaborador ${cedula} ya existe en Humand. Actualizando vía PATCH /users/${cedula} (preservando datos previos)...`,
+            'info'
+          );
+          const patchPayload: Record<string, any> = {
+            firstName: emp.nombres.trim(),
+            lastName: emp.apellidos.trim(),
+          };
+          const email = (emp.email_corporativo || emp.email || '').trim().toLowerCase();
+          if (email) patchPayload.email = email;
+          if (emp.telefono?.trim()) patchPayload.phoneNumber = emp.telefono.trim();
+          if (emp.fecha_ingreso) patchPayload.hiringDate = emp.fecha_ingreso.split('T')[0];
+          if (emp.fecha_nacimiento) patchPayload.birthdate = emp.fecha_nacimiento.split('T')[0];
+          if (supCedula) {
+            patchPayload.relationships = [{ name: 'BOSS', employeeInternalId: supCedula }];
+          }
 
-      const resUpsert = await humandApi.upsertUser(userPayload);
-      if (!resUpsert.ok) {
-        throw new Error(`Error al aprovisionar usuario en Humand: ${resUpsert.error}`);
+          const resPatch = await humandApi.patchUser(cedula, patchPayload);
+          if (!resPatch.ok) {
+            throw new Error(`Error al actualizar usuario en Humand vía PATCH: ${resPatch.error}`);
+          }
+          report.usuarioAprovisionado = true;
+          addLog('Actualización Segura', `Colaborador actualizado exitosamente vía PATCH sin alterar campos omitidos.`, 'success');
+        }
       }
-
-      report.usuarioAprovisionado = true;
-      addLog('Aprovisionamiento', `Usuario ${cedula} aprovisionado exitosamente en Humand.`, 'success');
 
       // ----------------------------------------------------------------------
       // PASO 4: Asignar Membresías (Departamento y Cargo)
@@ -739,6 +824,7 @@ export const humandSyncEngine = {
       departamento: { nombre: emp.codigo_departamento, creado: false },
       cargo: { nombre: emp.codigo_cargo, creado: false },
       usuarioAprovisionado: false,
+      metodoUsuario: 'PATCH',
       departamentoAsignado: false,
       cargoAsignado: false,
       camposExtendidosAsignados: false,
