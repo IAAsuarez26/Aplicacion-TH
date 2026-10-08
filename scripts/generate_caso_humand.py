@@ -527,7 +527,7 @@ def generate_document():
     p_s0 = c0.paragraphs[0]
     p_s0.paragraph_format.line_spacing = 1.15
     p_s0.add_run("_________________________________________\n").font.color.rgb = COLOR_BORDER
-    r_s0_1 = p_s0.add_run("Ing. Alejandro Suárez / Equipo de Desarrollo\n")
+    r_s0_1 = p_s0.add_run("Ing. Albin Suárez / Equipo de Desarrollo\n")
     r_s0_1.bold = True
     r_s0_1.font.size = Pt(9.5)
     r_s0_1.font.color.rgb = COLOR_NAVY

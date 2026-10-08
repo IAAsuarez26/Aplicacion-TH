@@ -83,7 +83,7 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     desc: 'Actualizados formalmente en Humand 167 colaboradores con los campos: Fecha de Nacimiento.',
     badge: '167 Exitosos',
     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-    user: 'Ing. Alejandro Suárez'
+    user: 'Ing. Albin Suárez'
   },
   {
     id: 'log-1',
@@ -93,7 +93,7 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     desc: 'Se ejecutó DELETE /users/{id} sobre las 9 cuentas no pertenecientes a la nómina de TH. Todas eliminadas exitosamente con HTTP 204. Las cuentas técnicas quedaron protegidas.',
     badge: 'HTTP 204',
     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-    user: 'Ing. Alejandro Suárez'
+    user: 'Ing. Albin Suárez'
   },
   {
     id: 'log-2',
@@ -103,7 +103,7 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     desc: 'Se ejecutó asignación organizacional sobre los 163 colaboradores de nómina vía PUT /departments/members y PUT /job-positions/members. 163 de 163 asignados exitosamente (100%). Cero errores.',
     badge: '163 Exitosos',
     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-    user: 'Ing. Alejandro Suárez'
+    user: 'Ing. Albin Suárez'
   },
   {
     id: 'log-3',
@@ -113,7 +113,7 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     desc: 'Se cargaron 43 Departamentos nuevos (POST /departments/bulk) y 97 Puestos de Trabajo (POST /job-positions/bulk). Todos creados con HTTP 201 Created.',
     badge: 'HTTP 201',
     color: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-    user: 'Ing. Alejandro Suárez'
+    user: 'Ing. Albin Suárez'
   },
   {
     id: 'log-4',
@@ -123,7 +123,7 @@ const DEFAULT_AUDIT_LOGS: SyncAuditLog[] = [
     desc: 'Autenticación validada con Authorization: Basic contra el usuario integracionespb. Inspección de cuotas confirmada: 100 peticiones por minuto.',
     badge: 'HTTP 200',
     color: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
-    user: 'Ing. Alejandro Suárez'
+    user: 'Ing. Albin Suárez'
   },
 ];
 
@@ -141,10 +141,16 @@ export const HumandSyncModule: React.FC = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((item: any) => ({
+          const sanitized = parsed.map((item: any) => ({
             ...item,
-            user: item.user || 'Ing. Alejandro Suárez',
+            user: (!item.user || item.user.includes('Alejandro')) ? 'Ing. Albin Suárez' : item.user,
           }));
+          try {
+            localStorage.setItem('humand_sync_audit_logs', JSON.stringify(sanitized));
+          } catch {
+            // no-op
+          }
+          return sanitized;
         }
       }
     } catch {
@@ -175,7 +181,7 @@ export const HumandSyncModule: React.FC = () => {
       desc: info?.desc || (selectedEmpForSync ? `Actualización de estructura y expediente de ${selectedEmpForSync.nombres} ${selectedEmpForSync.apellidos} sincronizado a Humand.` : 'Sincronización ejecutada exitosamente desde la consola de control.'),
       badge: info?.badge || 'Completado',
       color: info?.color || 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-      user: info?.user || currentUser?.name || currentUser?.email || 'Ing. Alejandro Suárez'
+      user: info?.user || currentUser?.name || currentUser?.email || 'Ing. Albin Suárez'
     };
 
     setAuditLogs(prev => {
@@ -1084,7 +1090,7 @@ export const HumandSyncModule: React.FC = () => {
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                     <User className="w-3.5 h-3.5 text-indigo-400" />
                     <span className="text-indigo-400/80 font-normal">Por:</span>
-                    <span className="font-semibold text-indigo-200">{log.user || 'Ing. Alejandro Suárez'}</span>
+                    <span className="font-semibold text-indigo-200">{log.user && !log.user.includes('Alejandro') ? log.user : 'Ing. Albin Suárez'}</span>
                   </span>
                   <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${log.color}`}>
                     {log.badge}

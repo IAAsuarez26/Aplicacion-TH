@@ -6,7 +6,7 @@ export const DEMO_PROFILES: Record<RolCodigo, UserProfile> = {
   ADMIN_PLATAFORMA: {
     id: 'usr_demo_admin_plataforma',
     email: 'admin.plataforma@empresa.com',
-    name: 'Ing. Carlos Mendoza',
+    name: 'Ing. Albin Suárez',
     role: 'Administrador de la plataforma',
     rol_codigo: 'ADMIN_PLATAFORMA',
     permite_gestion_usuarios: true,
