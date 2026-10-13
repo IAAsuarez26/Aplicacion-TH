@@ -23,7 +23,7 @@ CREATE TRIGGER trg_roles_updated_at
 BEFORE UPDATE ON public.roles
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Insertar los 6 roles oficiales del Sistema TH
+-- Insertar los 8 roles oficiales del Sistema TH
 INSERT INTO public.roles (codigo, nombre, descripcion, permite_gestion_usuarios, color)
 VALUES
   (
@@ -48,11 +48,25 @@ VALUES
     'emerald'
   ),
   (
-    'COORD_RECLUTAMIENTO',
-    'Coordinador de Reclutamiento',
-    'Liderazgo de procesos de captación, catálogo de cargos, denominaciones de cargos (DC) y especificación de perfiles de competencias (PC).',
+    'COORD_TALENTO_HUMANO',
+    'Coordinador de Talento Humano',
+    'Liderazgo y supervisión de procesos de Talento Humano: captación, catálogo de cargos, denominaciones (DC), perfiles de competencias (PC), traslados y estructura organizativa.',
     FALSE,
     'amber'
+  ),
+  (
+    'ANALISTA_TALENTO_HUMANO',
+    'Analista de Talento Humano',
+    'Operación y análisis de procesos de Talento Humano: ficha de empleados (altas e ingresos), perfiles de competencias, traslados y dependencias organizativas.',
+    FALSE,
+    'sky'
+  ),
+  (
+    'ANALISTA_NOMINA',
+    'Analista de Nómina',
+    'Gestión operativa de nómina, análisis de novedades de personal, imputación de costos (MOD/MOI) y centros de costos asociados.',
+    FALSE,
+    'emerald'
   ),
   (
     'ESPEC_RECLUTAMIENTO',
@@ -414,6 +428,65 @@ EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object('success', false, 'message', SQLERRM);
 END;
 $$;
+
+-- 8. PROCEDIMIENTO: sp_cambiar_mi_password
+-- Permite que cualquier usuario autenticado dentro del sistema cambie su propia contraseña
+CREATE OR REPLACE FUNCTION sp_cambiar_mi_password(
+    p_auth_user_id UUID,
+    p_current_password VARCHAR,
+    p_new_password VARCHAR
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_caller_id UUID;
+    v_stored_pw TEXT;
+    v_hashed_pw TEXT;
+    v_target_user_id UUID;
+BEGIN
+    v_caller_id := auth.uid();
+    v_target_user_id := COALESCE(v_caller_id, p_auth_user_id);
+    
+    IF v_target_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Identificador de usuario no proporcionado o sesión no válida.');
+    END IF;
+
+    IF v_caller_id IS NOT NULL AND v_caller_id <> v_target_user_id THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Solo puede cambiar la contraseña de su propia cuenta.');
+    END IF;
+
+    IF length(trim(p_new_password)) < 6 THEN
+        RETURN jsonb_build_object('success', false, 'message', 'La nueva contraseña debe tener al menos 6 caracteres.');
+    END IF;
+
+    SELECT password INTO v_stored_pw
+    FROM auth.users
+    WHERE id = v_target_user_id;
+
+    IF v_stored_pw IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Usuario no encontrado.');
+    END IF;
+
+    IF crypt(trim(p_current_password), replace(v_stored_pw, '$2b$', '$2a$')) <> replace(v_stored_pw, '$2b$', '$2a$') THEN
+        RETURN jsonb_build_object('success', false, 'message', 'La contraseña actual ingresada es incorrecta.');
+    END IF;
+
+    v_hashed_pw := replace(crypt(trim(p_new_password), gen_salt('bf', 10)), '$2a$', '$2b$');
+
+    UPDATE auth.users
+    SET password = v_hashed_pw,
+        updated_at = NOW()
+    WHERE id = v_target_user_id;
+
+    RETURN jsonb_build_object('success', true, 'message', 'Su contraseña ha sido modificada exitosamente.');
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sp_cambiar_mi_password(UUID, VARCHAR, VARCHAR) TO anon, authenticated, project_admin;
 
 -- 8. BOOTSTRAP: Registrar y sincronizar usuario actual (asuarez@ponce-benzo.com)
 INSERT INTO public.usuarios (

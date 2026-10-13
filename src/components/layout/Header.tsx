@@ -3,6 +3,7 @@ import { Menu, Bell, Search, User, Sparkles, PanelLeftClose, PanelLeftOpen, Sun,
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { NavigationTab } from './Sidebar';
+import { ChangePasswordModal } from '../auth/ChangePasswordModal';
 
 interface HeaderProps {
   activeTab: NavigationTab;
@@ -89,6 +90,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
 
   const isDemoUser = user?.id.startsWith('usr_demo');
 
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = React.useState(false);
+
   const getRoleColor = (rolCodigo?: string) => {
     switch (rolCodigo) {
       case 'ADMIN_PLATAFORMA':
@@ -97,8 +100,13 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
         return 'text-blue-300 bg-blue-500/10 border-blue-500/30';
       case 'COORD_COMPENSACION':
         return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
+      case 'COORD_TALENTO_HUMANO':
       case 'COORD_RECLUTAMIENTO':
         return 'text-amber-300 bg-amber-500/10 border-amber-500/30';
+      case 'ANALISTA_TALENTO_HUMANO':
+        return 'text-sky-300 bg-sky-500/10 border-sky-500/30';
+      case 'ANALISTA_NOMINA':
+        return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
       case 'ESPEC_COMPENSACION':
         return 'text-teal-300 bg-teal-500/10 border-teal-500/30';
       case 'ESPEC_RECLUTAMIENTO':
@@ -108,83 +116,97 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, sidebarCollapsed, onT
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-4 md:px-8 py-4">
-      <div className="flex items-center justify-between gap-4">
-        {/* Left: Menu / Collapse Trigger & Title */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onToggleSidebar}
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center shadow-sm"
-            aria-label={sidebarCollapsed ? "Mostrar barra lateral" : "Ocultar barra lateral"}
-            title={sidebarCollapsed ? "Mostrar barra lateral" : "Ocultar barra lateral"}
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen className="w-5 h-5 text-brand-400" />
-            ) : (
-              <PanelLeftClose className="w-5 h-5 text-slate-300" />
-            )}
-          </button>
+    <>
+      <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 px-4 md:px-8 py-4">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Menu / Collapse Trigger & Title */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center shadow-sm"
+              aria-label={sidebarCollapsed ? "Mostrar barra lateral" : "Ocultar barra lateral"}
+              title={sidebarCollapsed ? "Mostrar barra lateral" : "Ocultar barra lateral"}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="w-5 h-5 text-brand-400" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-slate-300" />
+              )}
+            </button>
 
-          <div>
-            <h2 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight">
-              {currentInfo.title}
-            </h2>
-            <p className="hidden sm:block text-xs text-slate-400 font-normal">
-              {currentInfo.subtitle}
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Actions, Theme Toggle & User Badge */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-sm group ${
-              theme === 'dark'
-                ? 'bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white'
-                : 'bg-white hover:bg-blue-50/80 border-blue-200 text-blue-900 shadow-sm'
-            }`}
-            title={theme === 'dark' ? 'Cambiar a Modo Claro (Azul y Blanco)' : 'Cambiar a Modo Oscuro'}
-            aria-label="Cambiar tema de color"
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
-                <span className="hidden md:inline text-xs font-semibold text-slate-300 group-hover:text-white">
-                  Modo Claro
-                </span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-4 h-4 text-blue-600 group-hover:-rotate-12 transition-transform duration-300" />
-                <span className="hidden md:inline text-xs font-semibold text-blue-900 group-hover:text-blue-950">
-                  Modo Oscuro
-                </span>
-              </>
-            )}
-          </button>
-
-          {/* User badge */}
-          <div className="flex items-center gap-2.5 pl-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-sm">
-              <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-200">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-              </div>
-            </div>
-            <div className="hidden sm:block text-left">
-              <p className="text-xs font-semibold text-slate-200 leading-none">
-                {user?.name || user?.email?.split('@')[0]}
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-slate-100 tracking-tight">
+                {currentInfo.title}
+              </h2>
+              <p className="hidden sm:block text-xs text-slate-400 font-normal">
+                {currentInfo.subtitle}
               </p>
-              <div className="mt-1">
-                <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getRoleColor(user?.rol_codigo)}`}>
-                  {user?.role || 'Administrador'}
-                </span>
-              </div>
             </div>
           </div>
+
+          {/* Right: Actions, Theme Toggle & User Badge */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-200 cursor-pointer shadow-sm group ${
+                theme === 'dark'
+                  ? 'bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white'
+                  : 'bg-white hover:bg-blue-50/80 border-blue-200 text-blue-900 shadow-sm'
+              }`}
+              title={theme === 'dark' ? 'Cambiar a Modo Claro (Azul y Blanco)' : 'Cambiar a Modo Oscuro'}
+              aria-label="Cambiar tema de color"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+                  <span className="hidden md:inline text-xs font-semibold text-slate-300 group-hover:text-white">
+                    Modo Claro
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-blue-600 group-hover:-rotate-12 transition-transform duration-300" />
+                  <span className="hidden md:inline text-xs font-semibold text-blue-900 group-hover:text-blue-950">
+                    Modo Oscuro
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* User badge con acción para Cambiar Contraseña */}
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="flex items-center gap-2.5 pl-2 pr-3 py-1 rounded-xl bg-slate-900/50 hover:bg-slate-800/80 border border-slate-800/80 hover:border-brand-500/40 transition-all group cursor-pointer text-left"
+              title="Haz clic para cambiar tu contraseña de acceso"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-sm group-hover:scale-105 transition-transform">
+                <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-200">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+              </div>
+              <div className="hidden sm:block text-left">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-slate-200 leading-none group-hover:text-white">
+                    {user?.name || user?.email?.split('@')[0]}
+                  </p>
+                </div>
+                <div className="mt-1">
+                  <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getRoleColor(user?.rol_codigo)}`}>
+                    {user?.role || 'Administrador'}
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Modal de Cambio de Contraseña */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
+    </>
   );
 };

@@ -33,14 +33,44 @@ export const DEMO_PROFILES: Record<RolCodigo, UserProfile> = {
     cargo: 'Coordinador de Compensación y Beneficios',
     emailVerified: true,
   },
+  COORD_TALENTO_HUMANO: {
+    id: 'usr_demo_coord_th',
+    email: 'coord.th@empresa.com',
+    name: 'Lic. Mariana Silva',
+    role: 'Coordinador de Talento Humano',
+    rol_codigo: 'COORD_TALENTO_HUMANO',
+    permite_gestion_usuarios: false,
+    cargo: 'Coordinador de Talento Humano',
+    emailVerified: true,
+  },
   COORD_RECLUTAMIENTO: {
     id: 'usr_demo_coord_rec',
     email: 'coord.reclutamiento@empresa.com',
     name: 'Lic. Mariana Silva',
-    role: 'Coordinador de Reclutamiento',
-    rol_codigo: 'COORD_RECLUTAMIENTO',
+    role: 'Coordinador de Talento Humano',
+    rol_codigo: 'COORD_TALENTO_HUMANO',
     permite_gestion_usuarios: false,
-    cargo: 'Coordinador de Selección y Adquisición de Talento',
+    cargo: 'Coordinador de Talento Humano',
+    emailVerified: true,
+  },
+  ANALISTA_TALENTO_HUMANO: {
+    id: 'usr_demo_analista_th',
+    email: 'analista.th@empresa.com',
+    name: 'Lic. Andrea Torres',
+    role: 'Analista de Talento Humano',
+    rol_codigo: 'ANALISTA_TALENTO_HUMANO',
+    permite_gestion_usuarios: false,
+    cargo: 'Analista de Selección y Talento Humano',
+    emailVerified: true,
+  },
+  ANALISTA_NOMINA: {
+    id: 'usr_demo_analista_nomina',
+    email: 'analista.nomina@empresa.com',
+    name: 'Lic. Carlos Paredes',
+    role: 'Analista de Nómina',
+    rol_codigo: 'ANALISTA_NOMINA',
+    permite_gestion_usuarios: false,
+    cargo: 'Analista de Nómina y Compensación',
     emailVerified: true,
   },
   ESPEC_RECLUTAMIENTO: {
@@ -114,8 +144,8 @@ export const checkTabPermission = (tab: string, rolCodigo?: string | null): bool
     ].includes(tab);
   }
 
-  // 6. Coordinador de Reclutamiento: Reclutamiento, perfiles PC, estructura organizativa y traslados
-  if (rolCodigo === 'COORD_RECLUTAMIENTO') {
+  // 6. Coordinador de Talento Humano: Reclutamiento, perfiles PC, estructura organizativa, traslados e integración Humand
+  if (rolCodigo === 'COORD_TALENTO_HUMANO' || rolCodigo === 'COORD_RECLUTAMIENTO') {
     return [
       'perfiles_competencias',
       'historial',
@@ -123,10 +153,21 @@ export const checkTabPermission = (tab: string, rolCodigo?: string | null): bool
       'gerencias',
       'departamentos',
       'responsables',
+      'humand',
     ].includes(tab);
   }
 
-  // 7. Especialista de reclutamiento: Ficha y perfiles de competencias
+  // 7. Analista de Talento Humano: Operación de TH, perfiles de competencias y traslados
+  if (rolCodigo === 'ANALISTA_TALENTO_HUMANO') {
+    return ['perfiles_competencias', 'historial'].includes(tab);
+  }
+
+  // 8. Analista de Nómina: Operación de costos y dependencias corporativas
+  if (rolCodigo === 'ANALISTA_NOMINA') {
+    return ['tipo_costos', 'centros_costos', 'empresas', 'departamentos'].includes(tab);
+  }
+
+  // 9. Especialista de reclutamiento: Ficha y perfiles de competencias
   if (rolCodigo === 'ESPEC_RECLUTAMIENTO') {
     return ['perfiles_competencias'].includes(tab);
   }
@@ -145,6 +186,7 @@ interface AuthContextType {
   resendVerificationCode: (email: string) => Promise<{ success?: boolean; error?: any }>;
   sendPasswordReset: (email: string) => Promise<{ success?: boolean; error?: any }>;
   resetPasswordWithToken: (token: string, newPassword: string) => Promise<{ success?: boolean; error?: any }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   signInWithProvider: (provider: 'google' | 'github') => Promise<void>;
   signOut: () => Promise<void>;
   loginAsDemoAdmin: (roleKey?: RolCodigo) => void;
@@ -436,6 +478,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // 12. Cambiar contraseña del propio usuario autenticado
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string; message?: string }> => {
+    try {
+      if (!user) {
+        return { success: false, error: 'No hay ninguna sesión activa de usuario.' };
+      }
+
+      if (user.id.startsWith('usr_demo')) {
+        // En modo demo simulamos el cambio exitoso
+        return { success: true, message: 'Contraseña cambiada exitosamente (Modo Demo).' };
+      }
+
+      const res = await usuariosApi.cambiarMiPassword(user.id, currentPassword, newPassword);
+      return res;
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Error al actualizar contraseña' };
+    }
+  };
+
   // Determinación de privilegios
   const canManageUsers = Boolean(
     user?.permite_gestion_usuarios ||
@@ -460,6 +524,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resendVerificationCode,
         sendPasswordReset,
         resetPasswordWithToken,
+        changePassword,
         signInWithProvider,
         signOut,
         loginAsDemoAdmin,

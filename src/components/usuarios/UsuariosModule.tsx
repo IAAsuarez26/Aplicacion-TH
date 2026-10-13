@@ -318,11 +318,26 @@ export const UsuariosModule: React.FC = () => {
             {rolNombre || 'Coordinador de Compensación'}
           </span>
         );
+      case 'COORD_TALENTO_HUMANO':
       case 'COORD_RECLUTAMIENTO':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
             <Shield className="w-3.5 h-3.5 text-amber-400" />
-            {rolNombre || 'Coordinador de Reclutamiento'}
+            {rolNombre || 'Coordinador de Talento Humano'}
+          </span>
+        );
+      case 'ANALISTA_TALENTO_HUMANO':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+            <Users className="w-3.5 h-3.5 text-sky-400" />
+            {rolNombre || 'Analista de Talento Humano'}
+          </span>
+        );
+      case 'ANALISTA_NOMINA':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <Coins className="w-3.5 h-3.5 text-emerald-400" />
+            {rolNombre || 'Analista de Nómina'}
           </span>
         );
       case 'ESPEC_COMPENSACION':

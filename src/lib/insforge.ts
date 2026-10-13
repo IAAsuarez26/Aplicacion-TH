@@ -1719,6 +1719,29 @@ export const usuariosApi = {
     }
   },
 
+  async cambiarMiPassword(auth_user_id: string, current_password: string, new_password: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const { data, error } = await insforge.database.rpc('sp_cambiar_mi_password', {
+        p_auth_user_id: auth_user_id,
+        p_current_password: current_password,
+        p_new_password: new_password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message || 'Error al cambiar la contraseña' };
+      }
+
+      const result = data as any;
+      if (result && result.success === false) {
+        return { success: false, error: result.message || 'No se pudo cambiar la contraseña' };
+      }
+
+      return { success: true, message: result?.message || 'Contraseña actualizada con éxito' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error de conexión' };
+    }
+  },
+
   async delete(auth_user_id: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { data, error } = await insforge.database.rpc('sp_eliminar_usuario', {
